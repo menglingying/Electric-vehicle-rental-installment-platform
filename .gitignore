@@ -1,0 +1,21 @@
+node_modules/
+dist/
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Java
+services/api/target/
+services/api/.mvn/wrapper/maven-wrapper.jar
+
+# Local tools
+.tools/
+
+# Deploy bundles/secrets
+deploy/aliyun/bundle.tgz
+deploy/aliyun/.bundle/
+deploy/aliyun/.secrets/
+
+# Local secrets
+服务器密码

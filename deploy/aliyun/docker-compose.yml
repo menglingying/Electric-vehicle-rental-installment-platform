@@ -1,0 +1,63 @@
+name: evlease
+
+services:
+  mysql:
+    image: ${EVLEASE_MYSQL_IMAGE:-docker.m.daocloud.io/library/mysql:8.0}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set in .env}
+      MYSQL_DATABASE: evlease
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  api:
+    image: ${EVLEASE_JRE_IMAGE:-docker.m.daocloud.io/library/eclipse-temurin:17-jre}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set in .env}
+      APP_ADMIN_USERNAME: ${APP_ADMIN_USERNAME:-admin}
+      APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD:-admin123}
+      APP_AUTH_FIXED_CODE_WHITELIST_PHONES: ${APP_AUTH_FIXED_CODE_WHITELIST_PHONES:-}
+      APP_UPLOAD_DIR: ${APP_UPLOAD_DIR:-/app/uploads}
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--Xms128m -Xmx512m}
+    volumes:
+      - ./artifacts/installment-api.jar:/app/app.jar:ro
+      - ./data/uploads:/app/uploads
+    command: ["java", "-jar", "/app/app.jar"]
+    restart: unless-stopped
+
+  h5:
+    image: ${EVLEASE_NGINX_IMAGE:-docker.m.daocloud.io/library/nginx:1.25-alpine}
+    depends_on:
+      - api
+    ports:
+      - "8088:80"
+    volumes:
+      - ./nginx/h5.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./artifacts/h5:/usr/share/nginx/html:ro
+    restart: unless-stopped
+
+  admin:
+    image: ${EVLEASE_NGINX_IMAGE:-docker.m.daocloud.io/library/nginx:1.25-alpine}
+    depends_on:
+      - api
+    ports:
+      - "8089:80"
+    volumes:
+      - ./nginx/admin.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./artifacts/admin:/usr/share/nginx/html:ro
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

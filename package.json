@@ -1,0 +1,16 @@
+{
+  "name": "ev-lease-installment-platform",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "services/api-node"
+  ],
+  "scripts": {
+    "dev:api": "powershell -ExecutionPolicy Bypass -File scripts\\dev-spring.ps1",
+    "dev:api:node": "npm --workspace services/api-node run dev",
+    "dev:h5": "npm --workspace apps/h5 run dev",
+    "dev:admin": "npm --workspace apps/admin run dev",
+    "build:h5": "npm --workspace apps/h5 run build",
+    "build:admin": "npm --workspace apps/admin run build"
+  }
+}
