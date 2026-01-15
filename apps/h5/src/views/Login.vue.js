@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { ref, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { showFailToast, showSuccessToast } from 'vant';
 import { login, requestLoginCode } from '@/services/api';
@@ -6,10 +6,44 @@ import { setH5Token } from '@/services/auth';
 const router = useRouter();
 const phone = ref('');
 const code = ref('');
+const countdown = ref(0);
+const devFixedCode = ref('');
+let timer = null;
+function startCountdown(seconds) {
+    countdown.value = seconds;
+    if (timer)
+        clearInterval(timer);
+    timer = setInterval(() => {
+        countdown.value--;
+        if (countdown.value <= 0) {
+            if (timer)
+                clearInterval(timer);
+            timer = null;
+        }
+    }, 1000);
+}
+onUnmounted(() => {
+    if (timer)
+        clearInterval(timer);
+});
 async function onRequestCode() {
+    if (!phone.value) {
+        showFailToast('请输入手机号');
+        return;
+    }
     try {
-        await requestLoginCode(phone.value);
-        showSuccessToast('已发送（dev 固定码：123456）');
+        const res = await requestLoginCode(phone.value);
+        // 开发环境返回固定验证码
+        if (res.devFixedCode) {
+            devFixedCode.value = res.devFixedCode;
+            showSuccessToast(`已发送（dev 固定码：${res.devFixedCode}）`);
+        }
+        else {
+            devFixedCode.value = '';
+            showSuccessToast('验证码已发送');
+        }
+        // 开始60秒倒计时
+        startCountdown(60);
     }
     catch (e) {
         showFailToast(e?.response?.data?.message ?? '获取验证码失败');
@@ -103,11 +137,13 @@ const __VLS_21 = __VLS_asFunctionalComponent(__VLS_20, new __VLS_20({
     ...{ 'onClick': {} },
     block: true,
     type: "default",
+    disabled: (__VLS_ctx.countdown > 0 || !__VLS_ctx.phone),
 }));
 const __VLS_22 = __VLS_21({
     ...{ 'onClick': {} },
     block: true,
     type: "default",
+    disabled: (__VLS_ctx.countdown > 0 || !__VLS_ctx.phone),
 }, ...__VLS_functionalComponentArgsRest(__VLS_21));
 let __VLS_24;
 let __VLS_25;
@@ -116,6 +152,7 @@ const __VLS_27 = {
     onClick: (__VLS_ctx.onRequestCode)
 };
 __VLS_23.slots.default;
+(__VLS_ctx.countdown > 0 ? `${__VLS_ctx.countdown}秒后重新获取` : '获取验证码');
 var __VLS_23;
 const __VLS_28 = {}.VanButton;
 /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
@@ -124,17 +161,22 @@ const __VLS_29 = __VLS_asFunctionalComponent(__VLS_28, new __VLS_28({
     block: true,
     type: "primary",
     nativeType: "submit",
+    disabled: (!__VLS_ctx.phone || !__VLS_ctx.code),
 }));
 const __VLS_30 = __VLS_29({
     block: true,
     type: "primary",
     nativeType: "submit",
+    disabled: (!__VLS_ctx.phone || !__VLS_ctx.code),
 }, ...__VLS_functionalComponentArgsRest(__VLS_29));
 __VLS_31.slots.default;
 var __VLS_31;
-__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "hint" },
-});
+if (__VLS_ctx.devFixedCode) {
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+        ...{ class: "hint" },
+    });
+    (__VLS_ctx.devFixedCode);
+}
 var __VLS_7;
 /** @type {__VLS_StyleScopedClasses['page']} */ ;
 /** @type {__VLS_StyleScopedClasses['card']} */ ;
@@ -145,6 +187,8 @@ const __VLS_self = (await import('vue')).defineComponent({
         return {
             phone: phone,
             code: code,
+            countdown: countdown,
+            devFixedCode: devFixedCode,
             onRequestCode: onRequestCode,
             onSubmit: onSubmit,
         };

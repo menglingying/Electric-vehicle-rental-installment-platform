@@ -1,24 +1,42 @@
-import { h, onMounted, ref } from 'vue';
-import { Button, Message } from '@arco-design/web-vue';
-import { listReminders, listSmsRecords, sendSms } from '@/services/api';
+import { onMounted, ref } from 'vue';
+import { Message } from '@arco-design/web-vue';
+import { listReminders, listSmsRecords, sendReminderSms } from '@/services/api';
 import { downloadCsv } from '@/services/download';
 const kind = ref('all');
 const rows = ref([]);
 const records = ref([]);
+const selectedIds = ref([]);
 async function load() {
     try {
         rows.value = await listReminders(kind.value);
         records.value = await listSmsRecords();
+        selectedIds.value = [];
     }
     catch (e) {
         Message.error(e?.response?.data?.message ?? '加载失败');
     }
 }
-async function send(item) {
+async function sendOne(item) {
     try {
-        const content = `【还款提醒】订单${item.orderId} 第${item.period}期 ￥${item.amount} 到期日：${item.dueDate}`;
-        await sendSms(item.phone, content);
-        Message.success('已记录发送');
+        const result = await sendReminderSms([item.id]);
+        if (result.success > 0) {
+            Message.success('短信发送成功');
+        }
+        else {
+            Message.error('短信发送失败');
+        }
+        await load();
+    }
+    catch (e) {
+        Message.error(e?.response?.data?.message ?? '发送失败');
+    }
+}
+async function sendSelected() {
+    if (selectedIds.value.length === 0)
+        return;
+    try {
+        const result = await sendReminderSms(selectedIds.value);
+        Message.success(`发送完成：成功 ${result.success}，失败 ${result.fail}`);
         await load();
     }
     catch (e) {
@@ -42,10 +60,10 @@ const __VLS_0 = {}.ACard;
 /** @type {[typeof __VLS_components.ACard, typeof __VLS_components.aCard, typeof __VLS_components.ACard, typeof __VLS_components.aCard, ]} */ ;
 // @ts-ignore
 const __VLS_1 = __VLS_asFunctionalComponent(__VLS_0, new __VLS_0({
-    title: "提醒与短信（预留）",
+    title: "还款提醒",
 }));
 const __VLS_2 = __VLS_1({
-    title: "提醒与短信（预留）",
+    title: "还款提醒",
 }, ...__VLS_functionalComponentArgsRest(__VLS_1));
 var __VLS_4 = {};
 __VLS_3.slots.default;
@@ -128,210 +146,263 @@ const __VLS_33 = {}.AButton;
 // @ts-ignore
 const __VLS_34 = __VLS_asFunctionalComponent(__VLS_33, new __VLS_33({
     ...{ 'onClick': {} },
+    type: "primary",
+    disabled: (__VLS_ctx.selectedIds.length === 0),
 }));
 const __VLS_35 = __VLS_34({
     ...{ 'onClick': {} },
+    type: "primary",
+    disabled: (__VLS_ctx.selectedIds.length === 0),
 }, ...__VLS_functionalComponentArgsRest(__VLS_34));
 let __VLS_37;
 let __VLS_38;
 let __VLS_39;
 const __VLS_40 = {
-    onClick: (__VLS_ctx.exportSms)
+    onClick: (__VLS_ctx.sendSelected)
 };
 __VLS_36.slots.default;
+(__VLS_ctx.selectedIds.length);
 var __VLS_36;
-const __VLS_41 = {}.AAlert;
-/** @type {[typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, ]} */ ;
+const __VLS_41 = {}.AButton;
+/** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
 // @ts-ignore
 const __VLS_42 = __VLS_asFunctionalComponent(__VLS_41, new __VLS_41({
-    ...{ style: {} },
-    type: "warning",
+    ...{ 'onClick': {} },
 }));
 const __VLS_43 = __VLS_42({
-    ...{ style: {} },
-    type: "warning",
+    ...{ 'onClick': {} },
 }, ...__VLS_functionalComponentArgsRest(__VLS_42));
+let __VLS_45;
+let __VLS_46;
+let __VLS_47;
+const __VLS_48 = {
+    onClick: (__VLS_ctx.exportSms)
+};
 __VLS_44.slots.default;
 var __VLS_44;
-const __VLS_45 = {}.ATable;
+const __VLS_49 = {}.ATable;
 /** @type {[typeof __VLS_components.ATable, typeof __VLS_components.aTable, typeof __VLS_components.ATable, typeof __VLS_components.aTable, ]} */ ;
 // @ts-ignore
-const __VLS_46 = __VLS_asFunctionalComponent(__VLS_45, new __VLS_45({
-    data: (__VLS_ctx.rows),
-    pagination: (false),
-}));
-const __VLS_47 = __VLS_46({
-    data: (__VLS_ctx.rows),
-    pagination: (false),
-}, ...__VLS_functionalComponentArgsRest(__VLS_46));
-__VLS_48.slots.default;
-const __VLS_49 = {}.ATableColumn;
-/** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
-// @ts-ignore
 const __VLS_50 = __VLS_asFunctionalComponent(__VLS_49, new __VLS_49({
-    title: "订单",
-    dataIndex: "orderId",
+    data: (__VLS_ctx.rows),
+    pagination: (false),
+    rowSelection: ({ type: 'checkbox', showCheckedAll: true }),
+    selectedKeys: (__VLS_ctx.selectedIds),
+    rowKey: "id",
 }));
 const __VLS_51 = __VLS_50({
-    title: "订单",
-    dataIndex: "orderId",
+    data: (__VLS_ctx.rows),
+    pagination: (false),
+    rowSelection: ({ type: 'checkbox', showCheckedAll: true }),
+    selectedKeys: (__VLS_ctx.selectedIds),
+    rowKey: "id",
 }, ...__VLS_functionalComponentArgsRest(__VLS_50));
+__VLS_52.slots.default;
 const __VLS_53 = {}.ATableColumn;
 /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_54 = __VLS_asFunctionalComponent(__VLS_53, new __VLS_53({
-    title: "手机号",
-    dataIndex: "phone",
+    title: "订单",
+    dataIndex: "orderId",
 }));
 const __VLS_55 = __VLS_54({
-    title: "手机号",
-    dataIndex: "phone",
+    title: "订单",
+    dataIndex: "orderId",
 }, ...__VLS_functionalComponentArgsRest(__VLS_54));
 const __VLS_57 = {}.ATableColumn;
 /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_58 = __VLS_asFunctionalComponent(__VLS_57, new __VLS_57({
-    title: "商品",
-    dataIndex: "productName",
+    title: "手机号",
+    dataIndex: "phone",
 }));
 const __VLS_59 = __VLS_58({
-    title: "商品",
-    dataIndex: "productName",
+    title: "手机号",
+    dataIndex: "phone",
 }, ...__VLS_functionalComponentArgsRest(__VLS_58));
 const __VLS_61 = {}.ATableColumn;
 /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_62 = __VLS_asFunctionalComponent(__VLS_61, new __VLS_61({
-    title: "期次",
-    dataIndex: "period",
+    title: "商品",
+    dataIndex: "productName",
 }));
 const __VLS_63 = __VLS_62({
-    title: "期次",
-    dataIndex: "period",
+    title: "商品",
+    dataIndex: "productName",
 }, ...__VLS_functionalComponentArgsRest(__VLS_62));
 const __VLS_65 = {}.ATableColumn;
 /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_66 = __VLS_asFunctionalComponent(__VLS_65, new __VLS_65({
-    title: "到期日",
-    dataIndex: "dueDate",
+    title: "期次",
+    dataIndex: "period",
 }));
 const __VLS_67 = __VLS_66({
-    title: "到期日",
-    dataIndex: "dueDate",
+    title: "期次",
+    dataIndex: "period",
 }, ...__VLS_functionalComponentArgsRest(__VLS_66));
 const __VLS_69 = {}.ATableColumn;
 /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_70 = __VLS_asFunctionalComponent(__VLS_69, new __VLS_69({
-    title: "金额",
-    render: (({ record }) => `￥${record.amount}`),
+    title: "到期日",
+    dataIndex: "dueDate",
 }));
 const __VLS_71 = __VLS_70({
-    title: "金额",
-    render: (({ record }) => `￥${record.amount}`),
+    title: "到期日",
+    dataIndex: "dueDate",
 }, ...__VLS_functionalComponentArgsRest(__VLS_70));
 const __VLS_73 = {}.ATableColumn;
 /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_74 = __VLS_asFunctionalComponent(__VLS_73, new __VLS_73({
-    title: "操作",
-    render: (({ record }) => __VLS_ctx.h(__VLS_ctx.Button, { type: 'primary', size: 'small', onClick: () => __VLS_ctx.send(record) }, () => '发送短信(模拟)')),
+    title: "金额",
+    render: (({ record }) => `￥${(record.amount / 100).toFixed(2)}`),
 }));
 const __VLS_75 = __VLS_74({
-    title: "操作",
-    render: (({ record }) => __VLS_ctx.h(__VLS_ctx.Button, { type: 'primary', size: 'small', onClick: () => __VLS_ctx.send(record) }, () => '发送短信(模拟)')),
+    title: "金额",
+    render: (({ record }) => `￥${(record.amount / 100).toFixed(2)}`),
 }, ...__VLS_functionalComponentArgsRest(__VLS_74));
-var __VLS_48;
-const __VLS_77 = {}.ADivider;
+const __VLS_77 = {}.ATableColumn;
+/** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
+// @ts-ignore
+const __VLS_78 = __VLS_asFunctionalComponent(__VLS_77, new __VLS_77({
+    title: "操作",
+}));
+const __VLS_79 = __VLS_78({
+    title: "操作",
+}, ...__VLS_functionalComponentArgsRest(__VLS_78));
+__VLS_80.slots.default;
+{
+    const { cell: __VLS_thisSlot } = __VLS_80.slots;
+    const [{ record }] = __VLS_getSlotParams(__VLS_thisSlot);
+    const __VLS_81 = {}.AButton;
+    /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
+    // @ts-ignore
+    const __VLS_82 = __VLS_asFunctionalComponent(__VLS_81, new __VLS_81({
+        ...{ 'onClick': {} },
+        type: "primary",
+        size: "small",
+    }));
+    const __VLS_83 = __VLS_82({
+        ...{ 'onClick': {} },
+        type: "primary",
+        size: "small",
+    }, ...__VLS_functionalComponentArgsRest(__VLS_82));
+    let __VLS_85;
+    let __VLS_86;
+    let __VLS_87;
+    const __VLS_88 = {
+        onClick: (...[$event]) => {
+            __VLS_ctx.sendOne(record);
+        }
+    };
+    __VLS_84.slots.default;
+    var __VLS_84;
+}
+var __VLS_80;
+var __VLS_52;
+const __VLS_89 = {}.ADivider;
 /** @type {[typeof __VLS_components.ADivider, typeof __VLS_components.aDivider, ]} */ ;
 // @ts-ignore
-const __VLS_78 = __VLS_asFunctionalComponent(__VLS_77, new __VLS_77({}));
-const __VLS_79 = __VLS_78({}, ...__VLS_functionalComponentArgsRest(__VLS_78));
-const __VLS_81 = {}.ACard;
+const __VLS_90 = __VLS_asFunctionalComponent(__VLS_89, new __VLS_89({}));
+const __VLS_91 = __VLS_90({}, ...__VLS_functionalComponentArgsRest(__VLS_90));
+const __VLS_93 = {}.ACard;
 /** @type {[typeof __VLS_components.ACard, typeof __VLS_components.aCard, typeof __VLS_components.ACard, typeof __VLS_components.aCard, ]} */ ;
 // @ts-ignore
-const __VLS_82 = __VLS_asFunctionalComponent(__VLS_81, new __VLS_81({
-    title: "发送记录",
-    bordered: (false),
-}));
-const __VLS_83 = __VLS_82({
-    title: "发送记录",
-    bordered: (false),
-}, ...__VLS_functionalComponentArgsRest(__VLS_82));
-__VLS_84.slots.default;
-const __VLS_85 = {}.ATable;
-/** @type {[typeof __VLS_components.ATable, typeof __VLS_components.aTable, typeof __VLS_components.ATable, typeof __VLS_components.aTable, ]} */ ;
-// @ts-ignore
-const __VLS_86 = __VLS_asFunctionalComponent(__VLS_85, new __VLS_85({
-    data: (__VLS_ctx.records),
-    pagination: (false),
-    size: "small",
-}));
-const __VLS_87 = __VLS_86({
-    data: (__VLS_ctx.records),
-    pagination: (false),
-    size: "small",
-}, ...__VLS_functionalComponentArgsRest(__VLS_86));
-__VLS_88.slots.default;
-const __VLS_89 = {}.ATableColumn;
-/** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
-// @ts-ignore
-const __VLS_90 = __VLS_asFunctionalComponent(__VLS_89, new __VLS_89({
-    title: "时间",
-    dataIndex: "createdAt",
-}));
-const __VLS_91 = __VLS_90({
-    title: "时间",
-    dataIndex: "createdAt",
-}, ...__VLS_functionalComponentArgsRest(__VLS_90));
-const __VLS_93 = {}.ATableColumn;
-/** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
-// @ts-ignore
 const __VLS_94 = __VLS_asFunctionalComponent(__VLS_93, new __VLS_93({
-    title: "手机号",
-    dataIndex: "phone",
+    title: "发送记录",
+    bordered: (false),
 }));
 const __VLS_95 = __VLS_94({
-    title: "手机号",
-    dataIndex: "phone",
+    title: "发送记录",
+    bordered: (false),
 }, ...__VLS_functionalComponentArgsRest(__VLS_94));
-const __VLS_97 = {}.ATableColumn;
-/** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
+__VLS_96.slots.default;
+const __VLS_97 = {}.ATable;
+/** @type {[typeof __VLS_components.ATable, typeof __VLS_components.aTable, typeof __VLS_components.ATable, typeof __VLS_components.aTable, ]} */ ;
 // @ts-ignore
 const __VLS_98 = __VLS_asFunctionalComponent(__VLS_97, new __VLS_97({
-    title: "内容",
-    dataIndex: "content",
+    data: (__VLS_ctx.records),
+    pagination: (false),
+    size: "small",
 }));
 const __VLS_99 = __VLS_98({
-    title: "内容",
-    dataIndex: "content",
+    data: (__VLS_ctx.records),
+    pagination: (false),
+    size: "small",
 }, ...__VLS_functionalComponentArgsRest(__VLS_98));
+__VLS_100.slots.default;
 const __VLS_101 = {}.ATableColumn;
 /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_102 = __VLS_asFunctionalComponent(__VLS_101, new __VLS_101({
+    title: "时间",
+    dataIndex: "createdAt",
+}));
+const __VLS_103 = __VLS_102({
+    title: "时间",
+    dataIndex: "createdAt",
+}, ...__VLS_functionalComponentArgsRest(__VLS_102));
+const __VLS_105 = {}.ATableColumn;
+/** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
+// @ts-ignore
+const __VLS_106 = __VLS_asFunctionalComponent(__VLS_105, new __VLS_105({
+    title: "手机号",
+    dataIndex: "phone",
+}));
+const __VLS_107 = __VLS_106({
+    title: "手机号",
+    dataIndex: "phone",
+}, ...__VLS_functionalComponentArgsRest(__VLS_106));
+const __VLS_109 = {}.ATableColumn;
+/** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
+// @ts-ignore
+const __VLS_110 = __VLS_asFunctionalComponent(__VLS_109, new __VLS_109({
+    title: "内容",
+    dataIndex: "content",
+}));
+const __VLS_111 = __VLS_110({
+    title: "内容",
+    dataIndex: "content",
+}, ...__VLS_functionalComponentArgsRest(__VLS_110));
+const __VLS_113 = {}.ATableColumn;
+/** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
+// @ts-ignore
+const __VLS_114 = __VLS_asFunctionalComponent(__VLS_113, new __VLS_113({
     title: "状态",
     dataIndex: "status",
 }));
-const __VLS_103 = __VLS_102({
+const __VLS_115 = __VLS_114({
     title: "状态",
     dataIndex: "status",
-}, ...__VLS_functionalComponentArgsRest(__VLS_102));
-var __VLS_88;
-var __VLS_84;
+}, ...__VLS_functionalComponentArgsRest(__VLS_114));
+const __VLS_117 = {}.ATableColumn;
+/** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
+// @ts-ignore
+const __VLS_118 = __VLS_asFunctionalComponent(__VLS_117, new __VLS_117({
+    title: "类型",
+    dataIndex: "bizType",
+}));
+const __VLS_119 = __VLS_118({
+    title: "类型",
+    dataIndex: "bizType",
+}, ...__VLS_functionalComponentArgsRest(__VLS_118));
+var __VLS_100;
+var __VLS_96;
 var __VLS_3;
 var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {
         return {
-            h: h,
-            Button: Button,
             kind: kind,
             rows: rows,
             records: records,
+            selectedIds: selectedIds,
             load: load,
-            send: send,
+            sendOne: sendOne,
+            sendSelected: sendSelected,
             exportSms: exportSms,
         };
     },

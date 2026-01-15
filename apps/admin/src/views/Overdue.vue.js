@@ -1,19 +1,56 @@
-import { h, onMounted, ref } from 'vue';
-import { Message, Tag } from '@arco-design/web-vue';
-import { listOverdue } from '@/services/api';
+import { computed, onMounted, ref } from 'vue';
+import { Message } from '@arco-design/web-vue';
+import { listOverdue, sendOverdueSms } from '@/services/api';
 import { downloadCsv } from '@/services/download';
 const tier = ref('1-3');
 const rows = ref([]);
-function renderOverduePeriods({ record }) {
-    const items = record.overduePeriods ?? [];
-    return h('div', { style: 'display:flex; gap:6px; flex-wrap:wrap' }, items.map((x) => h(Tag, { color: 'orangered' }, () => `第${x.period}期 ${x.overdueDays}天`)));
-}
+const selectedKeys = ref([]);
+const selectedRows = computed(() => rows.value.filter(r => selectedKeys.value.includes(r.orderId)));
 async function load() {
     try {
         rows.value = await listOverdue(tier.value);
+        selectedKeys.value = [];
     }
     catch (e) {
         Message.error(e?.response?.data?.message ?? '加载失败');
+    }
+}
+function buildSendItems(record) {
+    return (record.overduePeriods ?? []).map((p) => ({
+        orderId: record.orderId,
+        period: p.period,
+        amount: p.amount,
+        overdueDays: p.overdueDays
+    }));
+}
+async function sendOne(record) {
+    try {
+        const items = buildSendItems(record);
+        const result = await sendOverdueSms(items);
+        if (result.success > 0) {
+            Message.success(`催收短信发送成功：${result.success}条`);
+        }
+        else {
+            Message.error('催收短信发送失败');
+        }
+    }
+    catch (e) {
+        Message.error(e?.response?.data?.message ?? '发送失败');
+    }
+}
+async function sendSelected() {
+    if (selectedRows.value.length === 0)
+        return;
+    try {
+        const items = [];
+        for (const record of selectedRows.value) {
+            items.push(...buildSendItems(record));
+        }
+        const result = await sendOverdueSms(items);
+        Message.success(`发送完成：成功 ${result.success}，失败 ${result.fail}`);
+    }
+    catch (e) {
+        Message.error(e?.response?.data?.message ?? '发送失败');
     }
 }
 onMounted(load);
@@ -141,97 +178,187 @@ const __VLS_41 = {}.AButton;
 // @ts-ignore
 const __VLS_42 = __VLS_asFunctionalComponent(__VLS_41, new __VLS_41({
     ...{ 'onClick': {} },
+    type: "primary",
+    disabled: (__VLS_ctx.selectedRows.length === 0),
 }));
 const __VLS_43 = __VLS_42({
     ...{ 'onClick': {} },
+    type: "primary",
+    disabled: (__VLS_ctx.selectedRows.length === 0),
 }, ...__VLS_functionalComponentArgsRest(__VLS_42));
 let __VLS_45;
 let __VLS_46;
 let __VLS_47;
 const __VLS_48 = {
-    onClick: (__VLS_ctx.exportOverdue)
+    onClick: (__VLS_ctx.sendSelected)
 };
 __VLS_44.slots.default;
+(__VLS_ctx.selectedRows.length);
 var __VLS_44;
-const __VLS_49 = {}.ATable;
-/** @type {[typeof __VLS_components.ATable, typeof __VLS_components.aTable, typeof __VLS_components.ATable, typeof __VLS_components.aTable, ]} */ ;
+const __VLS_49 = {}.AButton;
+/** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
 // @ts-ignore
 const __VLS_50 = __VLS_asFunctionalComponent(__VLS_49, new __VLS_49({
-    data: (__VLS_ctx.rows),
-    pagination: (false),
+    ...{ 'onClick': {} },
 }));
 const __VLS_51 = __VLS_50({
-    data: (__VLS_ctx.rows),
-    pagination: (false),
+    ...{ 'onClick': {} },
 }, ...__VLS_functionalComponentArgsRest(__VLS_50));
+let __VLS_53;
+let __VLS_54;
+let __VLS_55;
+const __VLS_56 = {
+    onClick: (__VLS_ctx.exportOverdue)
+};
 __VLS_52.slots.default;
-const __VLS_53 = {}.ATableColumn;
-/** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
-// @ts-ignore
-const __VLS_54 = __VLS_asFunctionalComponent(__VLS_53, new __VLS_53({
-    title: "订单",
-    dataIndex: "orderId",
-}));
-const __VLS_55 = __VLS_54({
-    title: "订单",
-    dataIndex: "orderId",
-}, ...__VLS_functionalComponentArgsRest(__VLS_54));
-const __VLS_57 = {}.ATableColumn;
-/** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
+var __VLS_52;
+const __VLS_57 = {}.ATable;
+/** @type {[typeof __VLS_components.ATable, typeof __VLS_components.aTable, typeof __VLS_components.ATable, typeof __VLS_components.aTable, ]} */ ;
 // @ts-ignore
 const __VLS_58 = __VLS_asFunctionalComponent(__VLS_57, new __VLS_57({
-    title: "手机号",
-    dataIndex: "phone",
+    data: (__VLS_ctx.rows),
+    pagination: (false),
+    rowSelection: ({ type: 'checkbox', showCheckedAll: true }),
+    selectedKeys: (__VLS_ctx.selectedKeys),
+    rowKey: "orderId",
 }));
 const __VLS_59 = __VLS_58({
-    title: "手机号",
-    dataIndex: "phone",
+    data: (__VLS_ctx.rows),
+    pagination: (false),
+    rowSelection: ({ type: 'checkbox', showCheckedAll: true }),
+    selectedKeys: (__VLS_ctx.selectedKeys),
+    rowKey: "orderId",
 }, ...__VLS_functionalComponentArgsRest(__VLS_58));
+__VLS_60.slots.default;
 const __VLS_61 = {}.ATableColumn;
 /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_62 = __VLS_asFunctionalComponent(__VLS_61, new __VLS_61({
-    title: "商品",
-    dataIndex: "productName",
+    title: "订单",
+    dataIndex: "orderId",
 }));
 const __VLS_63 = __VLS_62({
-    title: "商品",
-    dataIndex: "productName",
+    title: "订单",
+    dataIndex: "orderId",
 }, ...__VLS_functionalComponentArgsRest(__VLS_62));
 const __VLS_65 = {}.ATableColumn;
 /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_66 = __VLS_asFunctionalComponent(__VLS_65, new __VLS_65({
-    title: "状态",
-    dataIndex: "status",
+    title: "手机号",
+    dataIndex: "phone",
 }));
 const __VLS_67 = __VLS_66({
-    title: "状态",
-    dataIndex: "status",
+    title: "手机号",
+    dataIndex: "phone",
 }, ...__VLS_functionalComponentArgsRest(__VLS_66));
 const __VLS_69 = {}.ATableColumn;
 /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_70 = __VLS_asFunctionalComponent(__VLS_69, new __VLS_69({
-    title: "最大逾期天数",
-    dataIndex: "maxOverdueDays",
+    title: "商品",
+    dataIndex: "productName",
 }));
 const __VLS_71 = __VLS_70({
-    title: "最大逾期天数",
-    dataIndex: "maxOverdueDays",
+    title: "商品",
+    dataIndex: "productName",
 }, ...__VLS_functionalComponentArgsRest(__VLS_70));
 const __VLS_73 = {}.ATableColumn;
 /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
 // @ts-ignore
 const __VLS_74 = __VLS_asFunctionalComponent(__VLS_73, new __VLS_73({
-    title: "逾期期次",
-    render: (__VLS_ctx.renderOverduePeriods),
+    title: "状态",
+    dataIndex: "status",
 }));
 const __VLS_75 = __VLS_74({
-    title: "逾期期次",
-    render: (__VLS_ctx.renderOverduePeriods),
+    title: "状态",
+    dataIndex: "status",
 }, ...__VLS_functionalComponentArgsRest(__VLS_74));
-var __VLS_52;
+const __VLS_77 = {}.ATableColumn;
+/** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
+// @ts-ignore
+const __VLS_78 = __VLS_asFunctionalComponent(__VLS_77, new __VLS_77({
+    title: "最大逾期天数",
+    dataIndex: "maxOverdueDays",
+}));
+const __VLS_79 = __VLS_78({
+    title: "最大逾期天数",
+    dataIndex: "maxOverdueDays",
+}, ...__VLS_functionalComponentArgsRest(__VLS_78));
+const __VLS_81 = {}.ATableColumn;
+/** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
+// @ts-ignore
+const __VLS_82 = __VLS_asFunctionalComponent(__VLS_81, new __VLS_81({
+    title: "逾期期次",
+}));
+const __VLS_83 = __VLS_82({
+    title: "逾期期次",
+}, ...__VLS_functionalComponentArgsRest(__VLS_82));
+__VLS_84.slots.default;
+{
+    const { cell: __VLS_thisSlot } = __VLS_84.slots;
+    const [{ record }] = __VLS_getSlotParams(__VLS_thisSlot);
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+        ...{ style: {} },
+    });
+    for (const [x] of __VLS_getVForSourceType((record.overduePeriods))) {
+        const __VLS_85 = {}.ATag;
+        /** @type {[typeof __VLS_components.ATag, typeof __VLS_components.aTag, typeof __VLS_components.ATag, typeof __VLS_components.aTag, ]} */ ;
+        // @ts-ignore
+        const __VLS_86 = __VLS_asFunctionalComponent(__VLS_85, new __VLS_85({
+            key: (x.period),
+            color: "orangered",
+        }));
+        const __VLS_87 = __VLS_86({
+            key: (x.period),
+            color: "orangered",
+        }, ...__VLS_functionalComponentArgsRest(__VLS_86));
+        __VLS_88.slots.default;
+        (x.period);
+        (x.overdueDays);
+        var __VLS_88;
+    }
+}
+var __VLS_84;
+const __VLS_89 = {}.ATableColumn;
+/** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
+// @ts-ignore
+const __VLS_90 = __VLS_asFunctionalComponent(__VLS_89, new __VLS_89({
+    title: "操作",
+}));
+const __VLS_91 = __VLS_90({
+    title: "操作",
+}, ...__VLS_functionalComponentArgsRest(__VLS_90));
+__VLS_92.slots.default;
+{
+    const { cell: __VLS_thisSlot } = __VLS_92.slots;
+    const [{ record }] = __VLS_getSlotParams(__VLS_thisSlot);
+    const __VLS_93 = {}.AButton;
+    /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
+    // @ts-ignore
+    const __VLS_94 = __VLS_asFunctionalComponent(__VLS_93, new __VLS_93({
+        ...{ 'onClick': {} },
+        type: "primary",
+        size: "small",
+    }));
+    const __VLS_95 = __VLS_94({
+        ...{ 'onClick': {} },
+        type: "primary",
+        size: "small",
+    }, ...__VLS_functionalComponentArgsRest(__VLS_94));
+    let __VLS_97;
+    let __VLS_98;
+    let __VLS_99;
+    const __VLS_100 = {
+        onClick: (...[$event]) => {
+            __VLS_ctx.sendOne(record);
+        }
+    };
+    __VLS_96.slots.default;
+    var __VLS_96;
+}
+var __VLS_92;
+var __VLS_60;
 var __VLS_3;
 var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
@@ -239,8 +366,11 @@ const __VLS_self = (await import('vue')).defineComponent({
         return {
             tier: tier,
             rows: rows,
-            renderOverduePeriods: renderOverduePeriods,
+            selectedKeys: selectedKeys,
+            selectedRows: selectedRows,
             load: load,
+            sendOne: sendOne,
+            sendSelected: sendSelected,
             exportOverdue: exportOverdue,
         };
     },

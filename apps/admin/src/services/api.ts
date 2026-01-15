@@ -134,6 +134,18 @@ export async function listOverdue(tier: '1-3' | '3-10' | '10-30' | '30+' | 'all'
   return data as any[];
 }
 
+export async function sendReminderSms(ids: string[]) {
+  const { data } = await http.post('/admin/reminders/send', { ids });
+  return data as { total: number; success: number; fail: number; results: any[] };
+}
+
+export type OverdueSendItem = { orderId: string; period: number; amount: number; overdueDays: number };
+
+export async function sendOverdueSms(items: OverdueSendItem[]) {
+  const { data } = await http.post('/admin/overdue/send', { items });
+  return data as { total: number; success: number; fail: number; results: any[] };
+}
+
 export async function listBlacklist() {
   const { data } = await http.get('/admin/blacklist');
   return data as { phone: string; reason: string; createdAt: string }[];

@@ -1,0 +1,43 @@
+短信服务对接已全部完成！✅
+---
+📋 完成总结
+新建文件（后端 9 个）
+services/api/src/main/java/com/evlease/installment/sms/
+├── SmsProperties.java        # 配置属性类
+├── SmsSender.java            # 发送器接口
+├── SmsResult.java            # 发送结果
+├── IhuyiSmsSender.java       # 互亿无线实现
+├── MockSmsSender.java        # Mock实现
+├── SmsConfig.java            # 配置类
+├── SmsService.java           # 统一短信服务
+├── VerificationCodeStore.java # 验证码内存缓存
+└── VerificationCodeService.java # 验证码服务
+修改文件
+| 文件 | 改动 |
+|------|------|
+| SmsRecord.java | +6字段 |
+| H5AuthController.java | 对接验证码服务 |
+| AdminSmsController.java | 对接真实发送 |
+| AdminReminderController.java | +批量发送接口 |
+| AdminOverdueController.java | +催收短信接口 |
+| application*.yml | 短信配置 |
+| apps/h5/Login.vue | 60秒倒计时 |
+| apps/h5/api.ts | 修复返回类型 |
+| apps/admin/Reminders.vue | +发送按钮 |
+| apps/admin/Overdue.vue | +发送按钮 |
+| apps/admin/api.ts | +2个API |
+配置
+| 环境 | 配置 |
+|------|------|
+| 开发 | mock=true，固定码 123456 |
+| 生产 | mock=false，API: C13900499 |
+功能
+- 验证码：15分钟有效，60秒间隔，10次/天
+- 还款提醒/逾期催收：批量发送按钮已添加
+验证
+- ✅ Admin 前端类型检查通过
+- ✅ H5 前端类型检查通过
+---
+下一步
+1. 启动后端服务测试短信发送
+2. 在互亿无线后台申请还款提醒/逾期催收的自定义模板

@@ -23,3 +23,6 @@ app:
       value: "123456"
   upload:
     dir: ${APP_UPLOAD_DIR:uploads}
+  sms:
+    enabled: true
+    mock: true

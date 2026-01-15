@@ -80,6 +80,14 @@ export async function listOverdue(tier) {
     const { data } = await http.get('/admin/overdue', { params: { tier } });
     return data;
 }
+export async function sendReminderSms(ids) {
+    const { data } = await http.post('/admin/reminders/send', { ids });
+    return data;
+}
+export async function sendOverdueSms(items) {
+    const { data } = await http.post('/admin/overdue/send', { items });
+    return data;
+}
 export async function listBlacklist() {
     const { data } = await http.get('/admin/blacklist');
     return data;

@@ -1,5 +1,5 @@
 <template>
-  <a-card title="提醒与短信（预留）">
+  <a-card title="还款提醒">
     <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center">
       <a-radio-group v-model="kind" type="button" @change="load">
         <a-radio value="all">全部（今天+3天后）</a-radio>
@@ -7,26 +7,30 @@
         <a-radio value="due_soon">3天后到期</a-radio>
       </a-radio-group>
       <a-button @click="load">刷新</a-button>
+      <a-button type="primary" :disabled="selectedIds.length === 0" @click="sendSelected">
+        发送短信 ({{ selectedIds.length }})
+      </a-button>
       <a-button @click="exportSms">导出短信记录CSV</a-button>
     </div>
 
-    <a-alert style="margin-bottom: 12px" type="warning">
-      一期：短信接口仅“留口 + 记录发送”，不会真实下发；后续接入短信通道后替换实现即可。
-    </a-alert>
-
-    <a-table :data="rows" :pagination="false">
+    <a-table 
+      :data="rows" 
+      :pagination="false" 
+      :row-selection="{ type: 'checkbox', showCheckedAll: true }"
+      v-model:selectedKeys="selectedIds"
+      row-key="id"
+    >
       <a-table-column title="订单" data-index="orderId" />
       <a-table-column title="手机号" data-index="phone" />
       <a-table-column title="商品" data-index="productName" />
       <a-table-column title="期次" data-index="period" />
       <a-table-column title="到期日" data-index="dueDate" />
-      <a-table-column title="金额" :render="({ record }: any) => `￥${record.amount}`" />
-      <a-table-column
-        title="操作"
-        :render="({ record }: any) =>
-          h(Button, { type: 'primary', size: 'small', onClick: () => send(record) }, () => '发送短信(模拟)')
-        "
-      />
+      <a-table-column title="金额" :render="({ record }: any) => `￥${(record.amount / 100).toFixed(2)}`" />
+      <a-table-column title="操作">
+        <template #cell="{ record }">
+          <a-button type="primary" size="small" @click="sendOne(record)">发送短信</a-button>
+        </template>
+      </a-table-column>
     </a-table>
 
     <a-divider />
@@ -36,35 +40,52 @@
         <a-table-column title="手机号" data-index="phone" />
         <a-table-column title="内容" data-index="content" />
         <a-table-column title="状态" data-index="status" />
+        <a-table-column title="类型" data-index="bizType" />
       </a-table>
     </a-card>
   </a-card>
 </template>
 
 <script setup lang="ts">
-import { h, onMounted, ref } from 'vue';
-import { Button, Divider, Message } from '@arco-design/web-vue';
-import { listReminders, listSmsRecords, sendSms, type ReminderItem } from '@/services/api';
+import { onMounted, ref } from 'vue';
+import { Message } from '@arco-design/web-vue';
+import { listReminders, listSmsRecords, sendReminderSms, type ReminderItem } from '@/services/api';
 import { downloadCsv } from '@/services/download';
 
 const kind = ref<'all' | 'due_today' | 'due_soon'>('all');
 const rows = ref<ReminderItem[]>([]);
 const records = ref<any[]>([]);
+const selectedIds = ref<string[]>([]);
 
 async function load() {
   try {
     rows.value = await listReminders(kind.value);
     records.value = await listSmsRecords();
+    selectedIds.value = [];
   } catch (e: any) {
     Message.error(e?.response?.data?.message ?? '加载失败');
   }
 }
 
-async function send(item: ReminderItem) {
+async function sendOne(item: ReminderItem) {
   try {
-    const content = `【还款提醒】订单${item.orderId} 第${item.period}期 ￥${item.amount} 到期日：${item.dueDate}`;
-    await sendSms(item.phone, content);
-    Message.success('已记录发送');
+    const result = await sendReminderSms([item.id]);
+    if (result.success > 0) {
+      Message.success('短信发送成功');
+    } else {
+      Message.error('短信发送失败');
+    }
+    await load();
+  } catch (e: any) {
+    Message.error(e?.response?.data?.message ?? '发送失败');
+  }
+}
+
+async function sendSelected() {
+  if (selectedIds.value.length === 0) return;
+  try {
+    const result = await sendReminderSms(selectedIds.value);
+    Message.success(`发送完成：成功 ${result.success}，失败 ${result.fail}`);
     await load();
   } catch (e: any) {
     Message.error(e?.response?.data?.message ?? '发送失败');

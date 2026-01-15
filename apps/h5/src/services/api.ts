@@ -54,7 +54,8 @@ export type PaymentIntent = {
 };
 
 export async function requestLoginCode(phone: string) {
-  return http.post('/h5/auth/request-code', { phone });
+  const { data } = await http.post('/h5/auth/request-code', { phone });
+  return data as { message: string; devFixedCode?: string; expireMinutes?: number };
 }
 
 export async function login(phone: string, code: string) {

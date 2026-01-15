@@ -1,6 +1,7 @@
 import { http } from './http';
 export async function requestLoginCode(phone) {
-    return http.post('/h5/auth/request-code', { phone });
+    const { data } = await http.post('/h5/auth/request-code', { phone });
+    return data;
 }
 export async function login(phone, code) {
     const { data } = await http.post('/h5/auth/login', { phone, code });

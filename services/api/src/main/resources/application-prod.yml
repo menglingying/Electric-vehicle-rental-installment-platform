@@ -29,3 +29,8 @@ app:
   admin:
     username: ${APP_ADMIN_USERNAME:admin}
     password: ${APP_ADMIN_PASSWORD:admin123}
+  sms:
+    enabled: true
+    mock: false
+    api-id: ${SMS_API_ID:C13900499}
+    api-key: ${SMS_API_KEY:dba47bdd16c5982cab4201f6cd6cc398}

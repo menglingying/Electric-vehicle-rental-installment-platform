@@ -28,3 +28,14 @@ app:
   admin:
     username: "admin"
     password: "admin123"
+  sms:
+    enabled: true
+    mock: true
+    api-id: ${SMS_API_ID:}
+    api-key: ${SMS_API_KEY:}
+    rate-limit:
+      interval-seconds: 60
+      daily-max-per-phone: 10
+    verification:
+      expire-minutes: 15
+      length: 6

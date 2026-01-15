@@ -204,6 +204,7 @@ def deploy_remote(
     fixed_code_whitelist_phones: str | None,
     reuse_remote_env: bool,
     auto_install_paramiko: bool,
+    ssh_key_file: str | None = None,
 ) -> None:
     ensure_paramiko(auto_install_paramiko)
     import paramiko
@@ -211,7 +212,13 @@ def deploy_remote(
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     print(f"Connecting: {user}@{host}")
-    ssh.connect(hostname=host, username=user, password=ssh_password, timeout=15)
+    
+    if ssh_key_file and Path(ssh_key_file).exists():
+        print(f"Using SSH key: {ssh_key_file}")
+        pkey = paramiko.Ed25519Key.from_private_key_file(ssh_key_file)
+        ssh.connect(hostname=host, username=user, pkey=pkey, timeout=15)
+    else:
+        ssh.connect(hostname=host, username=user, password=ssh_password, timeout=15)
 
     try:
         code, _, err = ssh_exec(ssh, f"mkdir -p {remote_dir}")
@@ -304,13 +311,20 @@ def remote_check(
     user: str,
     ssh_password: str,
     open_ports: bool = False,
+    ssh_key_file: str | None = None,
 ) -> None:
     import paramiko
 
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     print(f"Connecting: {user}@{host}")
-    ssh.connect(hostname=host, username=user, password=ssh_password, timeout=15)
+    
+    if ssh_key_file and Path(ssh_key_file).exists():
+        print(f"Using SSH key: {ssh_key_file}")
+        pkey = paramiko.Ed25519Key.from_private_key_file(ssh_key_file)
+        ssh.connect(hostname=host, username=user, pkey=pkey, timeout=15)
+    else:
+        ssh.connect(hostname=host, username=user, password=ssh_password, timeout=15)
     try:
         if open_ports:
             print("Opening UFW ports 8088/8089 if UFW is active...")
@@ -351,6 +365,7 @@ def main() -> int:
 
     parser.add_argument("--ssh-password", default="")
     parser.add_argument("--ssh-password-file", default="")
+    parser.add_argument("--ssh-key-file", default="", help="Path to SSH private key file for key-based auth")
 
     parser.add_argument("--mysql-root-password", default=None)
     parser.add_argument("--mysql-root-password-file", default="")
@@ -369,10 +384,10 @@ def main() -> int:
         ssh_password = args.ssh_password
         if not ssh_password and args.ssh_password_file:
             ssh_password = read_secret_from_file(args.ssh_password_file)
-        if not ssh_password:
+        if not ssh_password and not args.ssh_key_file:
             ssh_password = getpass(f"SSH password for {args.user}@{args.host}: ")
         ensure_paramiko(args.auto_install_paramiko)
-        remote_check(host=args.host, user=args.user, ssh_password=ssh_password, open_ports=args.open_ports)
+        remote_check(host=args.host, user=args.user, ssh_password=ssh_password, open_ports=args.open_ports, ssh_key_file=args.ssh_key_file)
         return 0
 
     if args.skip_build:
@@ -390,7 +405,7 @@ def main() -> int:
     ssh_password = args.ssh_password
     if not ssh_password and args.ssh_password_file:
         ssh_password = read_secret_from_file(args.ssh_password_file)
-    if not ssh_password:
+    if not ssh_password and not args.ssh_key_file:
         ssh_password = getpass(f"SSH password for {args.user}@{args.host}: ")
 
     mysql_root_password = args.mysql_root_password
@@ -410,6 +425,7 @@ def main() -> int:
         fixed_code_whitelist_phones=args.fixed_code_whitelist_phones,
         reuse_remote_env=args.reuse_remote_env,
         auto_install_paramiko=args.auto_install_paramiko,
+        ssh_key_file=args.ssh_key_file,
     )
 
     return 0
