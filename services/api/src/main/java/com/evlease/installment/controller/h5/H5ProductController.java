@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -20,8 +21,9 @@ public class H5ProductController {
   }
 
   @GetMapping
-  public List<Product> list() {
-    return productRepository.findAll();
+  public List<Product> list(@RequestParam(required = false) String categoryId) {
+    if (categoryId == null || categoryId.isBlank()) return productRepository.findAll();
+    return productRepository.findAllByCategoryId(categoryId);
   }
 
   @GetMapping("/{id}")
@@ -29,4 +31,3 @@ public class H5ProductController {
     return productRepository.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "商品不存在"));
   }
 }
-

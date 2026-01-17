@@ -56,6 +56,13 @@ public class Order {
   private String contactPhone;     // 联系人电话
   private String contactRelation;  // 联系人关系
   private boolean kycCompleted;    // KYC是否完成
+
+  private String employmentStatus;
+  private String incomeRangeCode;
+  private String homeProvinceCode;
+  private String homeCityCode;
+  private String homeDistrictCode;
+  private String homeAddressDetail;
   
   // 公证相关字段
   private String notaryOrderNo;       // 聚证公证订单号
@@ -344,6 +351,54 @@ public class Order {
 
   public void setKycCompleted(boolean kycCompleted) {
     this.kycCompleted = kycCompleted;
+  }
+
+  public String getEmploymentStatus() {
+    return employmentStatus;
+  }
+
+  public void setEmploymentStatus(String employmentStatus) {
+    this.employmentStatus = employmentStatus;
+  }
+
+  public String getIncomeRangeCode() {
+    return incomeRangeCode;
+  }
+
+  public void setIncomeRangeCode(String incomeRangeCode) {
+    this.incomeRangeCode = incomeRangeCode;
+  }
+
+  public String getHomeProvinceCode() {
+    return homeProvinceCode;
+  }
+
+  public void setHomeProvinceCode(String homeProvinceCode) {
+    this.homeProvinceCode = homeProvinceCode;
+  }
+
+  public String getHomeCityCode() {
+    return homeCityCode;
+  }
+
+  public void setHomeCityCode(String homeCityCode) {
+    this.homeCityCode = homeCityCode;
+  }
+
+  public String getHomeDistrictCode() {
+    return homeDistrictCode;
+  }
+
+  public void setHomeDistrictCode(String homeDistrictCode) {
+    this.homeDistrictCode = homeDistrictCode;
+  }
+
+  public String getHomeAddressDetail() {
+    return homeAddressDetail;
+  }
+
+  public void setHomeAddressDetail(String homeAddressDetail) {
+    this.homeAddressDetail = homeAddressDetail;
   }
 
   public String getNotaryOrderNo() {

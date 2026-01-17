@@ -31,14 +31,13 @@
       <a-descriptions v-if="detail.kycCompleted" :column="2" size="small" bordered>
         <a-descriptions-item label="真实姓名">{{ detail.realName }}</a-descriptions-item>
         <a-descriptions-item label="身份证号">{{ maskIdCard(detail.idCardNumber) }}</a-descriptions-item>
-        <a-descriptions-item label="职业">{{ detail.occupation || '-' }}</a-descriptions-item>
-        <a-descriptions-item label="工作单位">{{ detail.company || '-' }}</a-descriptions-item>
-        <a-descriptions-item label="工作城市">{{ detail.workCity || '-' }}</a-descriptions-item>
-        <a-descriptions-item label="居住时长">{{ detail.residenceDuration || '-' }}</a-descriptions-item>
-        <a-descriptions-item label="现居地址" :span="2">{{ detail.residenceAddress || '-' }}</a-descriptions-item>
+        <a-descriptions-item label="就业状态">{{ employmentStatusText(detail.employmentStatus) }}</a-descriptions-item>
+        <a-descriptions-item label="单位/职业">{{ detail.employmentName || detail.occupation || '-' }}</a-descriptions-item>
+        <a-descriptions-item label="月收入">{{ incomeRangeText(detail.incomeRangeCode) }}</a-descriptions-item>
+        <a-descriptions-item label="住家地址" :span="2">{{ formatAddress(detail) }}</a-descriptions-item>
         <a-descriptions-item label="紧急联系人">{{ detail.contactName }}</a-descriptions-item>
         <a-descriptions-item label="联系人电话">{{ detail.contactPhone }}</a-descriptions-item>
-        <a-descriptions-item label="与客户关系">{{ detail.contactRelation }}</a-descriptions-item>
+        <a-descriptions-item label="与客户关系">{{ contactRelationText(detail.contactRelation) }}</a-descriptions-item>
       </a-descriptions>
       <div v-if="detail.kycCompleted" style="margin-top: 12px; display: flex; gap: 12px">
         <div v-if="detail.idCardFront" class="kyc-image">
@@ -65,6 +64,24 @@
       </a-table>
     </template>
   </a-drawer>
+
+  <a-modal v-model:visible="adjustVisible" title="订单调价" @ok="submitAdjust">
+    <a-form :model="adjustForm" layout="vertical">
+      <a-form-item label="租金/期（元）" field="rentPerPeriod">
+        <a-input-number v-model="adjustForm.rentPerPeriod" :min="1" />
+      </a-form-item>
+      <a-form-item label="期数" field="periods">
+        <a-input-number v-model="adjustForm.periods" :min="3" />
+      </a-form-item>
+      <a-form-item label="周期（天）" field="cycleDays">
+        <a-input-number v-model="adjustForm.cycleDays" :min="7" />
+      </a-form-item>
+      <a-form-item label="调价原因" field="reason">
+        <a-input v-model="adjustForm.reason" placeholder="请输入原因" />
+      </a-form-item>
+      <a-alert type="warning" :show-icon="true" title="调价仅限审核前，调价后需重签合同。" />
+    </a-form>
+  </a-modal>
 </template>
 
 <script setup lang="ts">
@@ -72,6 +89,7 @@ import { h, onMounted, ref } from 'vue';
 import { Button, Message, Modal, Input } from '@arco-design/web-vue';
 import type { TableColumnData } from '@arco-design/web-vue';
 import {
+  adjustOrderPrice,
   approveOrder,
   closeOrder,
   deliverOrder,
@@ -88,6 +106,14 @@ import { downloadCsv } from '@/services/download';
 const rows = ref<Order[]>([]);
 const detailVisible = ref(false);
 const detail = ref<any>(null);
+const adjustVisible = ref(false);
+const adjustForm = ref({
+  orderId: '',
+  rentPerPeriod: 0,
+  periods: 0,
+  cycleDays: 0,
+  reason: ''
+});
 
 // 辅助函数：电池配置文本
 function batteryOptionText(option: string) {
@@ -114,6 +140,57 @@ function maskIdCard(idCard: string) {
   return idCard.slice(0, 6) + '********' + idCard.slice(-4);
 }
 
+function employmentStatusText(code: string) {
+  const map: Record<string, string> = {
+    employed: '\u5168\u804c',
+    part_time: '\u517c\u804c',
+    freelancer: '\u81ea\u7531\u804c\u4e1a',
+    self_employed: '\u4e2a\u4f53\u7ecf\u8425',
+    student: '\u5b66\u751f',
+    unemployed: '\u5168\u804c',
+    retired: '\u9000\u4f11'
+  };
+  return map[code] || '-';
+}
+
+function incomeRangeText(code: string) {
+  const map: Record<string, string> = {
+    '0_1000': '0-1000',
+    '1000_2000': '1000-2000',
+    '2001_3000': '2001-3000',
+    '3001_4000': '3001-4000',
+    '4001_5000': '4001-5000',
+    '5001_8000': '5001-8000',
+    '8001_12000': '8001-12000',
+    '12001_20000': '12001-20000',
+    '20000_plus': '20000+',
+    '12001_plus': '12001+'
+  };
+  return map[code] || '-';
+}
+
+function contactRelationText(code: string) {
+  const map: Record<string, string> = {
+    parent: '\u7236\u6bcd',
+    spouse: '\u914d\u5076',
+    child: '\u5b50\u5973',
+    colleague: '\u540c\u4e8b',
+    friend: '\u670b\u53cb',
+    other: '\u5176\u4ed6'
+  };
+  return map[code] || code || '-';
+}
+
+function formatAddress(order: any) {
+  const parts = [
+    order?.homeProvinceName || order?.homeProvinceCode,
+    order?.homeCityName || order?.homeCityCode,
+    order?.homeDistrictName || order?.homeDistrictCode,
+    order?.homeAddressDetail
+  ].filter(Boolean);
+  return parts.length ? parts.join(' ') : '-';
+}
+
 const columns: TableColumnData[] = [
   { title: 'ID', dataIndex: 'id' },
   { title: '手机号', dataIndex: 'phone' },
@@ -137,6 +214,7 @@ const columns: TableColumnData[] = [
       if (status === 'PENDING_REVIEW') {
         buttons.push(h(Button, { type: 'primary', size: 'small', onClick: () => approve(record.id) }, () => '通过'));
         buttons.push(h(Button, { status: 'danger', size: 'small', onClick: () => reject(record.id) }, () => '驳回'));
+        buttons.push(h(Button, { size: 'small', onClick: () => openAdjust(record.id) }, () => '调价'));
         buttons.push(h(Button, { size: 'small', onClick: () => close(record.id) }, () => '关闭'));
       } else if (status === 'ACTIVE') {
         buttons.push(h(Button, { type: 'primary', size: 'small', onClick: () => deliver(record.id) }, () => '交付'));
@@ -249,6 +327,45 @@ async function openDetail(id: string) {
     detailVisible.value = true;
   } catch (e: any) {
     Message.error(e?.response?.data?.message ?? '加载详情失败');
+  }
+}
+
+async function openAdjust(id: string) {
+  try {
+    const order = await getOrderDetail(id);
+    const plan = Array.isArray(order?.repaymentPlan) ? order.repaymentPlan : [];
+    const rentPerPeriod = plan.reduce((max: number, item: any) => Math.max(max, Number(item.amount || 0)), 0);
+    adjustForm.value = {
+      orderId: id,
+      rentPerPeriod: rentPerPeriod || 0,
+      periods: order.periods || 0,
+      cycleDays: order.cycleDays || 0,
+      reason: ''
+    };
+    adjustVisible.value = true;
+  } catch (e: any) {
+    Message.error(e?.response?.data?.message ?? '加载订单失败');
+  }
+}
+
+async function submitAdjust() {
+  if (!adjustForm.value.orderId) return;
+  if (!adjustForm.value.rentPerPeriod) return Message.warning('请输入租金/期');
+  if (!adjustForm.value.periods) return Message.warning('请输入期数');
+  if (!adjustForm.value.cycleDays) return Message.warning('请输入周期');
+  if (!adjustForm.value.reason.trim()) return Message.warning('请输入调价原因');
+  try {
+    await adjustOrderPrice(adjustForm.value.orderId, {
+      rentPerPeriod: adjustForm.value.rentPerPeriod,
+      periods: adjustForm.value.periods,
+      cycleDays: adjustForm.value.cycleDays,
+      reason: adjustForm.value.reason
+    });
+    Message.success('调价成功');
+    adjustVisible.value = false;
+    await load();
+  } catch (e: any) {
+    Message.error(e?.response?.data?.message ?? '调价失败');
   }
 }
 

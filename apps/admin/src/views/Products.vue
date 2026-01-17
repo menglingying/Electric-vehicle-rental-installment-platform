@@ -45,6 +45,16 @@
       <a-form-item label="名称" field="name">
         <a-input v-model="form.name" />
       </a-form-item>
+      <a-form-item label="车型分类">
+        <div class="cascader-row">
+          <a-select v-model="form.brandId" placeholder="选择品牌" :options="brandOptions" allow-clear @change="onBrandChange" style="flex:1" />
+          <a-select v-model="form.seriesId" placeholder="选择系列" :options="seriesOptions" allow-clear @change="onSeriesChange" :disabled="!form.brandId" style="flex:1" />
+          <a-select v-model="form.categoryId" placeholder="选择型号" :options="modelOptions" allow-clear :disabled="!form.seriesId" style="flex:1" />
+        </div>
+        <div v-if="!brandOptions.length" style="margin-top: 8px">
+          <a-alert type="warning">暂无分类数据，请先在「分类管理」中创建品牌→系列→型号的三级分类</a-alert>
+        </div>
+      </a-form-item>
       <a-form-item label="租金/期（元）" field="rentPerCycle">
         <a-input-number v-model="form.rentPerCycle" :min="1" />
       </a-form-item>
@@ -87,12 +97,70 @@
 import { h, onMounted, reactive, ref, computed } from 'vue';
 import { Button, Message, Tag, Modal } from '@arco-design/web-vue';
 import type { TableColumnData } from '@arco-design/web-vue';
-import { listProducts, uploadProductImage, upsertProduct, deleteProduct, type Product } from '@/services/api';
+import { listCategories, listProducts, uploadProductImage, upsertProduct, deleteProduct, type CategoryNode, type Product } from '@/services/api';
 
 const rows = ref<Product[]>([]);
+const categories = ref<CategoryNode[]>([]);
 const visible = ref(false);
 const uploading = ref(false);
 const searchKeyword = ref('');
+
+// 品牌选项（一级分类）
+const brandOptions = computed(() => {
+  return categories.value.map(c => ({ label: c.name, value: c.id }));
+});
+
+// 系列选项（二级分类，根据选中的品牌）
+const seriesOptions = computed(() => {
+  if (!form.brandId) return [];
+  const brand = categories.value.find(c => c.id === form.brandId);
+  return (brand?.children || []).map(c => ({ label: c.name, value: c.id }));
+});
+
+// 型号选项（三级分类，根据选中的系列）
+const modelOptions = computed(() => {
+  if (!form.brandId || !form.seriesId) return [];
+  const brand = categories.value.find(c => c.id === form.brandId);
+  const series = (brand?.children || []).find(c => c.id === form.seriesId);
+  return (series?.children || []).map(c => ({ label: c.name, value: c.id }));
+});
+
+// 品牌变化时清空系列和型号
+function onBrandChange() {
+  form.seriesId = '';
+  form.categoryId = '';
+}
+
+// 系列变化时清空型号
+function onSeriesChange() {
+  form.categoryId = '';
+}
+
+// 根据categoryId反推brandId和seriesId
+function resolveCategoryPath(categoryId: string) {
+  for (const brand of categories.value) {
+    for (const series of (brand.children || [])) {
+      for (const model of (series.children || [])) {
+        if (model.id === categoryId) {
+          return { brandId: brand.id, seriesId: series.id };
+        }
+      }
+    }
+  }
+  return { brandId: '', seriesId: '' };
+}
+
+const categoryNameMap = computed(() => {
+  const map: Record<string, string> = {};
+  for (const brand of categories.value) {
+    for (const series of (brand.children || [])) {
+      for (const model of (series.children || [])) {
+        map[model.id] = `${brand.name} / ${series.name} / ${model.name}`;
+      }
+    }
+  }
+  return map;
+});
 
 // 搜索过滤后的商品列表（按名称首字母分组排序）
 const filteredRows = computed(() => {
@@ -143,6 +211,10 @@ const columns: TableColumnData[] = [
   { title: 'ID', dataIndex: 'id' },
   { title: '名称', dataIndex: 'name' },
   {
+    title: '分类',
+    render: ({ record }: { record: any }) => categoryNameMap.value[record.categoryId] || '-'
+  },
+  {
     title: '电池配置/价格',
     render: ({ record }: { record: any }) => {
       const items = [];
@@ -178,6 +250,9 @@ const columns: TableColumnData[] = [
 const form = reactive({
   id: '',
   name: '',
+  brandId: '',
+  seriesId: '',
+  categoryId: '',
   images: [] as string[],
   rentPerCycle: 299,
   tagsText: '',
@@ -216,6 +291,9 @@ function confirmDelete(p: Product) {
 function openCreate() {
   form.id = '';
   form.name = '';
+  form.brandId = '';
+  form.seriesId = '';
+  form.categoryId = '';
   form.images = [];
   form.rentPerCycle = 299;
   form.tagsText = '';
@@ -229,6 +307,11 @@ function openCreate() {
 function openEdit(p: Product) {
   form.id = p.id;
   form.name = p.name;
+  // 反推品牌和系列
+  const path = resolveCategoryPath(p.categoryId ?? '');
+  form.brandId = path.brandId;
+  form.seriesId = path.seriesId;
+  form.categoryId = p.categoryId ?? '';
   form.images = (p.images ?? []).length ? [...(p.images ?? [])] : p.coverUrl ? [p.coverUrl] : [];
   form.rentPerCycle = p.rentPerCycle;
   form.tagsText = (p.tags ?? []).join(',');
@@ -287,11 +370,13 @@ async function onSelectFiles(fileList: any, fileItem?: any) {
 
 async function save() {
   if (!form.name) return Message.warning('请输入名称');
+  if (!form.categoryId) return Message.warning('请选择车型分类');
   const images = (form.images ?? []).map((s) => String(s).trim()).filter(Boolean);
   try {
     await upsertProduct({
       id: form.id || undefined,
       name: form.name,
+      categoryId: form.categoryId,
       coverUrl: images[0] || undefined,
       images,
       rentPerCycle: form.rentPerCycle,
@@ -313,6 +398,14 @@ async function save() {
 }
 
 onMounted(load);
+
+onMounted(async () => {
+  try {
+    categories.value = await listCategories();
+  } catch (e: any) {
+    Message.error(e?.response?.data?.message ?? '分类加载失败');
+  }
+});
 </script>
 
 <style scoped>
@@ -358,5 +451,10 @@ onMounted(load);
 }
 .option-header {
   margin-bottom: 12px;
+}
+.cascader-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
 }
 </style>

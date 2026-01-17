@@ -7,11 +7,14 @@ import com.evlease.installment.model.RepaymentPlanItem;
 import com.evlease.installment.model.RepaymentRecord;
 import com.evlease.installment.repo.ContractRepository;
 import com.evlease.installment.repo.PaymentRepository;
+import com.evlease.installment.repo.RegionRepository;
+import com.evlease.installment.util.RegionNameUtil;
 import com.evlease.installment.repo.RepaymentRepository;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,15 +22,26 @@ public class OrderEnricher {
   private final RepaymentRepository repaymentRepository;
   private final ContractRepository contractRepository;
   private final PaymentRepository paymentRepository;
+  private final RegionRepository regionRepository;
+  private final Map<String, String> regionNameCache = new ConcurrentHashMap<>();
 
   public OrderEnricher(
     RepaymentRepository repaymentRepository,
     ContractRepository contractRepository,
-    PaymentRepository paymentRepository
+    PaymentRepository paymentRepository,
+    RegionRepository regionRepository
   ) {
     this.repaymentRepository = repaymentRepository;
     this.contractRepository = contractRepository;
     this.paymentRepository = paymentRepository;
+    this.regionRepository = regionRepository;
+  }
+
+  private String resolveRegionName(String code) {
+    if (code == null || code.isBlank()) return null;
+    return regionNameCache.computeIfAbsent(code, key ->
+      regionRepository.findById(key).map(region -> RegionNameUtil.normalize(region.getName())).orElse(key)
+    );
   }
 
   public Map<String, Object> enrich(Order order) {
@@ -93,6 +107,16 @@ public class OrderEnricher {
     dto.put("contactName", order.getContactName());
     dto.put("contactPhone", order.getContactPhone());
     dto.put("contactRelation", order.getContactRelation());
+    dto.put("employmentStatus", order.getEmploymentStatus());
+    dto.put("employmentName", order.getOccupation());
+    dto.put("incomeRangeCode", order.getIncomeRangeCode());
+    dto.put("homeProvinceCode", order.getHomeProvinceCode());
+    dto.put("homeCityCode", order.getHomeCityCode());
+    dto.put("homeDistrictCode", order.getHomeDistrictCode());
+    dto.put("homeAddressDetail", order.getHomeAddressDetail());
+    dto.put("homeProvinceName", resolveRegionName(order.getHomeProvinceCode()));
+    dto.put("homeCityName", resolveRegionName(order.getHomeCityCode()));
+    dto.put("homeDistrictName", resolveRegionName(order.getHomeDistrictCode()));
     
     return dto;
   }

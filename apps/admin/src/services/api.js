@@ -56,6 +56,10 @@ export async function closeOrder(orderId) {
     const { data } = await http.post(`/admin/orders/${orderId}/close`);
     return data;
 }
+export async function adjustOrderPrice(orderId, payload) {
+    const { data } = await http.post(`/admin/orders/${orderId}/price-adjust`, payload);
+    return data;
+}
 export async function getRepayments(orderId) {
     const { data } = await http.get('/admin/repayments', { params: { orderId } });
     return data;
@@ -99,4 +103,15 @@ export async function addBlacklist(phone, reason) {
 export async function removeBlacklist(phone) {
     const { data } = await http.delete(`/admin/blacklist/${encodeURIComponent(phone)}`);
     return data;
+}
+export async function listCategories() {
+    const { data } = await http.get('/admin/categories/tree');
+    return data;
+}
+export async function upsertCategory(payload) {
+    const { data } = await http.post('/admin/categories', payload);
+    return data;
+}
+export async function deleteCategory(id) {
+    await http.delete(`/admin/categories/${encodeURIComponent(id)}`);
 }

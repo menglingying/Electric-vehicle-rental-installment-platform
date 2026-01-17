@@ -76,10 +76,10 @@ const __VLS_21 = {}.AMenuItem;
 /** @type {[typeof __VLS_components.AMenuItem, typeof __VLS_components.aMenuItem, typeof __VLS_components.AMenuItem, typeof __VLS_components.aMenuItem, ]} */ ;
 // @ts-ignore
 const __VLS_22 = __VLS_asFunctionalComponent(__VLS_21, new __VLS_21({
-    key: "/products",
+    key: "/categories",
 }));
 const __VLS_23 = __VLS_22({
-    key: "/products",
+    key: "/categories",
 }, ...__VLS_functionalComponentArgsRest(__VLS_22));
 __VLS_24.slots.default;
 var __VLS_24;
@@ -87,10 +87,10 @@ const __VLS_25 = {}.AMenuItem;
 /** @type {[typeof __VLS_components.AMenuItem, typeof __VLS_components.aMenuItem, typeof __VLS_components.AMenuItem, typeof __VLS_components.aMenuItem, ]} */ ;
 // @ts-ignore
 const __VLS_26 = __VLS_asFunctionalComponent(__VLS_25, new __VLS_25({
-    key: "/orders",
+    key: "/products",
 }));
 const __VLS_27 = __VLS_26({
-    key: "/orders",
+    key: "/products",
 }, ...__VLS_functionalComponentArgsRest(__VLS_26));
 __VLS_28.slots.default;
 var __VLS_28;
@@ -98,10 +98,10 @@ const __VLS_29 = {}.AMenuItem;
 /** @type {[typeof __VLS_components.AMenuItem, typeof __VLS_components.aMenuItem, typeof __VLS_components.AMenuItem, typeof __VLS_components.aMenuItem, ]} */ ;
 // @ts-ignore
 const __VLS_30 = __VLS_asFunctionalComponent(__VLS_29, new __VLS_29({
-    key: "/repayments",
+    key: "/orders",
 }));
 const __VLS_31 = __VLS_30({
-    key: "/repayments",
+    key: "/orders",
 }, ...__VLS_functionalComponentArgsRest(__VLS_30));
 __VLS_32.slots.default;
 var __VLS_32;
@@ -109,10 +109,10 @@ const __VLS_33 = {}.AMenuItem;
 /** @type {[typeof __VLS_components.AMenuItem, typeof __VLS_components.aMenuItem, typeof __VLS_components.AMenuItem, typeof __VLS_components.aMenuItem, ]} */ ;
 // @ts-ignore
 const __VLS_34 = __VLS_asFunctionalComponent(__VLS_33, new __VLS_33({
-    key: "/reminders",
+    key: "/repayments",
 }));
 const __VLS_35 = __VLS_34({
-    key: "/reminders",
+    key: "/repayments",
 }, ...__VLS_functionalComponentArgsRest(__VLS_34));
 __VLS_36.slots.default;
 var __VLS_36;
@@ -120,10 +120,10 @@ const __VLS_37 = {}.AMenuItem;
 /** @type {[typeof __VLS_components.AMenuItem, typeof __VLS_components.aMenuItem, typeof __VLS_components.AMenuItem, typeof __VLS_components.aMenuItem, ]} */ ;
 // @ts-ignore
 const __VLS_38 = __VLS_asFunctionalComponent(__VLS_37, new __VLS_37({
-    key: "/overdue",
+    key: "/reminders",
 }));
 const __VLS_39 = __VLS_38({
-    key: "/overdue",
+    key: "/reminders",
 }, ...__VLS_functionalComponentArgsRest(__VLS_38));
 __VLS_40.slots.default;
 var __VLS_40;
@@ -131,69 +131,80 @@ const __VLS_41 = {}.AMenuItem;
 /** @type {[typeof __VLS_components.AMenuItem, typeof __VLS_components.aMenuItem, typeof __VLS_components.AMenuItem, typeof __VLS_components.aMenuItem, ]} */ ;
 // @ts-ignore
 const __VLS_42 = __VLS_asFunctionalComponent(__VLS_41, new __VLS_41({
-    key: "/blacklist",
+    key: "/overdue",
 }));
 const __VLS_43 = __VLS_42({
-    key: "/blacklist",
+    key: "/overdue",
 }, ...__VLS_functionalComponentArgsRest(__VLS_42));
 __VLS_44.slots.default;
 var __VLS_44;
+const __VLS_45 = {}.AMenuItem;
+/** @type {[typeof __VLS_components.AMenuItem, typeof __VLS_components.aMenuItem, typeof __VLS_components.AMenuItem, typeof __VLS_components.aMenuItem, ]} */ ;
+// @ts-ignore
+const __VLS_46 = __VLS_asFunctionalComponent(__VLS_45, new __VLS_45({
+    key: "/blacklist",
+}));
+const __VLS_47 = __VLS_46({
+    key: "/blacklist",
+}, ...__VLS_functionalComponentArgsRest(__VLS_46));
+__VLS_48.slots.default;
+var __VLS_48;
 var __VLS_12;
 var __VLS_8;
-const __VLS_45 = {}.ALayout;
+const __VLS_49 = {}.ALayout;
 /** @type {[typeof __VLS_components.ALayout, typeof __VLS_components.aLayout, typeof __VLS_components.ALayout, typeof __VLS_components.aLayout, ]} */ ;
 // @ts-ignore
-const __VLS_46 = __VLS_asFunctionalComponent(__VLS_45, new __VLS_45({}));
-const __VLS_47 = __VLS_46({}, ...__VLS_functionalComponentArgsRest(__VLS_46));
-__VLS_48.slots.default;
-const __VLS_49 = {}.ALayoutHeader;
+const __VLS_50 = __VLS_asFunctionalComponent(__VLS_49, new __VLS_49({}));
+const __VLS_51 = __VLS_50({}, ...__VLS_functionalComponentArgsRest(__VLS_50));
+__VLS_52.slots.default;
+const __VLS_53 = {}.ALayoutHeader;
 /** @type {[typeof __VLS_components.ALayoutHeader, typeof __VLS_components.aLayoutHeader, typeof __VLS_components.ALayoutHeader, typeof __VLS_components.aLayoutHeader, ]} */ ;
 // @ts-ignore
-const __VLS_50 = __VLS_asFunctionalComponent(__VLS_49, new __VLS_49({
-    ...{ class: "header" },
-}));
-const __VLS_51 = __VLS_50({
-    ...{ class: "header" },
-}, ...__VLS_functionalComponentArgsRest(__VLS_50));
-__VLS_52.slots.default;
-__VLS_asFunctionalElement(__VLS_intrinsicElements.div)({});
-const __VLS_53 = {}.AButton;
-/** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
-// @ts-ignore
 const __VLS_54 = __VLS_asFunctionalComponent(__VLS_53, new __VLS_53({
-    ...{ 'onClick': {} },
-    type: "text",
+    ...{ class: "header" },
 }));
 const __VLS_55 = __VLS_54({
+    ...{ class: "header" },
+}, ...__VLS_functionalComponentArgsRest(__VLS_54));
+__VLS_56.slots.default;
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div)({});
+const __VLS_57 = {}.AButton;
+/** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
+// @ts-ignore
+const __VLS_58 = __VLS_asFunctionalComponent(__VLS_57, new __VLS_57({
     ...{ 'onClick': {} },
     type: "text",
-}, ...__VLS_functionalComponentArgsRest(__VLS_54));
-let __VLS_57;
-let __VLS_58;
-let __VLS_59;
-const __VLS_60 = {
+}));
+const __VLS_59 = __VLS_58({
+    ...{ 'onClick': {} },
+    type: "text",
+}, ...__VLS_functionalComponentArgsRest(__VLS_58));
+let __VLS_61;
+let __VLS_62;
+let __VLS_63;
+const __VLS_64 = {
     onClick: (__VLS_ctx.logout)
 };
-__VLS_56.slots.default;
+__VLS_60.slots.default;
+var __VLS_60;
 var __VLS_56;
-var __VLS_52;
-const __VLS_61 = {}.ALayoutContent;
+const __VLS_65 = {}.ALayoutContent;
 /** @type {[typeof __VLS_components.ALayoutContent, typeof __VLS_components.aLayoutContent, typeof __VLS_components.ALayoutContent, typeof __VLS_components.aLayoutContent, ]} */ ;
 // @ts-ignore
-const __VLS_62 = __VLS_asFunctionalComponent(__VLS_61, new __VLS_61({
+const __VLS_66 = __VLS_asFunctionalComponent(__VLS_65, new __VLS_65({
     ...{ class: "content" },
 }));
-const __VLS_63 = __VLS_62({
+const __VLS_67 = __VLS_66({
     ...{ class: "content" },
-}, ...__VLS_functionalComponentArgsRest(__VLS_62));
-__VLS_64.slots.default;
-const __VLS_65 = {}.RouterView;
+}, ...__VLS_functionalComponentArgsRest(__VLS_66));
+__VLS_68.slots.default;
+const __VLS_69 = {}.RouterView;
 /** @type {[typeof __VLS_components.RouterView, ]} */ ;
 // @ts-ignore
-const __VLS_66 = __VLS_asFunctionalComponent(__VLS_65, new __VLS_65({}));
-const __VLS_67 = __VLS_66({}, ...__VLS_functionalComponentArgsRest(__VLS_66));
-var __VLS_64;
-var __VLS_48;
+const __VLS_70 = __VLS_asFunctionalComponent(__VLS_69, new __VLS_69({}));
+const __VLS_71 = __VLS_70({}, ...__VLS_functionalComponentArgsRest(__VLS_70));
+var __VLS_68;
+var __VLS_52;
 var __VLS_3;
 /** @type {__VLS_StyleScopedClasses['logo']} */ ;
 /** @type {__VLS_StyleScopedClasses['header']} */ ;

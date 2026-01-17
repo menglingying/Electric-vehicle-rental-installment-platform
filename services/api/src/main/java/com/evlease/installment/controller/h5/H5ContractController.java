@@ -41,8 +41,9 @@ public class H5ContractController {
     if (!order.getPhone().equals(principal.phoneOrUsername())) throw new ApiException(HttpStatus.FORBIDDEN, "无权限");
 
     var existing = contractRepository.findById(orderId).orElse(null);
-    if (existing != null && ("SIGNING".equals(existing.getStatus()) || "SIGNED".equals(existing.getStatus()))) {
-      return existing;
+    if (existing != null) {
+      var status = existing.getStatus();
+      if ("SIGNING".equals(status) || "SIGNED".equals(status)) return existing;
     }
 
     var contract = new Contract();

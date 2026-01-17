@@ -2,6 +2,7 @@ param(
   [Parameter(Mandatory = $false)][string]$HostIp = "47.120.27.110",
   [Parameter(Mandatory = $false)][string]$SshUser = "root",
   [Parameter(Mandatory = $false)][string]$RemoteDir = "/opt/evlease",
+  [Parameter(Mandatory = $false)][string]$IdentityFile = "",
   [Parameter(Mandatory = $false)][switch]$BundleOnly
 )
 
@@ -18,6 +19,18 @@ function Assert-Command($name) {
 Assert-Command ssh
 Assert-Command scp
 Assert-Command npm
+
+$defaultKey = Join-Path $repoRoot "evlease_deploy_key"
+if ([string]::IsNullOrWhiteSpace($IdentityFile) -and (Test-Path $defaultKey)) {
+  $IdentityFile = $defaultKey
+}
+
+$sshArgs = @("-o", "StrictHostKeyChecking=no")
+$scpArgs = @("-o", "StrictHostKeyChecking=no")
+if (-not [string]::IsNullOrWhiteSpace($IdentityFile)) {
+  $sshArgs += @("-i", $IdentityFile)
+  $scpArgs += @("-i", $IdentityFile)
+}
 
 Write-Host "Building backend jar..." -ForegroundColor Cyan
 Push-Location (Join-Path $repoRoot "services\\api")
@@ -68,23 +81,23 @@ if ($BundleOnly) {
 $remote = "$SshUser@$HostIp"
 
 Write-Host "Uploading bundle to $remote ..." -ForegroundColor Cyan
-ssh $remote "mkdir -p $RemoteDir"
-scp $tarPath "${remote}:$RemoteDir/bundle.tgz"
+ssh @sshArgs $remote "mkdir -p $RemoteDir"
+scp @scpArgs $tarPath "${remote}:$RemoteDir/bundle.tgz"
 
 Write-Host "Unpacking on server (will not use port 5000)..." -ForegroundColor Cyan
-ssh $remote "cd $RemoteDir && tar -xzf bundle.tgz && chmod +x remote/*.sh && if ! command -v docker >/dev/null 2>&1; then remote/bootstrap-ubuntu22-docker.sh; fi"
+ssh @sshArgs $remote "cd $RemoteDir && tar -xzf bundle.tgz && chmod +x remote/*.sh && if ! command -v docker >/dev/null 2>&1; then remote/bootstrap-ubuntu22-docker.sh; fi"
 
-$hasEnv = (ssh $remote "[ -f $RemoteDir/.env ] && echo YES || echo NO").Trim()
+$hasEnv = (ssh @sshArgs $remote "[ -f $RemoteDir/.env ] && echo YES || echo NO").Trim()
 if ($hasEnv -ne "YES") {
   Write-Host "Creating $RemoteDir/.env from .env.example (needs your edit)..." -ForegroundColor Yellow
-  ssh $remote "cd $RemoteDir && cp .env.example .env"
+  ssh @sshArgs $remote "cd $RemoteDir && cp .env.example .env"
   Write-Host "Edit $RemoteDir/.env on the server, set MYSQL_ROOT_PASSWORD, then run:" -ForegroundColor Yellow
   Write-Host "  bash $RemoteDir/remote/deploy.sh $RemoteDir" -ForegroundColor Yellow
   exit 0
 }
 
 Write-Host "Deploying containers..." -ForegroundColor Cyan
-ssh $remote "bash $RemoteDir/remote/deploy.sh $RemoteDir"
+ssh @sshArgs $remote "bash $RemoteDir/remote/deploy.sh $RemoteDir"
 
 Write-Host "Done." -ForegroundColor Green
 Write-Host "H5:    http://$HostIp:8088" -ForegroundColor Green

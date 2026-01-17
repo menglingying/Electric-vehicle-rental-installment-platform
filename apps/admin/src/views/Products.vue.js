@@ -1,10 +1,63 @@
 import { h, onMounted, reactive, ref, computed } from 'vue';
 import { Button, Message, Tag, Modal } from '@arco-design/web-vue';
-import { listProducts, uploadProductImage, upsertProduct, deleteProduct } from '@/services/api';
+import { listCategories, listProducts, uploadProductImage, upsertProduct, deleteProduct } from '@/services/api';
 const rows = ref([]);
+const categories = ref([]);
 const visible = ref(false);
 const uploading = ref(false);
 const searchKeyword = ref('');
+// 品牌选项（一级分类）
+const brandOptions = computed(() => {
+    return categories.value.map(c => ({ label: c.name, value: c.id }));
+});
+// 系列选项（二级分类，根据选中的品牌）
+const seriesOptions = computed(() => {
+    if (!form.brandId)
+        return [];
+    const brand = categories.value.find(c => c.id === form.brandId);
+    return (brand?.children || []).map(c => ({ label: c.name, value: c.id }));
+});
+// 型号选项（三级分类，根据选中的系列）
+const modelOptions = computed(() => {
+    if (!form.brandId || !form.seriesId)
+        return [];
+    const brand = categories.value.find(c => c.id === form.brandId);
+    const series = (brand?.children || []).find(c => c.id === form.seriesId);
+    return (series?.children || []).map(c => ({ label: c.name, value: c.id }));
+});
+// 品牌变化时清空系列和型号
+function onBrandChange() {
+    form.seriesId = '';
+    form.categoryId = '';
+}
+// 系列变化时清空型号
+function onSeriesChange() {
+    form.categoryId = '';
+}
+// 根据categoryId反推brandId和seriesId
+function resolveCategoryPath(categoryId) {
+    for (const brand of categories.value) {
+        for (const series of (brand.children || [])) {
+            for (const model of (series.children || [])) {
+                if (model.id === categoryId) {
+                    return { brandId: brand.id, seriesId: series.id };
+                }
+            }
+        }
+    }
+    return { brandId: '', seriesId: '' };
+}
+const categoryNameMap = computed(() => {
+    const map = {};
+    for (const brand of categories.value) {
+        for (const series of (brand.children || [])) {
+            for (const model of (series.children || [])) {
+                map[model.id] = `${brand.name} / ${series.name} / ${model.name}`;
+            }
+        }
+    }
+    return map;
+});
 // 搜索过滤后的商品列表（按名称首字母分组排序）
 const filteredRows = computed(() => {
     let list = rows.value;
@@ -49,6 +102,10 @@ const columns = [
     { title: 'ID', dataIndex: 'id' },
     { title: '名称', dataIndex: 'name' },
     {
+        title: '分类',
+        render: ({ record }) => categoryNameMap.value[record.categoryId] || '-'
+    },
+    {
         title: '电池配置/价格',
         render: ({ record }) => {
             const items = [];
@@ -80,6 +137,9 @@ const columns = [
 const form = reactive({
     id: '',
     name: '',
+    brandId: '',
+    seriesId: '',
+    categoryId: '',
     images: [],
     rentPerCycle: 299,
     tagsText: '',
@@ -117,6 +177,9 @@ function confirmDelete(p) {
 function openCreate() {
     form.id = '';
     form.name = '';
+    form.brandId = '';
+    form.seriesId = '';
+    form.categoryId = '';
     form.images = [];
     form.rentPerCycle = 299;
     form.tagsText = '';
@@ -129,6 +192,11 @@ function openCreate() {
 function openEdit(p) {
     form.id = p.id;
     form.name = p.name;
+    // 反推品牌和系列
+    const path = resolveCategoryPath(p.categoryId ?? '');
+    form.brandId = path.brandId;
+    form.seriesId = path.seriesId;
+    form.categoryId = p.categoryId ?? '';
     form.images = (p.images ?? []).length ? [...(p.images ?? [])] : p.coverUrl ? [p.coverUrl] : [];
     form.rentPerCycle = p.rentPerCycle;
     form.tagsText = (p.tags ?? []).join(',');
@@ -187,11 +255,14 @@ async function onSelectFiles(fileList, fileItem) {
 async function save() {
     if (!form.name)
         return Message.warning('请输入名称');
+    if (!form.categoryId)
+        return Message.warning('请选择车型分类');
     const images = (form.images ?? []).map((s) => String(s).trim()).filter(Boolean);
     try {
         await upsertProduct({
             id: form.id || undefined,
             name: form.name,
+            categoryId: form.categoryId,
             coverUrl: images[0] || undefined,
             images,
             rentPerCycle: form.rentPerCycle,
@@ -213,6 +284,14 @@ async function save() {
     }
 }
 onMounted(load);
+onMounted(async () => {
+    try {
+        categories.value = await listCategories();
+    }
+    catch (e) {
+        Message.error(e?.response?.data?.message ?? '分类加载失败');
+    }
+});
 debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_ctx = {};
 let __VLS_components;
@@ -596,84 +675,187 @@ const __VLS_113 = {}.AFormItem;
 /** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_114 = __VLS_asFunctionalComponent(__VLS_113, new __VLS_113({
-    label: "租金/期（元）",
-    field: "rentPerCycle",
+    label: "车型分类",
 }));
 const __VLS_115 = __VLS_114({
-    label: "租金/期（元）",
-    field: "rentPerCycle",
+    label: "车型分类",
 }, ...__VLS_functionalComponentArgsRest(__VLS_114));
 __VLS_116.slots.default;
-const __VLS_117 = {}.AInputNumber;
-/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "cascader-row" },
+});
+const __VLS_117 = {}.ASelect;
+/** @type {[typeof __VLS_components.ASelect, typeof __VLS_components.aSelect, ]} */ ;
 // @ts-ignore
 const __VLS_118 = __VLS_asFunctionalComponent(__VLS_117, new __VLS_117({
-    modelValue: (__VLS_ctx.form.rentPerCycle),
-    min: (1),
+    ...{ 'onChange': {} },
+    modelValue: (__VLS_ctx.form.brandId),
+    placeholder: "选择品牌",
+    options: (__VLS_ctx.brandOptions),
+    allowClear: true,
+    ...{ style: {} },
 }));
 const __VLS_119 = __VLS_118({
-    modelValue: (__VLS_ctx.form.rentPerCycle),
-    min: (1),
+    ...{ 'onChange': {} },
+    modelValue: (__VLS_ctx.form.brandId),
+    placeholder: "选择品牌",
+    options: (__VLS_ctx.brandOptions),
+    allowClear: true,
+    ...{ style: {} },
 }, ...__VLS_functionalComponentArgsRest(__VLS_118));
-var __VLS_116;
-const __VLS_121 = {}.AFormItem;
-/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
-// @ts-ignore
-const __VLS_122 = __VLS_asFunctionalComponent(__VLS_121, new __VLS_121({
-    label: "标签（逗号分隔）",
-    field: "tagsText",
-}));
-const __VLS_123 = __VLS_122({
-    label: "标签（逗号分隔）",
-    field: "tagsText",
-}, ...__VLS_functionalComponentArgsRest(__VLS_122));
-__VLS_124.slots.default;
-const __VLS_125 = {}.AInput;
-/** @type {[typeof __VLS_components.AInput, typeof __VLS_components.aInput, ]} */ ;
+let __VLS_121;
+let __VLS_122;
+let __VLS_123;
+const __VLS_124 = {
+    onChange: (__VLS_ctx.onBrandChange)
+};
+var __VLS_120;
+const __VLS_125 = {}.ASelect;
+/** @type {[typeof __VLS_components.ASelect, typeof __VLS_components.aSelect, ]} */ ;
 // @ts-ignore
 const __VLS_126 = __VLS_asFunctionalComponent(__VLS_125, new __VLS_125({
-    modelValue: (__VLS_ctx.form.tagsText),
-    placeholder: "例如：续航,通勤,分期",
+    ...{ 'onChange': {} },
+    modelValue: (__VLS_ctx.form.seriesId),
+    placeholder: "选择系列",
+    options: (__VLS_ctx.seriesOptions),
+    allowClear: true,
+    disabled: (!__VLS_ctx.form.brandId),
+    ...{ style: {} },
 }));
 const __VLS_127 = __VLS_126({
-    modelValue: (__VLS_ctx.form.tagsText),
-    placeholder: "例如：续航,通勤,分期",
+    ...{ 'onChange': {} },
+    modelValue: (__VLS_ctx.form.seriesId),
+    placeholder: "选择系列",
+    options: (__VLS_ctx.seriesOptions),
+    allowClear: true,
+    disabled: (!__VLS_ctx.form.brandId),
+    ...{ style: {} },
 }, ...__VLS_functionalComponentArgsRest(__VLS_126));
-var __VLS_124;
-const __VLS_129 = {}.AFormItem;
-/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
-// @ts-ignore
-const __VLS_130 = __VLS_asFunctionalComponent(__VLS_129, new __VLS_129({
-    label: "车架配置",
-    field: "frameConfig",
-}));
-const __VLS_131 = __VLS_130({
-    label: "车架配置",
-    field: "frameConfig",
-}, ...__VLS_functionalComponentArgsRest(__VLS_130));
-__VLS_132.slots.default;
-const __VLS_133 = {}.AInput;
-/** @type {[typeof __VLS_components.AInput, typeof __VLS_components.aInput, ]} */ ;
+let __VLS_129;
+let __VLS_130;
+let __VLS_131;
+const __VLS_132 = {
+    onChange: (__VLS_ctx.onSeriesChange)
+};
+var __VLS_128;
+const __VLS_133 = {}.ASelect;
+/** @type {[typeof __VLS_components.ASelect, typeof __VLS_components.aSelect, ]} */ ;
 // @ts-ignore
 const __VLS_134 = __VLS_asFunctionalComponent(__VLS_133, new __VLS_133({
-    modelValue: (__VLS_ctx.form.frameConfig),
-    placeholder: "例如：铝合金车架、碳钢车架",
+    modelValue: (__VLS_ctx.form.categoryId),
+    placeholder: "选择型号",
+    options: (__VLS_ctx.modelOptions),
+    allowClear: true,
+    disabled: (!__VLS_ctx.form.seriesId),
+    ...{ style: {} },
 }));
 const __VLS_135 = __VLS_134({
-    modelValue: (__VLS_ctx.form.frameConfig),
-    placeholder: "例如：铝合金车架、碳钢车架",
+    modelValue: (__VLS_ctx.form.categoryId),
+    placeholder: "选择型号",
+    options: (__VLS_ctx.modelOptions),
+    allowClear: true,
+    disabled: (!__VLS_ctx.form.seriesId),
+    ...{ style: {} },
 }, ...__VLS_functionalComponentArgsRest(__VLS_134));
-var __VLS_132;
-const __VLS_137 = {}.AFormItem;
+if (!__VLS_ctx.brandOptions.length) {
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+        ...{ style: {} },
+    });
+    const __VLS_137 = {}.AAlert;
+    /** @type {[typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, ]} */ ;
+    // @ts-ignore
+    const __VLS_138 = __VLS_asFunctionalComponent(__VLS_137, new __VLS_137({
+        type: "warning",
+    }));
+    const __VLS_139 = __VLS_138({
+        type: "warning",
+    }, ...__VLS_functionalComponentArgsRest(__VLS_138));
+    __VLS_140.slots.default;
+    var __VLS_140;
+}
+var __VLS_116;
+const __VLS_141 = {}.AFormItem;
 /** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
 // @ts-ignore
-const __VLS_138 = __VLS_asFunctionalComponent(__VLS_137, new __VLS_137({
+const __VLS_142 = __VLS_asFunctionalComponent(__VLS_141, new __VLS_141({
+    label: "租金/期（元）",
+    field: "rentPerCycle",
+}));
+const __VLS_143 = __VLS_142({
+    label: "租金/期（元）",
+    field: "rentPerCycle",
+}, ...__VLS_functionalComponentArgsRest(__VLS_142));
+__VLS_144.slots.default;
+const __VLS_145 = {}.AInputNumber;
+/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
+// @ts-ignore
+const __VLS_146 = __VLS_asFunctionalComponent(__VLS_145, new __VLS_145({
+    modelValue: (__VLS_ctx.form.rentPerCycle),
+    min: (1),
+}));
+const __VLS_147 = __VLS_146({
+    modelValue: (__VLS_ctx.form.rentPerCycle),
+    min: (1),
+}, ...__VLS_functionalComponentArgsRest(__VLS_146));
+var __VLS_144;
+const __VLS_149 = {}.AFormItem;
+/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
+// @ts-ignore
+const __VLS_150 = __VLS_asFunctionalComponent(__VLS_149, new __VLS_149({
+    label: "标签（逗号分隔）",
+    field: "tagsText",
+}));
+const __VLS_151 = __VLS_150({
+    label: "标签（逗号分隔）",
+    field: "tagsText",
+}, ...__VLS_functionalComponentArgsRest(__VLS_150));
+__VLS_152.slots.default;
+const __VLS_153 = {}.AInput;
+/** @type {[typeof __VLS_components.AInput, typeof __VLS_components.aInput, ]} */ ;
+// @ts-ignore
+const __VLS_154 = __VLS_asFunctionalComponent(__VLS_153, new __VLS_153({
+    modelValue: (__VLS_ctx.form.tagsText),
+    placeholder: "例如：续航,通勤,分期",
+}));
+const __VLS_155 = __VLS_154({
+    modelValue: (__VLS_ctx.form.tagsText),
+    placeholder: "例如：续航,通勤,分期",
+}, ...__VLS_functionalComponentArgsRest(__VLS_154));
+var __VLS_152;
+const __VLS_157 = {}.AFormItem;
+/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
+// @ts-ignore
+const __VLS_158 = __VLS_asFunctionalComponent(__VLS_157, new __VLS_157({
+    label: "车架配置",
+    field: "frameConfig",
+}));
+const __VLS_159 = __VLS_158({
+    label: "车架配置",
+    field: "frameConfig",
+}, ...__VLS_functionalComponentArgsRest(__VLS_158));
+__VLS_160.slots.default;
+const __VLS_161 = {}.AInput;
+/** @type {[typeof __VLS_components.AInput, typeof __VLS_components.aInput, ]} */ ;
+// @ts-ignore
+const __VLS_162 = __VLS_asFunctionalComponent(__VLS_161, new __VLS_161({
+    modelValue: (__VLS_ctx.form.frameConfig),
+    placeholder: "例如：铝合金车架、碳钢车架",
+}));
+const __VLS_163 = __VLS_162({
+    modelValue: (__VLS_ctx.form.frameConfig),
+    placeholder: "例如：铝合金车架、碳钢车架",
+}, ...__VLS_functionalComponentArgsRest(__VLS_162));
+var __VLS_160;
+const __VLS_165 = {}.AFormItem;
+/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
+// @ts-ignore
+const __VLS_166 = __VLS_asFunctionalComponent(__VLS_165, new __VLS_165({
     label: "电池配置（客户下单时可选）",
 }));
-const __VLS_139 = __VLS_138({
+const __VLS_167 = __VLS_166({
     label: "电池配置（客户下单时可选）",
-}, ...__VLS_functionalComponentArgsRest(__VLS_138));
-__VLS_140.slots.default;
+}, ...__VLS_functionalComponentArgsRest(__VLS_166));
+__VLS_168.slots.default;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "battery-config-section" },
 });
@@ -683,115 +865,115 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.d
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "option-header" },
 });
-const __VLS_141 = {}.ATag;
+const __VLS_169 = {}.ATag;
 /** @type {[typeof __VLS_components.ATag, typeof __VLS_components.aTag, typeof __VLS_components.ATag, typeof __VLS_components.aTag, ]} */ ;
 // @ts-ignore
-const __VLS_142 = __VLS_asFunctionalComponent(__VLS_141, new __VLS_141({
+const __VLS_170 = __VLS_asFunctionalComponent(__VLS_169, new __VLS_169({
     color: "blue",
 }));
-const __VLS_143 = __VLS_142({
+const __VLS_171 = __VLS_170({
     color: "blue",
-}, ...__VLS_functionalComponentArgsRest(__VLS_142));
-__VLS_144.slots.default;
-var __VLS_144;
-const __VLS_145 = {}.AFormItem;
+}, ...__VLS_functionalComponentArgsRest(__VLS_170));
+__VLS_172.slots.default;
+var __VLS_172;
+const __VLS_173 = {}.AFormItem;
 /** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
 // @ts-ignore
-const __VLS_146 = __VLS_asFunctionalComponent(__VLS_145, new __VLS_145({
+const __VLS_174 = __VLS_asFunctionalComponent(__VLS_173, new __VLS_173({
     label: "空车租金/期（元）",
     ...{ style: {} },
 }));
-const __VLS_147 = __VLS_146({
+const __VLS_175 = __VLS_174({
     label: "空车租金/期（元）",
     ...{ style: {} },
-}, ...__VLS_functionalComponentArgsRest(__VLS_146));
-__VLS_148.slots.default;
-const __VLS_149 = {}.AInputNumber;
+}, ...__VLS_functionalComponentArgsRest(__VLS_174));
+__VLS_176.slots.default;
+const __VLS_177 = {}.AInputNumber;
 /** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
 // @ts-ignore
-const __VLS_150 = __VLS_asFunctionalComponent(__VLS_149, new __VLS_149({
+const __VLS_178 = __VLS_asFunctionalComponent(__VLS_177, new __VLS_177({
     modelValue: (__VLS_ctx.form.rentWithoutBattery),
     min: (0),
     placeholder: "必填",
     ...{ style: {} },
 }));
-const __VLS_151 = __VLS_150({
+const __VLS_179 = __VLS_178({
     modelValue: (__VLS_ctx.form.rentWithoutBattery),
     min: (0),
     placeholder: "必填",
     ...{ style: {} },
-}, ...__VLS_functionalComponentArgsRest(__VLS_150));
-var __VLS_148;
+}, ...__VLS_functionalComponentArgsRest(__VLS_178));
+var __VLS_176;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "battery-option" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "option-header" },
 });
-const __VLS_153 = {}.ATag;
+const __VLS_181 = {}.ATag;
 /** @type {[typeof __VLS_components.ATag, typeof __VLS_components.aTag, typeof __VLS_components.ATag, typeof __VLS_components.aTag, ]} */ ;
 // @ts-ignore
-const __VLS_154 = __VLS_asFunctionalComponent(__VLS_153, new __VLS_153({
+const __VLS_182 = __VLS_asFunctionalComponent(__VLS_181, new __VLS_181({
     color: "green",
 }));
-const __VLS_155 = __VLS_154({
+const __VLS_183 = __VLS_182({
     color: "green",
-}, ...__VLS_functionalComponentArgsRest(__VLS_154));
-__VLS_156.slots.default;
-var __VLS_156;
-const __VLS_157 = {}.AFormItem;
+}, ...__VLS_functionalComponentArgsRest(__VLS_182));
+__VLS_184.slots.default;
+var __VLS_184;
+const __VLS_185 = {}.AFormItem;
 /** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
 // @ts-ignore
-const __VLS_158 = __VLS_asFunctionalComponent(__VLS_157, new __VLS_157({
+const __VLS_186 = __VLS_asFunctionalComponent(__VLS_185, new __VLS_185({
     label: "电池型号/规格",
     ...{ style: {} },
 }));
-const __VLS_159 = __VLS_158({
+const __VLS_187 = __VLS_186({
     label: "电池型号/规格",
     ...{ style: {} },
-}, ...__VLS_functionalComponentArgsRest(__VLS_158));
-__VLS_160.slots.default;
-const __VLS_161 = {}.AInput;
+}, ...__VLS_functionalComponentArgsRest(__VLS_186));
+__VLS_188.slots.default;
+const __VLS_189 = {}.AInput;
 /** @type {[typeof __VLS_components.AInput, typeof __VLS_components.aInput, ]} */ ;
 // @ts-ignore
-const __VLS_162 = __VLS_asFunctionalComponent(__VLS_161, new __VLS_161({
+const __VLS_190 = __VLS_asFunctionalComponent(__VLS_189, new __VLS_189({
     modelValue: (__VLS_ctx.form.batteryConfig),
     placeholder: "例如：48V20Ah锂电池",
 }));
-const __VLS_163 = __VLS_162({
+const __VLS_191 = __VLS_190({
     modelValue: (__VLS_ctx.form.batteryConfig),
     placeholder: "例如：48V20Ah锂电池",
-}, ...__VLS_functionalComponentArgsRest(__VLS_162));
-var __VLS_160;
-const __VLS_165 = {}.AFormItem;
+}, ...__VLS_functionalComponentArgsRest(__VLS_190));
+var __VLS_188;
+const __VLS_193 = {}.AFormItem;
 /** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
 // @ts-ignore
-const __VLS_166 = __VLS_asFunctionalComponent(__VLS_165, new __VLS_165({
+const __VLS_194 = __VLS_asFunctionalComponent(__VLS_193, new __VLS_193({
     label: "含电池租金/期（元）",
     ...{ style: {} },
 }));
-const __VLS_167 = __VLS_166({
+const __VLS_195 = __VLS_194({
     label: "含电池租金/期（元）",
     ...{ style: {} },
-}, ...__VLS_functionalComponentArgsRest(__VLS_166));
-__VLS_168.slots.default;
-const __VLS_169 = {}.AInputNumber;
+}, ...__VLS_functionalComponentArgsRest(__VLS_194));
+__VLS_196.slots.default;
+const __VLS_197 = {}.AInputNumber;
 /** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
 // @ts-ignore
-const __VLS_170 = __VLS_asFunctionalComponent(__VLS_169, new __VLS_169({
+const __VLS_198 = __VLS_asFunctionalComponent(__VLS_197, new __VLS_197({
     modelValue: (__VLS_ctx.form.rentWithBattery),
     min: (0),
     placeholder: "不填则不提供此选项",
     ...{ style: {} },
 }));
-const __VLS_171 = __VLS_170({
+const __VLS_199 = __VLS_198({
     modelValue: (__VLS_ctx.form.rentWithBattery),
     min: (0),
     placeholder: "不填则不提供此选项",
     ...{ style: {} },
-}, ...__VLS_functionalComponentArgsRest(__VLS_170));
+}, ...__VLS_functionalComponentArgsRest(__VLS_198));
+var __VLS_196;
 var __VLS_168;
-var __VLS_140;
 var __VLS_36;
 var __VLS_28;
 /** @type {__VLS_StyleScopedClasses['toolbar']} */ ;
@@ -800,6 +982,7 @@ var __VLS_28;
 /** @type {__VLS_StyleScopedClasses['hint']} */ ;
 /** @type {__VLS_StyleScopedClasses['image-card']} */ ;
 /** @type {__VLS_StyleScopedClasses['image-actions']} */ ;
+/** @type {__VLS_StyleScopedClasses['cascader-row']} */ ;
 /** @type {__VLS_StyleScopedClasses['battery-config-section']} */ ;
 /** @type {__VLS_StyleScopedClasses['battery-option']} */ ;
 /** @type {__VLS_StyleScopedClasses['option-header']} */ ;
@@ -812,6 +995,11 @@ const __VLS_self = (await import('vue')).defineComponent({
             visible: visible,
             uploading: uploading,
             searchKeyword: searchKeyword,
+            brandOptions: brandOptions,
+            seriesOptions: seriesOptions,
+            modelOptions: modelOptions,
+            onBrandChange: onBrandChange,
+            onSeriesChange: onSeriesChange,
             filteredRows: filteredRows,
             onSearch: onSearch,
             columns: columns,

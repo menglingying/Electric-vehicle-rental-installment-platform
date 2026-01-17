@@ -4,6 +4,7 @@
       <div class="logo">电动车租赁分期</div>
       <a-menu :selected-keys="[activeKey]" @menu-item-click="onMenuClick">
         <a-menu-item key="/dashboard">仪表盘</a-menu-item>
+        <a-menu-item key="/categories">分类管理</a-menu-item>
         <a-menu-item key="/products">商品管理</a-menu-item>
         <a-menu-item key="/orders">订单管理</a-menu-item>
         <a-menu-item key="/repayments">还款管理</a-menu-item>

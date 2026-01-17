@@ -11,8 +11,24 @@ export async function listProducts() {
     const { data } = await http.get('/h5/products');
     return data;
 }
+export async function listProductsByCategory(categoryId) {
+    const { data } = await http.get('/h5/products', { params: { categoryId } });
+    return data;
+}
 export async function getProduct(id) {
     const { data } = await http.get(`/h5/products/${id}`);
+    return data;
+}
+export async function listCategoryTree() {
+    const { data } = await http.get('/h5/categories/tree');
+    return data;
+}
+export async function listDictItems(dictCode) {
+    const { data } = await http.get(`/common/dicts/${dictCode}`);
+    return data;
+}
+export async function listRegions(parentCode) {
+    const { data } = await http.get('/common/regions', { params: { parentCode } });
     return data;
 }
 export async function createOrder(payload) {
@@ -23,8 +39,9 @@ export async function listOrders() {
     const { data } = await http.get('/h5/orders');
     return data;
 }
-export async function getOrder(id) {
-    const { data } = await http.get(`/h5/orders/${id}`);
+export async function getOrder(id, options) {
+    const params = options?.bypassCache ? { t: Date.now() } : undefined;
+    const { data } = await http.get(`/h5/orders/${id}`, { params });
     return data;
 }
 export async function startContract(orderId) {

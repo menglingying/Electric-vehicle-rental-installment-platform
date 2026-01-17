@@ -1,4 +1,4 @@
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { showFailToast, showSuccessToast } from 'vant';
 import { getOrder, startContract, startPayment } from '@/services/api';
@@ -7,6 +7,54 @@ const router = useRouter();
 const order = ref(null);
 const contractLoading = ref(false);
 const paymentLoading = ref(false);
+const loading = ref(false);
+const contractAllowedStatuses = new Set(['ACTIVE', 'DELIVERED', 'IN_USE', 'RETURNED']);
+const paymentAllowedStatuses = new Set(['ACTIVE', 'DELIVERED', 'IN_USE', 'RETURNED']);
+const shouldShowKycPrompt = computed(() => {
+    return !!order.value && !order.value.kycCompleted && order.value.status === 'PENDING_REVIEW';
+});
+const shouldShowKycBlocked = computed(() => {
+    return !!order.value && !order.value.kycCompleted && order.value.status !== 'PENDING_REVIEW';
+});
+const kycBlockedReason = computed(() => {
+    if (!order.value)
+        return '';
+    if (order.value.status === 'REJECTED')
+        return '订单已驳回，暂不支持补充资料';
+    if (order.value.status === 'CLOSED')
+        return '订单已关闭，暂不支持补充资料';
+    if (order.value.status === 'SETTLED')
+        return '订单已结清，暂不支持补充资料';
+    if (order.value.status === 'ACTIVE' || order.value.status === 'DELIVERED' || order.value.status === 'IN_USE' || order.value.status === 'RETURNED') {
+        return '订单已进入履约流程，暂不支持补充资料';
+    }
+    return '';
+});
+const canStartContract = computed(() => {
+    return !!order.value && contractAllowedStatuses.has(order.value.status);
+});
+const canStartPayment = computed(() => {
+    return !!order.value && paymentAllowedStatuses.has(order.value.status);
+});
+const contractBlockedReason = computed(() => {
+    return buildBlockedReason(order.value?.status, '合同');
+});
+const paymentBlockedReason = computed(() => {
+    return buildBlockedReason(order.value?.status, '收款');
+});
+function buildBlockedReason(status, target) {
+    if (!status)
+        return '';
+    if (status === 'PENDING_REVIEW')
+        return `订单待审核，暂不支持发起${target}`;
+    if (status === 'REJECTED')
+        return `订单已驳回，暂不支持发起${target}`;
+    if (status === 'CLOSED')
+        return `订单已关闭，暂不支持发起${target}`;
+    if (status === 'SETTLED')
+        return `订单已结清，无需发起${target}`;
+    return `当前状态暂不支持发起${target}`;
+}
 function statusText(status) {
     switch (status) {
         case 'PENDING_REVIEW':
@@ -93,15 +141,39 @@ async function onStartPayment() {
         paymentLoading.value = false;
     }
 }
-async function load() {
+async function load(options) {
+    if (loading.value)
+        return;
+    loading.value = true;
     try {
-        order.value = await getOrder(String(route.params.id));
+        order.value = await getOrder(String(route.params.id), options);
     }
     catch (e) {
         showFailToast(e?.response?.data?.message ?? '加载失败');
     }
+    finally {
+        loading.value = false;
+    }
 }
-onMounted(load);
+function refreshIfVisible() {
+    if (document.visibilityState === 'visible') {
+        void load({ bypassCache: true });
+    }
+}
+onMounted(() => {
+    void load({ bypassCache: true });
+    document.addEventListener('visibilitychange', refreshIfVisible);
+    window.addEventListener('focus', refreshIfVisible);
+});
+onUnmounted(() => {
+    document.removeEventListener('visibilitychange', refreshIfVisible);
+    window.removeEventListener('focus', refreshIfVisible);
+});
+watch(() => route.params.id, (next, prev) => {
+    if (next && next !== prev) {
+        void load({ bypassCache: true });
+    }
+});
 debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_ctx = {};
 let __VLS_components;
@@ -197,7 +269,7 @@ if (__VLS_ctx.order) {
         (__VLS_ctx.order.settledAt);
     }
 }
-if (__VLS_ctx.order && !__VLS_ctx.order.kycCompleted) {
+if (__VLS_ctx.shouldShowKycPrompt) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "card kyc-card" },
     });
@@ -231,6 +303,18 @@ if (__VLS_ctx.order && !__VLS_ctx.order.kycCompleted) {
     __VLS_11.slots.default;
     var __VLS_11;
 }
+else if (__VLS_ctx.shouldShowKycBlocked) {
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+        ...{ class: "card kyc-card" },
+    });
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+        ...{ class: "title" },
+    });
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+        ...{ class: "sub" },
+    });
+    (__VLS_ctx.kycBlockedReason);
+}
 else if (__VLS_ctx.order && __VLS_ctx.order.kycCompleted) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "card kyc-done" },
@@ -256,32 +340,41 @@ if (__VLS_ctx.order) {
         ...{ class: "sub" },
     });
     (__VLS_ctx.contractStatusText(__VLS_ctx.order.contract?.status));
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-        ...{ style: {} },
-    });
-    const __VLS_16 = {}.VanButton;
-    /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
-    // @ts-ignore
-    const __VLS_17 = __VLS_asFunctionalComponent(__VLS_16, new __VLS_16({
-        ...{ 'onClick': {} },
-        type: "primary",
-        block: true,
-        loading: (__VLS_ctx.contractLoading),
-    }));
-    const __VLS_18 = __VLS_17({
-        ...{ 'onClick': {} },
-        type: "primary",
-        block: true,
-        loading: (__VLS_ctx.contractLoading),
-    }, ...__VLS_functionalComponentArgsRest(__VLS_17));
-    let __VLS_20;
-    let __VLS_21;
-    let __VLS_22;
-    const __VLS_23 = {
-        onClick: (__VLS_ctx.onStartContract)
-    };
-    __VLS_19.slots.default;
-    var __VLS_19;
+    if (__VLS_ctx.canStartContract) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ style: {} },
+        });
+        const __VLS_16 = {}.VanButton;
+        /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
+        // @ts-ignore
+        const __VLS_17 = __VLS_asFunctionalComponent(__VLS_16, new __VLS_16({
+            ...{ 'onClick': {} },
+            type: "primary",
+            block: true,
+            loading: (__VLS_ctx.contractLoading),
+        }));
+        const __VLS_18 = __VLS_17({
+            ...{ 'onClick': {} },
+            type: "primary",
+            block: true,
+            loading: (__VLS_ctx.contractLoading),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_17));
+        let __VLS_20;
+        let __VLS_21;
+        let __VLS_22;
+        const __VLS_23 = {
+            onClick: (__VLS_ctx.onStartContract)
+        };
+        __VLS_19.slots.default;
+        var __VLS_19;
+    }
+    else {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "sub muted" },
+            ...{ style: {} },
+        });
+        (__VLS_ctx.contractBlockedReason);
+    }
 }
 if (__VLS_ctx.order) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -293,32 +386,41 @@ if (__VLS_ctx.order) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "sub" },
     });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-        ...{ style: {} },
-    });
-    const __VLS_24 = {}.VanButton;
-    /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
-    // @ts-ignore
-    const __VLS_25 = __VLS_asFunctionalComponent(__VLS_24, new __VLS_24({
-        ...{ 'onClick': {} },
-        type: "default",
-        block: true,
-        loading: (__VLS_ctx.paymentLoading),
-    }));
-    const __VLS_26 = __VLS_25({
-        ...{ 'onClick': {} },
-        type: "default",
-        block: true,
-        loading: (__VLS_ctx.paymentLoading),
-    }, ...__VLS_functionalComponentArgsRest(__VLS_25));
-    let __VLS_28;
-    let __VLS_29;
-    let __VLS_30;
-    const __VLS_31 = {
-        onClick: (__VLS_ctx.onStartPayment)
-    };
-    __VLS_27.slots.default;
-    var __VLS_27;
+    if (__VLS_ctx.canStartPayment) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ style: {} },
+        });
+        const __VLS_24 = {}.VanButton;
+        /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
+        // @ts-ignore
+        const __VLS_25 = __VLS_asFunctionalComponent(__VLS_24, new __VLS_24({
+            ...{ 'onClick': {} },
+            type: "default",
+            block: true,
+            loading: (__VLS_ctx.paymentLoading),
+        }));
+        const __VLS_26 = __VLS_25({
+            ...{ 'onClick': {} },
+            type: "default",
+            block: true,
+            loading: (__VLS_ctx.paymentLoading),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_25));
+        let __VLS_28;
+        let __VLS_29;
+        let __VLS_30;
+        const __VLS_31 = {
+            onClick: (__VLS_ctx.onStartPayment)
+        };
+        __VLS_27.slots.default;
+        var __VLS_27;
+    }
+    else {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "sub muted" },
+            ...{ style: {} },
+        });
+        (__VLS_ctx.paymentBlockedReason);
+    }
 }
 if (__VLS_ctx.order?.repaymentPlan) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -391,15 +493,23 @@ if (__VLS_ctx.order?.repaymentRecords?.length) {
 /** @type {__VLS_StyleScopedClasses['title']} */ ;
 /** @type {__VLS_StyleScopedClasses['sub']} */ ;
 /** @type {__VLS_StyleScopedClasses['card']} */ ;
+/** @type {__VLS_StyleScopedClasses['kyc-card']} */ ;
+/** @type {__VLS_StyleScopedClasses['title']} */ ;
+/** @type {__VLS_StyleScopedClasses['sub']} */ ;
+/** @type {__VLS_StyleScopedClasses['card']} */ ;
 /** @type {__VLS_StyleScopedClasses['kyc-done']} */ ;
 /** @type {__VLS_StyleScopedClasses['title']} */ ;
 /** @type {__VLS_StyleScopedClasses['sub']} */ ;
 /** @type {__VLS_StyleScopedClasses['card']} */ ;
 /** @type {__VLS_StyleScopedClasses['title']} */ ;
 /** @type {__VLS_StyleScopedClasses['sub']} */ ;
+/** @type {__VLS_StyleScopedClasses['sub']} */ ;
+/** @type {__VLS_StyleScopedClasses['muted']} */ ;
 /** @type {__VLS_StyleScopedClasses['card']} */ ;
 /** @type {__VLS_StyleScopedClasses['title']} */ ;
 /** @type {__VLS_StyleScopedClasses['sub']} */ ;
+/** @type {__VLS_StyleScopedClasses['sub']} */ ;
+/** @type {__VLS_StyleScopedClasses['muted']} */ ;
 /** @type {__VLS_StyleScopedClasses['card']} */ ;
 /** @type {__VLS_StyleScopedClasses['title']} */ ;
 /** @type {__VLS_StyleScopedClasses['hint']} */ ;
@@ -413,6 +523,13 @@ const __VLS_self = (await import('vue')).defineComponent({
             order: order,
             contractLoading: contractLoading,
             paymentLoading: paymentLoading,
+            shouldShowKycPrompt: shouldShowKycPrompt,
+            shouldShowKycBlocked: shouldShowKycBlocked,
+            kycBlockedReason: kycBlockedReason,
+            canStartContract: canStartContract,
+            canStartPayment: canStartPayment,
+            contractBlockedReason: contractBlockedReason,
+            paymentBlockedReason: paymentBlockedReason,
             statusText: statusText,
             contractStatusText: contractStatusText,
             batteryOptionText: batteryOptionText,

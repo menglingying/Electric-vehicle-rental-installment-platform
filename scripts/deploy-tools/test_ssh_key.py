@@ -11,7 +11,7 @@ def main():
     print("使用SSH密钥连接服务器 47.120.27.110...")
     
     # 使用私钥连接
-    key = paramiko.Ed25519Key.from_private_key_file(r'E:\电动车租赁分期平台\evlease_deploy_key')
+    key = paramiko.Ed25519Key.from_private_key_file(r'E:\电动车租赁分期平台\deploy\aliyun\evlease_deploy_key')
     ssh.connect('47.120.27.110', username='root', pkey=key)
     
     print("SSH密钥连接成功!")

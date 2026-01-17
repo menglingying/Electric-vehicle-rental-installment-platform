@@ -16,12 +16,16 @@
     </div>
 
     <!-- KYC状态提示 -->
-    <div class="card kyc-card" v-if="order && !order.kycCompleted">
+    <div class="card kyc-card" v-if="shouldShowKycPrompt">
       <div class="title">资料待补充</div>
       <div class="sub">请尽快完成实名认证，以便订单进入审核流程</div>
       <van-button type="primary" size="small" style="margin-top: 8px" @click="goToKyc">
         去补充资料
       </van-button>
+    </div>
+    <div class="card kyc-card" v-else-if="shouldShowKycBlocked">
+      <div class="title">资料未完成</div>
+      <div class="sub">{{ kycBlockedReason }}</div>
     </div>
     <div class="card kyc-done" v-else-if="order && order.kycCompleted">
       <div class="title">✓ 资料已提交</div>
@@ -30,20 +34,22 @@
     <div class="card" v-if="order">
       <div class="title">合同</div>
       <div class="sub">状态：{{ contractStatusText(order.contract?.status) }}</div>
-      <div style="padding-top: 12px; display: flex; gap: 12px">
+      <div v-if="canStartContract" style="padding-top: 12px; display: flex; gap: 12px">
         <van-button type="primary" block :loading="contractLoading" @click="onStartContract">
           发起电子签（预留）
         </van-button>
       </div>
+      <div v-else class="sub muted" style="margin-top: 8px">{{ contractBlockedReason }}</div>
     </div>
     <div class="card" v-if="order">
       <div class="title">收款（预留 H5 收银台）</div>
       <div class="sub">一期仅预留接口，实际对接第三方收银台后启用。</div>
-      <div style="padding-top: 12px; display: flex; gap: 12px">
+      <div v-if="canStartPayment" style="padding-top: 12px; display: flex; gap: 12px">
         <van-button type="default" block :loading="paymentLoading" @click="onStartPayment">
           打开收银台（预留）
         </van-button>
       </div>
+      <div v-else class="sub muted" style="margin-top: 8px">{{ paymentBlockedReason }}</div>
     </div>
     <div class="card" v-if="order?.repaymentPlan">
       <div class="title">租金计划（明细）</div>
@@ -70,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { showFailToast, showSuccessToast } from 'vant';
 import { getOrder, startContract, startPayment } from '@/services/api';
@@ -80,6 +86,46 @@ const router = useRouter();
 const order = ref<any>(null);
 const contractLoading = ref(false);
 const paymentLoading = ref(false);
+const loading = ref(false);
+const contractAllowedStatuses = new Set(['ACTIVE', 'DELIVERED', 'IN_USE', 'RETURNED']);
+const paymentAllowedStatuses = new Set(['ACTIVE', 'DELIVERED', 'IN_USE', 'RETURNED']);
+const shouldShowKycPrompt = computed(() => {
+  return !!order.value && !order.value.kycCompleted && order.value.status === 'PENDING_REVIEW';
+});
+const shouldShowKycBlocked = computed(() => {
+  return !!order.value && !order.value.kycCompleted && order.value.status !== 'PENDING_REVIEW';
+});
+const kycBlockedReason = computed(() => {
+  if (!order.value) return '';
+  if (order.value.status === 'REJECTED') return '订单已驳回，暂不支持补充资料';
+  if (order.value.status === 'CLOSED') return '订单已关闭，暂不支持补充资料';
+  if (order.value.status === 'SETTLED') return '订单已结清，暂不支持补充资料';
+  if (order.value.status === 'ACTIVE' || order.value.status === 'DELIVERED' || order.value.status === 'IN_USE' || order.value.status === 'RETURNED') {
+    return '订单已进入履约流程，暂不支持补充资料';
+  }
+  return '';
+});
+const canStartContract = computed(() => {
+  return !!order.value && contractAllowedStatuses.has(order.value.status);
+});
+const canStartPayment = computed(() => {
+  return !!order.value && paymentAllowedStatuses.has(order.value.status);
+});
+const contractBlockedReason = computed(() => {
+  return buildBlockedReason(order.value?.status, '合同');
+});
+const paymentBlockedReason = computed(() => {
+  return buildBlockedReason(order.value?.status, '收款');
+});
+
+function buildBlockedReason(status: string | undefined, target: string) {
+  if (!status) return '';
+  if (status === 'PENDING_REVIEW') return `订单待审核，暂不支持发起${target}`;
+  if (status === 'REJECTED') return `订单已驳回，暂不支持发起${target}`;
+  if (status === 'CLOSED') return `订单已关闭，暂不支持发起${target}`;
+  if (status === 'SETTLED') return `订单已结清，无需发起${target}`;
+  return `当前状态暂不支持发起${target}`;
+}
 
 function statusText(status: string) {
   switch (status) {
@@ -159,15 +205,43 @@ async function onStartPayment() {
   }
 }
 
-async function load() {
+async function load(options?: { bypassCache?: boolean }) {
+  if (loading.value) return;
+  loading.value = true;
   try {
-    order.value = await getOrder(String(route.params.id));
+    order.value = await getOrder(String(route.params.id), options);
   } catch (e: any) {
     showFailToast(e?.response?.data?.message ?? '加载失败');
+  } finally {
+    loading.value = false;
   }
 }
 
-onMounted(load);
+function refreshIfVisible() {
+  if (document.visibilityState === 'visible') {
+    void load({ bypassCache: true });
+  }
+}
+
+onMounted(() => {
+  void load({ bypassCache: true });
+  document.addEventListener('visibilitychange', refreshIfVisible);
+  window.addEventListener('focus', refreshIfVisible);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', refreshIfVisible);
+  window.removeEventListener('focus', refreshIfVisible);
+});
+
+watch(
+  () => route.params.id,
+  (next, prev) => {
+    if (next && next !== prev) {
+      void load({ bypassCache: true });
+    }
+  }
+);
 </script>
 
 <style scoped>
@@ -186,6 +260,9 @@ onMounted(load);
 .sub {
   color: #666;
   margin-top: 6px;
+}
+.muted {
+  color: #999;
 }
 .hint {
   color: #999;

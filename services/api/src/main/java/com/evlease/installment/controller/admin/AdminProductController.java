@@ -35,6 +35,7 @@ public class AdminProductController {
     String id,
     @NotNull String name,
     @NotNull Integer rentPerCycle,
+    @NotNull String categoryId,
     List<String> tags,
     String coverUrl,
     List<String> images,
@@ -47,6 +48,9 @@ public class AdminProductController {
   @PostMapping
   public Product upsert(@Valid @RequestBody UpsertRequest req) {
     if (req.rentPerCycle() <= 0) throw new ApiException(HttpStatus.BAD_REQUEST, "租金/期必须大于0");
+    if (req.categoryId() == null || req.categoryId().isBlank()) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "请选择车型分类");
+    }
     var id = (req.id() == null || req.id().isBlank()) ? ("p_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12)) : req.id();
     var tags = req.tags() == null ? List.<String>of() : req.tags();
     var normalizedTags = new ArrayList<String>();
@@ -76,6 +80,7 @@ public class AdminProductController {
       req.name(),
       coverUrl,
       req.rentPerCycle(),
+      req.categoryId(),
       normalizedTags,
       normalizedImages,
       req.frameConfig() == null ? "" : req.frameConfig(),

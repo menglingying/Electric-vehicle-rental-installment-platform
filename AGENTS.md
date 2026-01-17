@@ -7,6 +7,12 @@
 - Backend single test: `cd services/api && mvn test -Dtest=ClassName#methodName`
 - Type check: `vue-tsc -b` (run in apps/h5 or apps/admin)
 
+## Deploy
+- 部署命令: `python deploy\aliyun\deploy.py --ssh-key-file "deploy\aliyun\evlease_deploy_key"`
+- SSH密钥位置: `deploy/aliyun/evlease_deploy_key`
+- 服务器: 47.120.27.110 (H5:8088, Admin:8089)
+- 运维脚本: `scripts/deploy-tools/` (check_api.py, verify_deploy.py等)
+
 ## Code Style
 - **TypeScript**: strict mode, ES2022, path alias `@/*` → `src/*`, no ESLint configured
 - **Vue**: `<script setup lang="ts">` + Composition API, Vant (H5), Arco Design (Admin)
@@ -21,3 +27,14 @@
 ## Structure
 - `apps/h5` - H5 mobile (Vue3+Vant), `apps/admin` - PC admin (Vue3+Arco)
 - `services/api` - Spring Boot API (JPA+MySQL), `services/api-node` - Node mock server
+- `deploy/aliyun` - 阿里云部署配置、SSH密钥、docker-compose
+- `scripts/deploy-tools` - 运维检查脚本
+- `docs/` - 项目文档和进度
+
+## 更新日志
+
+### 2026-01-16
+- 修复H5人脸照片上传失败：增加文件大小/类型验证，移除capture属性
+- 修复分类名称乱码：清空乱码数据
+- 整理根目录：脚本移至scripts/deploy-tools/，SSH密钥移至deploy/aliyun/
+- 部署最新代码到生产服务器

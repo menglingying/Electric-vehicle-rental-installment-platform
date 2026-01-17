@@ -1,10 +1,18 @@
 import { h, onMounted, ref } from 'vue';
 import { Button, Message, Modal, Input } from '@arco-design/web-vue';
-import { approveOrder, closeOrder, deliverOrder, getOrderDetail, listOrders, pickupOrder, rejectOrder, returnOrder, settleOrder } from '@/services/api';
+import { adjustOrderPrice, approveOrder, closeOrder, deliverOrder, getOrderDetail, listOrders, pickupOrder, rejectOrder, returnOrder, settleOrder } from '@/services/api';
 import { downloadCsv } from '@/services/download';
 const rows = ref([]);
 const detailVisible = ref(false);
 const detail = ref(null);
+const adjustVisible = ref(false);
+const adjustForm = ref({
+    orderId: '',
+    rentPerPeriod: 0,
+    periods: 0,
+    cycleDays: 0,
+    reason: ''
+});
 // 辅助函数：电池配置文本
 function batteryOptionText(option) {
     const map = {
@@ -28,6 +36,53 @@ function maskIdCard(idCard) {
         return idCard || '-';
     return idCard.slice(0, 6) + '********' + idCard.slice(-4);
 }
+function employmentStatusText(code) {
+    const map = {
+        employed: '\u5168\u804c',
+        part_time: '\u517c\u804c',
+        freelancer: '\u81ea\u7531\u804c\u4e1a',
+        self_employed: '\u4e2a\u4f53\u7ecf\u8425',
+        student: '\u5b66\u751f',
+        unemployed: '\u5168\u804c',
+        retired: '\u9000\u4f11'
+    };
+    return map[code] || '-';
+}
+function incomeRangeText(code) {
+    const map = {
+        '0_1000': '0-1000',
+        '1000_2000': '1000-2000',
+        '2001_3000': '2001-3000',
+        '3001_4000': '3001-4000',
+        '4001_5000': '4001-5000',
+        '5001_8000': '5001-8000',
+        '8001_12000': '8001-12000',
+        '12001_20000': '12001-20000',
+        '20000_plus': '20000+',
+        '12001_plus': '12001+'
+    };
+    return map[code] || '-';
+}
+function contactRelationText(code) {
+    const map = {
+        parent: '\u7236\u6bcd',
+        spouse: '\u914d\u5076',
+        child: '\u5b50\u5973',
+        colleague: '\u540c\u4e8b',
+        friend: '\u670b\u53cb',
+        other: '\u5176\u4ed6'
+    };
+    return map[code] || code || '-';
+}
+function formatAddress(order) {
+    const parts = [
+        order?.homeProvinceName || order?.homeProvinceCode,
+        order?.homeCityName || order?.homeCityCode,
+        order?.homeDistrictName || order?.homeDistrictCode,
+        order?.homeAddressDetail
+    ].filter(Boolean);
+    return parts.length ? parts.join(' ') : '-';
+}
 const columns = [
     { title: 'ID', dataIndex: 'id' },
     { title: '手机号', dataIndex: 'phone' },
@@ -50,6 +105,7 @@ const columns = [
             if (status === 'PENDING_REVIEW') {
                 buttons.push(h(Button, { type: 'primary', size: 'small', onClick: () => approve(record.id) }, () => '通过'));
                 buttons.push(h(Button, { status: 'danger', size: 'small', onClick: () => reject(record.id) }, () => '驳回'));
+                buttons.push(h(Button, { size: 'small', onClick: () => openAdjust(record.id) }, () => '调价'));
                 buttons.push(h(Button, { size: 'small', onClick: () => close(record.id) }, () => '关闭'));
             }
             else if (status === 'ACTIVE') {
@@ -163,6 +219,50 @@ async function openDetail(id) {
     }
     catch (e) {
         Message.error(e?.response?.data?.message ?? '加载详情失败');
+    }
+}
+async function openAdjust(id) {
+    try {
+        const order = await getOrderDetail(id);
+        const plan = Array.isArray(order?.repaymentPlan) ? order.repaymentPlan : [];
+        const rentPerPeriod = plan.reduce((max, item) => Math.max(max, Number(item.amount || 0)), 0);
+        adjustForm.value = {
+            orderId: id,
+            rentPerPeriod: rentPerPeriod || 0,
+            periods: order.periods || 0,
+            cycleDays: order.cycleDays || 0,
+            reason: ''
+        };
+        adjustVisible.value = true;
+    }
+    catch (e) {
+        Message.error(e?.response?.data?.message ?? '加载订单失败');
+    }
+}
+async function submitAdjust() {
+    if (!adjustForm.value.orderId)
+        return;
+    if (!adjustForm.value.rentPerPeriod)
+        return Message.warning('请输入租金/期');
+    if (!adjustForm.value.periods)
+        return Message.warning('请输入期数');
+    if (!adjustForm.value.cycleDays)
+        return Message.warning('请输入周期');
+    if (!adjustForm.value.reason.trim())
+        return Message.warning('请输入调价原因');
+    try {
+        await adjustOrderPrice(adjustForm.value.orderId, {
+            rentPerPeriod: adjustForm.value.rentPerPeriod,
+            periods: adjustForm.value.periods,
+            cycleDays: adjustForm.value.cycleDays,
+            reason: adjustForm.value.reason
+        });
+        Message.success('调价成功');
+        adjustVisible.value = false;
+        await load();
+    }
+    catch (e) {
+        Message.error(e?.response?.data?.message ?? '调价失败');
     }
 }
 onMounted(load);
@@ -466,100 +566,88 @@ if (__VLS_ctx.detail) {
         /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
         // @ts-ignore
         const __VLS_93 = __VLS_asFunctionalComponent(__VLS_92, new __VLS_92({
-            label: "职业",
+            label: "就业状态",
         }));
         const __VLS_94 = __VLS_93({
-            label: "职业",
+            label: "就业状态",
         }, ...__VLS_functionalComponentArgsRest(__VLS_93));
         __VLS_95.slots.default;
-        (__VLS_ctx.detail.occupation || '-');
+        (__VLS_ctx.employmentStatusText(__VLS_ctx.detail.employmentStatus));
         var __VLS_95;
         const __VLS_96 = {}.ADescriptionsItem;
         /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
         // @ts-ignore
         const __VLS_97 = __VLS_asFunctionalComponent(__VLS_96, new __VLS_96({
-            label: "工作单位",
+            label: "单位/职业",
         }));
         const __VLS_98 = __VLS_97({
-            label: "工作单位",
+            label: "单位/职业",
         }, ...__VLS_functionalComponentArgsRest(__VLS_97));
         __VLS_99.slots.default;
-        (__VLS_ctx.detail.company || '-');
+        (__VLS_ctx.detail.employmentName || __VLS_ctx.detail.occupation || '-');
         var __VLS_99;
         const __VLS_100 = {}.ADescriptionsItem;
         /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
         // @ts-ignore
         const __VLS_101 = __VLS_asFunctionalComponent(__VLS_100, new __VLS_100({
-            label: "工作城市",
+            label: "月收入",
         }));
         const __VLS_102 = __VLS_101({
-            label: "工作城市",
+            label: "月收入",
         }, ...__VLS_functionalComponentArgsRest(__VLS_101));
         __VLS_103.slots.default;
-        (__VLS_ctx.detail.workCity || '-');
+        (__VLS_ctx.incomeRangeText(__VLS_ctx.detail.incomeRangeCode));
         var __VLS_103;
         const __VLS_104 = {}.ADescriptionsItem;
         /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
         // @ts-ignore
         const __VLS_105 = __VLS_asFunctionalComponent(__VLS_104, new __VLS_104({
-            label: "居住时长",
+            label: "住家地址",
+            span: (2),
         }));
         const __VLS_106 = __VLS_105({
-            label: "居住时长",
+            label: "住家地址",
+            span: (2),
         }, ...__VLS_functionalComponentArgsRest(__VLS_105));
         __VLS_107.slots.default;
-        (__VLS_ctx.detail.residenceDuration || '-');
+        (__VLS_ctx.formatAddress(__VLS_ctx.detail));
         var __VLS_107;
         const __VLS_108 = {}.ADescriptionsItem;
         /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
         // @ts-ignore
         const __VLS_109 = __VLS_asFunctionalComponent(__VLS_108, new __VLS_108({
-            label: "现居地址",
-            span: (2),
+            label: "紧急联系人",
         }));
         const __VLS_110 = __VLS_109({
-            label: "现居地址",
-            span: (2),
+            label: "紧急联系人",
         }, ...__VLS_functionalComponentArgsRest(__VLS_109));
         __VLS_111.slots.default;
-        (__VLS_ctx.detail.residenceAddress || '-');
+        (__VLS_ctx.detail.contactName);
         var __VLS_111;
         const __VLS_112 = {}.ADescriptionsItem;
         /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
         // @ts-ignore
         const __VLS_113 = __VLS_asFunctionalComponent(__VLS_112, new __VLS_112({
-            label: "紧急联系人",
+            label: "联系人电话",
         }));
         const __VLS_114 = __VLS_113({
-            label: "紧急联系人",
+            label: "联系人电话",
         }, ...__VLS_functionalComponentArgsRest(__VLS_113));
         __VLS_115.slots.default;
-        (__VLS_ctx.detail.contactName);
+        (__VLS_ctx.detail.contactPhone);
         var __VLS_115;
         const __VLS_116 = {}.ADescriptionsItem;
         /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
         // @ts-ignore
         const __VLS_117 = __VLS_asFunctionalComponent(__VLS_116, new __VLS_116({
-            label: "联系人电话",
+            label: "与客户关系",
         }));
         const __VLS_118 = __VLS_117({
-            label: "联系人电话",
+            label: "与客户关系",
         }, ...__VLS_functionalComponentArgsRest(__VLS_117));
         __VLS_119.slots.default;
-        (__VLS_ctx.detail.contactPhone);
+        (__VLS_ctx.contactRelationText(__VLS_ctx.detail.contactRelation));
         var __VLS_119;
-        const __VLS_120 = {}.ADescriptionsItem;
-        /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
-        // @ts-ignore
-        const __VLS_121 = __VLS_asFunctionalComponent(__VLS_120, new __VLS_120({
-            label: "与客户关系",
-        }));
-        const __VLS_122 = __VLS_121({
-            label: "与客户关系",
-        }, ...__VLS_functionalComponentArgsRest(__VLS_121));
-        __VLS_123.slots.default;
-        (__VLS_ctx.detail.contactRelation);
-        var __VLS_123;
         var __VLS_83;
     }
     if (__VLS_ctx.detail.kycCompleted) {
@@ -573,23 +661,46 @@ if (__VLS_ctx.detail) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
                 ...{ class: "label" },
             });
-            const __VLS_124 = {}.AImage;
+            const __VLS_120 = {}.AImage;
             /** @type {[typeof __VLS_components.AImage, typeof __VLS_components.aImage, ]} */ ;
             // @ts-ignore
-            const __VLS_125 = __VLS_asFunctionalComponent(__VLS_124, new __VLS_124({
+            const __VLS_121 = __VLS_asFunctionalComponent(__VLS_120, new __VLS_120({
                 src: (__VLS_ctx.detail.idCardFront),
                 width: "120",
                 height: "80",
                 fit: "cover",
             }));
-            const __VLS_126 = __VLS_125({
+            const __VLS_122 = __VLS_121({
                 src: (__VLS_ctx.detail.idCardFront),
+                width: "120",
+                height: "80",
+                fit: "cover",
+            }, ...__VLS_functionalComponentArgsRest(__VLS_121));
+        }
+        if (__VLS_ctx.detail.idCardBack) {
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+                ...{ class: "kyc-image" },
+            });
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+                ...{ class: "label" },
+            });
+            const __VLS_124 = {}.AImage;
+            /** @type {[typeof __VLS_components.AImage, typeof __VLS_components.aImage, ]} */ ;
+            // @ts-ignore
+            const __VLS_125 = __VLS_asFunctionalComponent(__VLS_124, new __VLS_124({
+                src: (__VLS_ctx.detail.idCardBack),
+                width: "120",
+                height: "80",
+                fit: "cover",
+            }));
+            const __VLS_126 = __VLS_125({
+                src: (__VLS_ctx.detail.idCardBack),
                 width: "120",
                 height: "80",
                 fit: "cover",
             }, ...__VLS_functionalComponentArgsRest(__VLS_125));
         }
-        if (__VLS_ctx.detail.idCardBack) {
+        if (__VLS_ctx.detail.facePhoto) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
                 ...{ class: "kyc-image" },
             });
@@ -600,111 +711,231 @@ if (__VLS_ctx.detail) {
             /** @type {[typeof __VLS_components.AImage, typeof __VLS_components.aImage, ]} */ ;
             // @ts-ignore
             const __VLS_129 = __VLS_asFunctionalComponent(__VLS_128, new __VLS_128({
-                src: (__VLS_ctx.detail.idCardBack),
-                width: "120",
+                src: (__VLS_ctx.detail.facePhoto),
+                width: "80",
                 height: "80",
                 fit: "cover",
             }));
             const __VLS_130 = __VLS_129({
-                src: (__VLS_ctx.detail.idCardBack),
-                width: "120",
+                src: (__VLS_ctx.detail.facePhoto),
+                width: "80",
                 height: "80",
                 fit: "cover",
             }, ...__VLS_functionalComponentArgsRest(__VLS_129));
         }
-        if (__VLS_ctx.detail.facePhoto) {
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-                ...{ class: "kyc-image" },
-            });
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-                ...{ class: "label" },
-            });
-            const __VLS_132 = {}.AImage;
-            /** @type {[typeof __VLS_components.AImage, typeof __VLS_components.aImage, ]} */ ;
-            // @ts-ignore
-            const __VLS_133 = __VLS_asFunctionalComponent(__VLS_132, new __VLS_132({
-                src: (__VLS_ctx.detail.facePhoto),
-                width: "80",
-                height: "80",
-                fit: "cover",
-            }));
-            const __VLS_134 = __VLS_133({
-                src: (__VLS_ctx.detail.facePhoto),
-                width: "80",
-                height: "80",
-                fit: "cover",
-            }, ...__VLS_functionalComponentArgsRest(__VLS_133));
-        }
     }
-    const __VLS_136 = {}.ADivider;
+    const __VLS_132 = {}.ADivider;
     /** @type {[typeof __VLS_components.ADivider, typeof __VLS_components.aDivider, ]} */ ;
     // @ts-ignore
-    const __VLS_137 = __VLS_asFunctionalComponent(__VLS_136, new __VLS_136({}));
-    const __VLS_138 = __VLS_137({}, ...__VLS_functionalComponentArgsRest(__VLS_137));
+    const __VLS_133 = __VLS_asFunctionalComponent(__VLS_132, new __VLS_132({}));
+    const __VLS_134 = __VLS_133({}, ...__VLS_functionalComponentArgsRest(__VLS_133));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ style: {} },
     });
-    const __VLS_140 = {}.ATable;
+    const __VLS_136 = {}.ATable;
     /** @type {[typeof __VLS_components.ATable, typeof __VLS_components.aTable, typeof __VLS_components.ATable, typeof __VLS_components.aTable, ]} */ ;
     // @ts-ignore
-    const __VLS_141 = __VLS_asFunctionalComponent(__VLS_140, new __VLS_140({
+    const __VLS_137 = __VLS_asFunctionalComponent(__VLS_136, new __VLS_136({
         data: (__VLS_ctx.detail.statusLogs || []),
         pagination: (false),
         size: "small",
     }));
-    const __VLS_142 = __VLS_141({
+    const __VLS_138 = __VLS_137({
         data: (__VLS_ctx.detail.statusLogs || []),
         pagination: (false),
         size: "small",
+    }, ...__VLS_functionalComponentArgsRest(__VLS_137));
+    __VLS_139.slots.default;
+    const __VLS_140 = {}.ATableColumn;
+    /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
+    // @ts-ignore
+    const __VLS_141 = __VLS_asFunctionalComponent(__VLS_140, new __VLS_140({
+        title: "时间",
+        dataIndex: "at",
+    }));
+    const __VLS_142 = __VLS_141({
+        title: "时间",
+        dataIndex: "at",
     }, ...__VLS_functionalComponentArgsRest(__VLS_141));
-    __VLS_143.slots.default;
     const __VLS_144 = {}.ATableColumn;
     /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
     // @ts-ignore
     const __VLS_145 = __VLS_asFunctionalComponent(__VLS_144, new __VLS_144({
-        title: "时间",
-        dataIndex: "at",
+        title: "动作",
+        dataIndex: "action",
     }));
     const __VLS_146 = __VLS_145({
-        title: "时间",
-        dataIndex: "at",
+        title: "动作",
+        dataIndex: "action",
     }, ...__VLS_functionalComponentArgsRest(__VLS_145));
     const __VLS_148 = {}.ATableColumn;
     /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
     // @ts-ignore
     const __VLS_149 = __VLS_asFunctionalComponent(__VLS_148, new __VLS_148({
-        title: "动作",
-        dataIndex: "action",
+        title: "状态",
+        dataIndex: "status",
     }));
     const __VLS_150 = __VLS_149({
-        title: "动作",
-        dataIndex: "action",
+        title: "状态",
+        dataIndex: "status",
     }, ...__VLS_functionalComponentArgsRest(__VLS_149));
     const __VLS_152 = {}.ATableColumn;
     /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
     // @ts-ignore
     const __VLS_153 = __VLS_asFunctionalComponent(__VLS_152, new __VLS_152({
-        title: "状态",
-        dataIndex: "status",
+        title: "来源",
+        dataIndex: "by",
     }));
     const __VLS_154 = __VLS_153({
-        title: "状态",
-        dataIndex: "status",
+        title: "来源",
+        dataIndex: "by",
     }, ...__VLS_functionalComponentArgsRest(__VLS_153));
-    const __VLS_156 = {}.ATableColumn;
-    /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
-    // @ts-ignore
-    const __VLS_157 = __VLS_asFunctionalComponent(__VLS_156, new __VLS_156({
-        title: "来源",
-        dataIndex: "by",
-    }));
-    const __VLS_158 = __VLS_157({
-        title: "来源",
-        dataIndex: "by",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_157));
-    var __VLS_143;
+    var __VLS_139;
 }
 var __VLS_19;
+const __VLS_156 = {}.AModal;
+/** @type {[typeof __VLS_components.AModal, typeof __VLS_components.aModal, typeof __VLS_components.AModal, typeof __VLS_components.aModal, ]} */ ;
+// @ts-ignore
+const __VLS_157 = __VLS_asFunctionalComponent(__VLS_156, new __VLS_156({
+    ...{ 'onOk': {} },
+    visible: (__VLS_ctx.adjustVisible),
+    title: "订单调价",
+}));
+const __VLS_158 = __VLS_157({
+    ...{ 'onOk': {} },
+    visible: (__VLS_ctx.adjustVisible),
+    title: "订单调价",
+}, ...__VLS_functionalComponentArgsRest(__VLS_157));
+let __VLS_160;
+let __VLS_161;
+let __VLS_162;
+const __VLS_163 = {
+    onOk: (__VLS_ctx.submitAdjust)
+};
+__VLS_159.slots.default;
+const __VLS_164 = {}.AForm;
+/** @type {[typeof __VLS_components.AForm, typeof __VLS_components.aForm, typeof __VLS_components.AForm, typeof __VLS_components.aForm, ]} */ ;
+// @ts-ignore
+const __VLS_165 = __VLS_asFunctionalComponent(__VLS_164, new __VLS_164({
+    model: (__VLS_ctx.adjustForm),
+    layout: "vertical",
+}));
+const __VLS_166 = __VLS_165({
+    model: (__VLS_ctx.adjustForm),
+    layout: "vertical",
+}, ...__VLS_functionalComponentArgsRest(__VLS_165));
+__VLS_167.slots.default;
+const __VLS_168 = {}.AFormItem;
+/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
+// @ts-ignore
+const __VLS_169 = __VLS_asFunctionalComponent(__VLS_168, new __VLS_168({
+    label: "租金/期（元）",
+    field: "rentPerPeriod",
+}));
+const __VLS_170 = __VLS_169({
+    label: "租金/期（元）",
+    field: "rentPerPeriod",
+}, ...__VLS_functionalComponentArgsRest(__VLS_169));
+__VLS_171.slots.default;
+const __VLS_172 = {}.AInputNumber;
+/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
+// @ts-ignore
+const __VLS_173 = __VLS_asFunctionalComponent(__VLS_172, new __VLS_172({
+    modelValue: (__VLS_ctx.adjustForm.rentPerPeriod),
+    min: (1),
+}));
+const __VLS_174 = __VLS_173({
+    modelValue: (__VLS_ctx.adjustForm.rentPerPeriod),
+    min: (1),
+}, ...__VLS_functionalComponentArgsRest(__VLS_173));
+var __VLS_171;
+const __VLS_176 = {}.AFormItem;
+/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
+// @ts-ignore
+const __VLS_177 = __VLS_asFunctionalComponent(__VLS_176, new __VLS_176({
+    label: "期数",
+    field: "periods",
+}));
+const __VLS_178 = __VLS_177({
+    label: "期数",
+    field: "periods",
+}, ...__VLS_functionalComponentArgsRest(__VLS_177));
+__VLS_179.slots.default;
+const __VLS_180 = {}.AInputNumber;
+/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
+// @ts-ignore
+const __VLS_181 = __VLS_asFunctionalComponent(__VLS_180, new __VLS_180({
+    modelValue: (__VLS_ctx.adjustForm.periods),
+    min: (3),
+}));
+const __VLS_182 = __VLS_181({
+    modelValue: (__VLS_ctx.adjustForm.periods),
+    min: (3),
+}, ...__VLS_functionalComponentArgsRest(__VLS_181));
+var __VLS_179;
+const __VLS_184 = {}.AFormItem;
+/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
+// @ts-ignore
+const __VLS_185 = __VLS_asFunctionalComponent(__VLS_184, new __VLS_184({
+    label: "周期（天）",
+    field: "cycleDays",
+}));
+const __VLS_186 = __VLS_185({
+    label: "周期（天）",
+    field: "cycleDays",
+}, ...__VLS_functionalComponentArgsRest(__VLS_185));
+__VLS_187.slots.default;
+const __VLS_188 = {}.AInputNumber;
+/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
+// @ts-ignore
+const __VLS_189 = __VLS_asFunctionalComponent(__VLS_188, new __VLS_188({
+    modelValue: (__VLS_ctx.adjustForm.cycleDays),
+    min: (7),
+}));
+const __VLS_190 = __VLS_189({
+    modelValue: (__VLS_ctx.adjustForm.cycleDays),
+    min: (7),
+}, ...__VLS_functionalComponentArgsRest(__VLS_189));
+var __VLS_187;
+const __VLS_192 = {}.AFormItem;
+/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
+// @ts-ignore
+const __VLS_193 = __VLS_asFunctionalComponent(__VLS_192, new __VLS_192({
+    label: "调价原因",
+    field: "reason",
+}));
+const __VLS_194 = __VLS_193({
+    label: "调价原因",
+    field: "reason",
+}, ...__VLS_functionalComponentArgsRest(__VLS_193));
+__VLS_195.slots.default;
+const __VLS_196 = {}.AInput;
+/** @type {[typeof __VLS_components.AInput, typeof __VLS_components.aInput, ]} */ ;
+// @ts-ignore
+const __VLS_197 = __VLS_asFunctionalComponent(__VLS_196, new __VLS_196({
+    modelValue: (__VLS_ctx.adjustForm.reason),
+    placeholder: "请输入原因",
+}));
+const __VLS_198 = __VLS_197({
+    modelValue: (__VLS_ctx.adjustForm.reason),
+    placeholder: "请输入原因",
+}, ...__VLS_functionalComponentArgsRest(__VLS_197));
+var __VLS_195;
+const __VLS_200 = {}.AAlert;
+/** @type {[typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, ]} */ ;
+// @ts-ignore
+const __VLS_201 = __VLS_asFunctionalComponent(__VLS_200, new __VLS_200({
+    type: "warning",
+    showIcon: (true),
+    title: "调价仅限审核前，调价后需重签合同。",
+}));
+const __VLS_202 = __VLS_201({
+    type: "warning",
+    showIcon: (true),
+    title: "调价仅限审核前，调价后需重签合同。",
+}, ...__VLS_functionalComponentArgsRest(__VLS_201));
+var __VLS_167;
+var __VLS_159;
 /** @type {__VLS_StyleScopedClasses['kyc-image']} */ ;
 /** @type {__VLS_StyleScopedClasses['label']} */ ;
 /** @type {__VLS_StyleScopedClasses['kyc-image']} */ ;
@@ -718,10 +949,17 @@ const __VLS_self = (await import('vue')).defineComponent({
             rows: rows,
             detailVisible: detailVisible,
             detail: detail,
+            adjustVisible: adjustVisible,
+            adjustForm: adjustForm,
             batteryOptionText: batteryOptionText,
             repaymentMethodText: repaymentMethodText,
             maskIdCard: maskIdCard,
+            employmentStatusText: employmentStatusText,
+            incomeRangeText: incomeRangeText,
+            contactRelationText: contactRelationText,
+            formatAddress: formatAddress,
             columns: columns,
+            submitAdjust: submitAdjust,
             exportOrders: exportOrders,
         };
     },

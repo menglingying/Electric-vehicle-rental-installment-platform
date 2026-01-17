@@ -3,6 +3,7 @@ import Login from '@/views/Login.vue';
 import MainLayout from '@/views/MainLayout.vue';
 import Dashboard from '@/views/Dashboard.vue';
 import Products from '@/views/Products.vue';
+import Categories from '@/views/Categories.vue';
 import Orders from '@/views/Orders.vue';
 import Blacklist from '@/views/Blacklist.vue';
 import Repayments from '@/views/Repayments.vue';
@@ -20,6 +21,7 @@ export function createRouter() {
                 component: MainLayout,
                 children: [
                     { path: 'dashboard', component: Dashboard },
+                    { path: 'categories', component: Categories },
                     { path: 'products', component: Products },
                     { path: 'orders', component: Orders },
                     { path: 'repayments', component: Repayments },

@@ -3,13 +3,18 @@ package com.evlease.installment.controller.admin;
 import com.evlease.installment.common.ApiException;
 import com.evlease.installment.model.Order;
 import com.evlease.installment.model.OrderStatus;
+import com.evlease.installment.repo.ContractRepository;
+import com.evlease.installment.repo.OrderPriceAdjustmentRepository;
 import com.evlease.installment.repo.OrderRepository;
 import com.evlease.installment.service.OrderEnricher;
 import com.evlease.installment.service.OrderLogService;
+import com.evlease.installment.service.OrderPlanService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,11 +29,24 @@ public class AdminOrderController {
   private final OrderRepository orderRepository;
   private final OrderEnricher orderEnricher;
   private final OrderLogService orderLogService;
+  private final OrderPlanService orderPlanService;
+  private final OrderPriceAdjustmentRepository adjustmentRepository;
+  private final ContractRepository contractRepository;
 
-  public AdminOrderController(OrderRepository orderRepository, OrderEnricher orderEnricher, OrderLogService orderLogService) {
+  public AdminOrderController(
+    OrderRepository orderRepository,
+    OrderEnricher orderEnricher,
+    OrderLogService orderLogService,
+    OrderPlanService orderPlanService,
+    OrderPriceAdjustmentRepository adjustmentRepository,
+    ContractRepository contractRepository
+  ) {
     this.orderRepository = orderRepository;
     this.orderEnricher = orderEnricher;
     this.orderLogService = orderLogService;
+    this.orderPlanService = orderPlanService;
+    this.adjustmentRepository = adjustmentRepository;
+    this.contractRepository = contractRepository;
   }
 
   @GetMapping
@@ -123,6 +141,57 @@ public class AdminOrderController {
     order.setStatus(OrderStatus.CLOSED);
     order.setClosedAt(Instant.now());
     orderLogService.add(order, "CLOSED", "ADMIN");
+    orderRepository.save(order);
+    return order;
+  }
+
+  public record PriceAdjustRequest(
+    @Min(1) int rentPerPeriod,
+    @Min(3) int periods,
+    @Min(7) int cycleDays,
+    @NotBlank String reason
+  ) {}
+
+  @PostMapping("/{id}/price-adjust")
+  public Order adjustPrice(@PathVariable String id, @Valid @RequestBody PriceAdjustRequest req) {
+    var order = orderRepository.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "订单不存在"));
+    if (order.getStatus() != OrderStatus.PENDING_REVIEW) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "仅审核前订单可调价");
+    }
+
+    var beforeRent = order.getRepaymentPlan() == null
+      ? 0
+      : order.getRepaymentPlan().stream().mapToInt(item -> item.getAmount()).max().orElse(0);
+    var beforePeriods = order.getPeriods();
+    var beforeCycleDays = order.getCycleDays();
+
+    order.setPeriods(req.periods());
+    order.setCycleDays(req.cycleDays());
+    order.setRepaymentPlan(orderPlanService.buildRentPlan(req.rentPerPeriod(), req.periods(), req.cycleDays(), order.getDepositRatio()));
+
+    var adjustment = new com.evlease.installment.model.OrderPriceAdjustment();
+    adjustment.setId("adj_" + UUID.randomUUID().toString().replace("-", ""));
+    adjustment.setOrderId(order.getId());
+    adjustment.setBeforeRentPerPeriod(beforeRent);
+    adjustment.setAfterRentPerPeriod(req.rentPerPeriod());
+    adjustment.setBeforePeriods(beforePeriods);
+    adjustment.setAfterPeriods(req.periods());
+    adjustment.setBeforeCycleDays(beforeCycleDays);
+    adjustment.setAfterCycleDays(req.cycleDays());
+    adjustment.setReason(req.reason());
+    adjustment.setOperatorName("admin");
+    adjustment.setCreatedAt(Instant.now());
+    adjustmentRepository.save(adjustment);
+
+    var contract = contractRepository.findById(order.getId()).orElse(null);
+    if (contract != null) {
+      contract.setStatus("VOID");
+      contract.setVoidReason("PRICE_ADJUST");
+      contract.setUpdatedAt(Instant.now());
+      contractRepository.save(contract);
+    }
+
+    orderLogService.add(order, "PRICE_ADJUSTED", "ADMIN", l -> l.setActor(req.reason()));
     orderRepository.save(order);
     return order;
   }

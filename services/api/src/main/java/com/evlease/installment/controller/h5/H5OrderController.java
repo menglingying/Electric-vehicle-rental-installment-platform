@@ -5,19 +5,18 @@ import com.evlease.installment.auth.PrincipalType;
 import com.evlease.installment.common.ApiException;
 import com.evlease.installment.model.Order;
 import com.evlease.installment.model.OrderStatus;
-import com.evlease.installment.model.RepaymentPlanItem;
 import com.evlease.installment.repo.BlacklistRepository;
 import com.evlease.installment.repo.OrderRepository;
 import com.evlease.installment.repo.ProductRepository;
 import com.evlease.installment.service.OrderEnricher;
 import com.evlease.installment.service.OrderLogService;
+import com.evlease.installment.service.OrderPlanService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -37,19 +36,22 @@ public class H5OrderController {
   private final BlacklistRepository blacklistRepository;
   private final OrderEnricher orderEnricher;
   private final OrderLogService orderLogService;
+  private final OrderPlanService orderPlanService;
 
   public H5OrderController(
     ProductRepository productRepository,
     OrderRepository orderRepository,
     BlacklistRepository blacklistRepository,
     OrderEnricher orderEnricher,
-    OrderLogService orderLogService
+    OrderLogService orderLogService,
+    OrderPlanService orderPlanService
   ) {
     this.productRepository = productRepository;
     this.orderRepository = orderRepository;
     this.blacklistRepository = blacklistRepository;
     this.orderEnricher = orderEnricher;
     this.orderLogService = orderLogService;
+    this.orderPlanService = orderPlanService;
   }
 
   public record CreateOrderRequest(
@@ -98,7 +100,7 @@ public class H5OrderController {
       rentPerCycle = product.getRentWithoutBattery();
     }
 
-    order.setRepaymentPlan(buildRentPlan(rentPerCycle, req.periods(), req.cycleDays(), req.depositRatio()));
+    order.setRepaymentPlan(orderPlanService.buildRentPlan(rentPerCycle, req.periods(), req.cycleDays(), req.depositRatio()));
     order.setStatusLogs(new ArrayList<>());
     orderLogService.add(order, "CREATED", "H5", l -> l.setActor(phone));
     orderRepository.save(order);
@@ -121,27 +123,4 @@ public class H5OrderController {
     return orderEnricher.enrich(order);
   }
 
-  private List<RepaymentPlanItem> buildRentPlan(int rentPerCycle, int periods, int cycleDays, double depositRatio) {
-    var today = LocalDate.now();
-    var items = new ArrayList<RepaymentPlanItem>();
-    for (int i = 1; i <= periods; i++) {
-      var dueDate = today.plusDays((long) cycleDays * i);
-      items.add(new RepaymentPlanItem(i, dueDate, rentPerCycle));
-    }
-
-    if (depositRatio <= 0) return items;
-
-    var totalRent = (long) rentPerCycle * periods;
-    var deposit = Math.round(totalRent * depositRatio);
-    var remaining = (int) Math.min(Integer.MAX_VALUE, deposit);
-
-    for (int i = items.size() - 1; i >= 0 && remaining > 0; i--) {
-      var amount = items.get(i).getAmount();
-      var offset = Math.min(amount, remaining);
-      items.get(i).setAmount(amount - offset);
-      remaining -= offset;
-    }
-
-    return items;
-  }
 }

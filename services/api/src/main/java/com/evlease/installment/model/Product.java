@@ -19,6 +19,7 @@ public class Product {
   private String name;
   private String coverUrl;
   private int rentPerCycle;
+  private String categoryId;
 
   @ElementCollection(fetch = FetchType.EAGER)
   @CollectionTable(name = "product_tag", joinColumns = @JoinColumn(name = "product_id"))
@@ -45,6 +46,7 @@ public class Product {
     String name,
     String coverUrl,
     int rentPerCycle,
+    String categoryId,
     List<String> tags,
     List<String> images,
     String frameConfig,
@@ -56,6 +58,7 @@ public class Product {
     this.name = name;
     this.coverUrl = coverUrl;
     this.rentPerCycle = rentPerCycle;
+    this.categoryId = categoryId;
     this.tags = tags;
     this.images = images;
     this.frameConfig = frameConfig;
@@ -94,6 +97,14 @@ public class Product {
 
   public void setRentPerCycle(int rentPerCycle) {
     this.rentPerCycle = rentPerCycle;
+  }
+
+  public String getCategoryId() {
+    return categoryId;
+  }
+
+  public void setCategoryId(String categoryId) {
+    this.categoryId = categoryId;
   }
 
   public List<String> getTags() {

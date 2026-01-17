@@ -6,6 +6,7 @@ export type Product = {
   coverUrl: string;
   images?: string[];
   rentPerCycle: number;
+  categoryId?: string;
   tags: string[];
   frameConfig?: string;
   batteryConfig?: string;
@@ -68,9 +69,40 @@ export async function listProducts() {
   return data as Product[];
 }
 
+export async function listProductsByCategory(categoryId: string) {
+  const { data } = await http.get('/h5/products', { params: { categoryId } });
+  return data as Product[];
+}
+
 export async function getProduct(id: string) {
   const { data } = await http.get(`/h5/products/${id}`);
   return data as Product;
+}
+
+export type CategoryNode = {
+  id: string;
+  name: string;
+  level: number;
+  children?: CategoryNode[];
+};
+
+export async function listCategoryTree() {
+  const { data } = await http.get('/h5/categories/tree');
+  return data as CategoryNode[];
+}
+
+export type DictItem = { code: string; label: string };
+
+export async function listDictItems(dictCode: string) {
+  const { data } = await http.get(`/common/dicts/${dictCode}`);
+  return data as DictItem[];
+}
+
+export type RegionItem = { code: string; name: string };
+
+export async function listRegions(parentCode?: string) {
+  const { data } = await http.get('/common/regions', { params: { parentCode } });
+  return data as RegionItem[];
 }
 
 export async function createOrder(payload: {
@@ -90,8 +122,9 @@ export async function listOrders() {
   return data as Order[];
 }
 
-export async function getOrder(id: string) {
-  const { data } = await http.get(`/h5/orders/${id}`);
+export async function getOrder(id: string, options?: { bypassCache?: boolean }) {
+  const params = options?.bypassCache ? { t: Date.now() } : undefined;
+  const { data } = await http.get(`/h5/orders/${id}`, { params });
   return data as any;
 }
 
@@ -123,14 +156,16 @@ export async function submitKyc(orderId: string, kycData: {
   facePhoto: string;
   realName: string;
   idCardNumber: string;
-  occupation?: string;
-  company?: string;
-  workCity?: string;
-  residenceAddress?: string;
-  residenceDuration?: string;
   contactName: string;
   contactPhone: string;
   contactRelation: string;
+  employmentStatus: string;
+  employmentName: string;
+  incomeRangeCode: string;
+  homeProvinceCode: string;
+  homeCityCode: string;
+  homeDistrictCode: string;
+  homeAddressDetail: string;
 }) {
   const { data } = await http.post(`/h5/orders/${orderId}/kyc`, kycData);
   return data;

@@ -15,6 +15,7 @@ public class Contract {
   private String orderId;
   private String status;
   private String signUrl;
+  private String voidReason;
   private Instant createdAt;
   private Instant updatedAt;
 
@@ -50,6 +51,14 @@ public class Contract {
 
   public void setSignUrl(String signUrl) {
     this.signUrl = signUrl;
+  }
+
+  public String getVoidReason() {
+    return voidReason;
+  }
+
+  public void setVoidReason(String voidReason) {
+    this.voidReason = voidReason;
   }
 
   public Instant getCreatedAt() {

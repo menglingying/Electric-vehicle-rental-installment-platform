@@ -6,11 +6,22 @@ export type Product = {
   coverUrl?: string;
   images?: string[];
   rentPerCycle: number;
+  categoryId?: string;
   tags: string[];
   frameConfig?: string;
   batteryConfig?: string;
   rentWithoutBattery?: number;
   rentWithBattery?: number;
+};
+
+export type CategoryNode = {
+  id: string;
+  parentId?: string;
+  name: string;
+  level: number;
+  status: number;
+  sort: number;
+  children?: CategoryNode[];
 };
 
 export type Order = {
@@ -43,7 +54,7 @@ export async function listProducts() {
   return data as Product[];
 }
 
-export async function upsertProduct(payload: Partial<Product> & { name: string; rentPerCycle: number }) {
+export async function upsertProduct(payload: Partial<Product> & { name: string; rentPerCycle: number; categoryId: string }) {
   const { data } = await http.post('/admin/products', payload);
   return data as Product;
 }
@@ -104,6 +115,16 @@ export async function closeOrder(orderId: string) {
   return data;
 }
 
+export async function adjustOrderPrice(orderId: string, payload: {
+  rentPerPeriod: number;
+  periods: number;
+  cycleDays: number;
+  reason: string;
+}) {
+  const { data } = await http.post(`/admin/orders/${orderId}/price-adjust`, payload);
+  return data;
+}
+
 export async function getRepayments(orderId: string) {
   const { data } = await http.get('/admin/repayments', { params: { orderId } });
   return data as any;
@@ -159,4 +180,24 @@ export async function addBlacklist(phone: string, reason: string) {
 export async function removeBlacklist(phone: string) {
   const { data } = await http.delete(`/admin/blacklist/${encodeURIComponent(phone)}`);
   return data;
+}
+
+export async function listCategories() {
+  const { data } = await http.get('/admin/categories/tree');
+  return data as CategoryNode[];
+}
+
+export async function upsertCategory(payload: {
+  id?: string;
+  parentId?: string;
+  name: string;
+  sort?: number;
+  status?: number;
+}) {
+  const { data } = await http.post('/admin/categories', payload);
+  return data as CategoryNode;
+}
+
+export async function deleteCategory(id: string) {
+  await http.delete(`/admin/categories/${encodeURIComponent(id)}`);
 }

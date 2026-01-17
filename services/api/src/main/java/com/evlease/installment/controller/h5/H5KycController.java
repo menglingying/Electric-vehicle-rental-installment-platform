@@ -5,13 +5,16 @@ import com.evlease.installment.auth.PrincipalType;
 import com.evlease.installment.common.ApiException;
 import com.evlease.installment.config.AppProperties;
 import com.evlease.installment.repo.OrderRepository;
+import com.evlease.installment.repo.RegionRepository;
 import com.evlease.installment.service.OrderLogService;
+import com.evlease.installment.util.RegionNameUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -30,15 +33,18 @@ public class H5KycController {
   private final AppProperties appProperties;
   private final OrderRepository orderRepository;
   private final OrderLogService orderLogService;
+  private final RegionRepository regionRepository;
 
   public H5KycController(
     AppProperties appProperties,
     OrderRepository orderRepository,
-    OrderLogService orderLogService
+    OrderLogService orderLogService,
+    RegionRepository regionRepository
   ) {
     this.appProperties = appProperties;
     this.orderRepository = orderRepository;
     this.orderLogService = orderLogService;
+    this.regionRepository = regionRepository;
   }
 
   public record UploadResponse(String url) {}
@@ -76,14 +82,16 @@ public class H5KycController {
     @NotBlank String facePhoto,
     @NotBlank String realName,
     @NotBlank String idCardNumber,
-    String occupation,
-    String company,
-    String workCity,
-    String residenceAddress,
-    String residenceDuration,
     @NotBlank String contactName,
     @NotBlank String contactPhone,
-    @NotBlank String contactRelation
+    @NotBlank String contactRelation,
+    @NotBlank String employmentStatus,
+    @NotBlank String employmentName,
+    @NotBlank String incomeRangeCode,
+    @NotBlank String homeProvinceCode,
+    @NotBlank String homeCityCode,
+    @NotBlank String homeDistrictCode,
+    @NotBlank String homeAddressDetail
   ) {}
 
   @PostMapping("/orders/{orderId}/kyc")
@@ -105,20 +113,47 @@ public class H5KycController {
     order.setFacePhoto(req.facePhoto());
     order.setRealName(req.realName());
     order.setIdCardNumber(req.idCardNumber());
-    order.setOccupation(req.occupation() != null ? req.occupation() : "");
-    order.setCompany(req.company() != null ? req.company() : "");
-    order.setWorkCity(req.workCity() != null ? req.workCity() : "");
-    order.setResidenceAddress(req.residenceAddress() != null ? req.residenceAddress() : "");
-    order.setResidenceDuration(req.residenceDuration() != null ? req.residenceDuration() : "");
     order.setContactName(req.contactName());
     order.setContactPhone(req.contactPhone());
     order.setContactRelation(req.contactRelation());
+    order.setEmploymentStatus(req.employmentStatus());
+    order.setOccupation(req.employmentName());
+    order.setIncomeRangeCode(req.incomeRangeCode());
+    order.setHomeProvinceCode(req.homeProvinceCode());
+    order.setHomeCityCode(req.homeCityCode());
+    order.setHomeDistrictCode(req.homeDistrictCode());
+    order.setHomeAddressDetail(req.homeAddressDetail());
+    order.setResidenceAddress(buildResidenceAddress(
+      req.homeProvinceCode(),
+      req.homeCityCode(),
+      req.homeDistrictCode(),
+      req.homeAddressDetail()
+    ));
     order.setKycCompleted(true);
 
     orderLogService.add(order, "KYC_SUBMITTED", "H5", l -> l.setActor(principal.phoneOrUsername()));
     orderRepository.save(order);
 
     return java.util.Map.of("success", true);
+  }
+
+  private String buildResidenceAddress(String provinceCode, String cityCode, String districtCode, String detail) {
+    var parts = new ArrayList<String>();
+    var provinceName = resolveRegionName(provinceCode);
+    var cityName = resolveRegionName(cityCode);
+    var districtName = resolveRegionName(districtCode);
+    if (provinceName != null && !provinceName.isBlank()) parts.add(provinceName);
+    if (cityName != null && !cityName.isBlank()) parts.add(cityName);
+    if (districtName != null && !districtName.isBlank()) parts.add(districtName);
+    if (detail != null && !detail.isBlank()) parts.add(detail);
+    return String.join(" ", parts);
+  }
+
+  private String resolveRegionName(String code) {
+    if (code == null || code.isBlank()) return null;
+    return regionRepository.findById(code)
+      .map(region -> RegionNameUtil.normalize(region.getName()))
+      .orElse(code);
   }
 
   private String guessExt(String filename, String contentType) {
