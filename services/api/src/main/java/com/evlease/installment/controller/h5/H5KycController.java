@@ -124,7 +124,7 @@ public class H5KycController {
     order.setIdCardBack(req.idCardBack());
     order.setFacePhoto(req.facePhoto());
     order.setRealName(req.realName());
-    order.setIdCardNumber(req.idCardNumber());
+    order.setIdCardNumber(normalizeIdCardNo(req.idCardNumber()));
     order.setContactName(req.contactName());
     order.setContactPhone(req.contactPhone());
     order.setContactRelation(req.contactRelation());
@@ -219,5 +219,14 @@ public class H5KycController {
       }
     }
     return "";
+  }
+
+  private String normalizeIdCardNo(String idCardNo) {
+    if (idCardNo == null) return "";
+    var normalized = idCardNo.trim().replace(" ", "");
+    if (normalized.endsWith("x")) {
+      normalized = normalized.substring(0, normalized.length() - 1) + "X";
+    }
+    return normalized;
   }
 }

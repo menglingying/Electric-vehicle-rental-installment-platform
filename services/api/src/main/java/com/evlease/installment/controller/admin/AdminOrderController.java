@@ -53,8 +53,10 @@ public class AdminOrderController {
   }
 
   @GetMapping
-  public List<Order> list() {
-    return orderRepository.findAllByOrderByCreatedAtDesc();
+  public List<Map<String, Object>> list() {
+    return orderRepository.findAllByOrderByCreatedAtDesc().stream()
+      .map(orderEnricher::enrich)
+      .toList();
   }
 
   @GetMapping("/{id}")

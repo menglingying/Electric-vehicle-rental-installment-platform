@@ -121,9 +121,10 @@ public class AsignService {
     if (order.getIdCardNumber() == null || order.getIdCardNumber().isBlank()) {
       throw new ApiException(HttpStatus.BAD_REQUEST, "renter idCard missing");
     }
+    String idCardNo = normalizeIdCardNo(order.getIdCardNumber());
     Map<String, Object> payload = new HashMap<>();
     payload.put("realName", order.getRealName());
-    payload.put("idCardNo", order.getIdCardNumber());
+    payload.put("idCardNo", idCardNo);
     payload.put("bizId", order.getId());
     String notifyUrl = resolveAuthNotifyUrl();
     if (!notifyUrl.isBlank()) payload.put("notifyUrl", notifyUrl);
@@ -301,10 +302,10 @@ public class AsignService {
     if (order.getPhone() == null || order.getPhone().isBlank()) {
       throw new ApiException(HttpStatus.BAD_REQUEST, "renter phone missing");
     }
+    String idCardNo = normalizeIdCardNo(order.getIdCardNumber());
     String account = resolveUserAccount(order);
-    // 临时强制启用陌生人模式进行测试
-    boolean forceStranger = true;
-    if (forceStranger || config.isUseStranger()) {
+    // 仅在配置启用时才走陌生人模式
+    if (config.isUseStranger()) {
       Map<String, Object> payload = new HashMap<>();
       payload.put("account", account);
       payload.put("userType", 2);
@@ -325,7 +326,7 @@ public class AsignService {
     Map<String, Object> payload = new HashMap<>();
     payload.put("account", account);
     payload.put("serialNo", serialNo);
-    payload.put("idCard", order.getIdCardNumber());
+    payload.put("idCard", idCardNo);
     payload.put("idCardType", 1);
     payload.put("mobile", order.getPhone());
     // 签约密码：使用手机号后6位
@@ -341,9 +342,18 @@ public class AsignService {
 
   private String resolveUserAccount(Order order) {
     if (order.getIdCardNumber() != null && !order.getIdCardNumber().isBlank()) {
-      return order.getIdCardNumber();
+      return normalizeIdCardNo(order.getIdCardNumber());
     }
     return order.getPhone();
+  }
+
+  private String normalizeIdCardNo(String idCardNo) {
+    if (idCardNo == null) return "";
+    var normalized = idCardNo.trim().replace(" ", "");
+    if (normalized.endsWith("x")) {
+      normalized = normalized.substring(0, normalized.length() - 1) + "X";
+    }
+    return normalized;
   }
 
   private String resolveCompanyMobile() {

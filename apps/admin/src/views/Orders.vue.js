@@ -254,6 +254,20 @@ const columns = [
             return h('span', { style: `color: ${s.color}; font-weight: 500` }, s.text);
         }
     },
+    {
+        title: '合同状态',
+        render: ({ record }) => {
+            const status = record?.contract?.status;
+            const statusMap = {
+                SIGNING: { text: '签署中', color: '#1890ff' },
+                SIGNED: { text: '已签署', color: '#52c41a' },
+                VOID: { text: '已作废', color: '#ff7d00' },
+                FAILED: { text: '失败', color: '#f53f3f' }
+            };
+            const s = status ? statusMap[status] || { text: status, color: '#8c8c8c' } : { text: '未生成', color: '#8c8c8c' };
+            return h('span', { style: `color: ${s.color}; font-weight: 500` }, s.text);
+        }
+    },
     { title: '期数', dataIndex: 'periods' },
     {
         title: '创建时间',

@@ -149,6 +149,9 @@ public class AdminContractController {
     if (order.getAsignSerialNo() == null || order.getAsignSerialNo().isBlank()) {
       throw new ApiException(HttpStatus.BAD_REQUEST, "客户未完成爱签实名认证，请让客户在H5订单详情页点击'去实名认证'完成人脸认证");
     }
+    if (!asignConfig.isUseStranger() && !"1".equals(order.getAsignAuthResult())) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "客户爱签实名认证未通过，请客户重新完成人脸认证后再签合同");
+    }
 
     var contract = contractRepository.findById(orderId).orElse(null);
     if (contract == null) {
