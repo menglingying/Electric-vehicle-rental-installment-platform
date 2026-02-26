@@ -1,14 +1,15 @@
-<template>
+﻿<template>
   <div class="page">
-    <van-nav-bar title="手机号登录" />
-    <div class="card">
+    <van-nav-bar title="登录" />
+    <div class="h5-card login-card">
+      <div class="section-title">手机号登录</div>
       <van-form @submit="onSubmit">
         <van-field v-model="phone" name="phone" label="手机号" placeholder="请输入手机号" />
         <van-field v-model="code" name="code" label="验证码" placeholder="请输入验证码" />
-        <div style="display: flex; gap: 12px; padding: 16px 0">
-          <van-button 
-            block 
-            type="default" 
+        <div class="login-actions">
+          <van-button
+            block
+            type="default"
             :disabled="countdown > 0 || !phone"
             @click.prevent="onRequestCode"
           >
@@ -24,12 +25,13 @@
 
 <script setup lang="ts">
 import { ref, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { showFailToast, showSuccessToast } from 'vant';
 import { login, requestLoginCode } from '@/services/api';
 import { setH5Token } from '@/services/auth';
 
 const router = useRouter();
+const route = useRoute();
 const phone = ref('');
 const code = ref('');
 const countdown = ref(0);
@@ -60,15 +62,13 @@ async function onRequestCode() {
   }
   try {
     const res = await requestLoginCode(phone.value);
-    // 开发环境返回固定验证码
     if (res.devFixedCode) {
       devFixedCode.value = res.devFixedCode;
-      showSuccessToast(`已发送（dev 固定码：${res.devFixedCode}）`);
+      showSuccessToast(`已发送（dev固定码：${res.devFixedCode}）`);
     } else {
       devFixedCode.value = '';
       showSuccessToast('验证码已发送');
     }
-    // 开始60秒倒计时
     startCountdown(60);
   } catch (e: any) {
     showFailToast(e?.response?.data?.message ?? '获取验证码失败');
@@ -80,7 +80,9 @@ async function onSubmit() {
     const res = await login(phone.value, code.value);
     setH5Token(res.token);
     showSuccessToast('登录成功');
-    await router.replace('/products');
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '';
+    const target = redirect.startsWith('/') ? redirect : '/products';
+    await router.replace(target);
   } catch (e: any) {
     showFailToast(e?.response?.data?.message ?? '登录失败');
   }
@@ -88,18 +90,18 @@ async function onSubmit() {
 </script>
 
 <style scoped>
-.page {
-  min-height: 100vh;
+.login-card {
+  margin-top: 12px;
 }
-.card {
-  margin: 12px;
-  background: #fff;
-  border-radius: 12px;
-  padding: 12px;
+.login-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 12px 0;
 }
 .hint {
-  color: #999;
+  color: var(--h5-muted);
   font-size: 12px;
-  padding: 8px 0;
+  padding: 4px 0;
 }
 </style>

@@ -1,16 +1,29 @@
-<template>
-  <a-card title="商品管理">
-    <div class="toolbar">
+﻿<template>
+  <div class="panel">
+    <div class="panel-title">
+      <div>商品管理</div>
+      <span class="link">商品与价格维护</span>
+    </div>
+    <div class="section-toolbar">
       <div class="left">
-        <a-input-search v-model="searchKeyword" placeholder="搜索车型名称" style="width: 240px" allow-clear @search="onSearch" @clear="onSearch" />
+        <a-input-search
+          v-model="searchKeyword"
+          placeholder="搜索车型名称"
+          style="width: 240px"
+          allow-clear
+          @search="onSearch"
+          @clear="onSearch"
+        />
       </div>
       <div class="right">
-        <div class="hint">商品上架后，H5 会自动同步可选。</div>
+        <div class="info-hint">商品上架后，H5 会自动同步可选。</div>
         <a-button type="primary" @click="openCreate">新增商品</a-button>
       </div>
     </div>
-    <a-table :data="filteredRows" :columns="columns" :pagination="false" />
-  </a-card>
+    <div class="table-wrap">
+      <a-table :data="filteredRows" :columns="columns" :pagination="false" />
+    </div>
+  </div>
 
   <a-modal v-model:visible="visible" :title="form.id ? '编辑商品' : '新增商品'" @ok="save">
     <a-form :model="form" layout="vertical">
@@ -25,7 +38,7 @@
           style="margin-top: 8px"
           type="info"
           :show-icon="true"
-          title="建议至少上传 1 张图片；第一张会作为封面展示，H5 详情页会轮播展示所有图片。"
+          title="建议至少上传 1 张图片；第一张作为封面，H5 详情页轮播展示。"
         />
 
         <a-space v-if="form.images.length" wrap size="medium" style="margin-top: 12px">
@@ -47,12 +60,27 @@
       </a-form-item>
       <a-form-item label="车型分类">
         <div class="cascader-row">
-          <a-select v-model="form.brandId" placeholder="选择品牌" :options="brandOptions" allow-clear @change="onBrandChange" style="flex:1" />
-          <a-select v-model="form.seriesId" placeholder="选择系列" :options="seriesOptions" allow-clear @change="onSeriesChange" :disabled="!form.brandId" style="flex:1" />
-          <a-select v-model="form.categoryId" placeholder="选择型号" :options="modelOptions" allow-clear :disabled="!form.seriesId" style="flex:1" />
+          <a-select v-model="form.brandId" placeholder="选择品牌" :options="brandOptions" allow-clear @change="onBrandChange" style="flex: 1" />
+          <a-select
+            v-model="form.seriesId"
+            placeholder="选择系列"
+            :options="seriesOptions"
+            allow-clear
+            @change="onSeriesChange"
+            :disabled="!form.brandId"
+            style="flex: 1"
+          />
+          <a-select
+            v-model="form.categoryId"
+            placeholder="选择型号"
+            :options="modelOptions"
+            allow-clear
+            :disabled="!form.seriesId"
+            style="flex: 1"
+          />
         </div>
         <div v-if="!brandOptions.length" style="margin-top: 8px">
-          <a-alert type="warning">暂无分类数据，请先在「分类管理」中创建品牌→系列→型号的三级分类</a-alert>
+          <a-alert type="warning">暂无分类数据，请先在「分类管理」创建品牌 → 系列 → 型号。</a-alert>
         </div>
       </a-form-item>
       <a-form-item label="租金/期（元）" field="rentPerCycle">
@@ -65,8 +93,7 @@
         <a-input v-model="form.frameConfig" placeholder="例如：铝合金车架、碳钢车架" />
       </a-form-item>
 
-      <!-- 电池配置区域 -->
-      <a-form-item label="电池配置（客户下单时可选）">
+      <a-form-item label="电池配置（下单可选）">
         <div class="battery-config-section">
           <div class="battery-option">
             <div class="option-header">
@@ -97,7 +124,15 @@
 import { h, onMounted, reactive, ref, computed } from 'vue';
 import { Button, Message, Tag, Modal } from '@arco-design/web-vue';
 import type { TableColumnData } from '@arco-design/web-vue';
-import { listCategories, listProducts, uploadProductImage, upsertProduct, deleteProduct, type CategoryNode, type Product } from '@/services/api';
+import {
+  listCategories,
+  listProducts,
+  uploadProductImage,
+  upsertProduct,
+  deleteProduct,
+  type CategoryNode,
+  type Product
+} from '@/services/api';
 
 const rows = ref<Product[]>([]);
 const categories = ref<CategoryNode[]>([]);
@@ -105,42 +140,36 @@ const visible = ref(false);
 const uploading = ref(false);
 const searchKeyword = ref('');
 
-// 品牌选项（一级分类）
 const brandOptions = computed(() => {
-  return categories.value.map(c => ({ label: c.name, value: c.id }));
+  return categories.value.map((c) => ({ label: c.name, value: c.id }));
 });
 
-// 系列选项（二级分类，根据选中的品牌）
 const seriesOptions = computed(() => {
   if (!form.brandId) return [];
-  const brand = categories.value.find(c => c.id === form.brandId);
-  return (brand?.children || []).map(c => ({ label: c.name, value: c.id }));
+  const brand = categories.value.find((c) => c.id === form.brandId);
+  return (brand?.children || []).map((c) => ({ label: c.name, value: c.id }));
 });
 
-// 型号选项（三级分类，根据选中的系列）
 const modelOptions = computed(() => {
   if (!form.brandId || !form.seriesId) return [];
-  const brand = categories.value.find(c => c.id === form.brandId);
-  const series = (brand?.children || []).find(c => c.id === form.seriesId);
-  return (series?.children || []).map(c => ({ label: c.name, value: c.id }));
+  const brand = categories.value.find((c) => c.id === form.brandId);
+  const series = (brand?.children || []).find((c) => c.id === form.seriesId);
+  return (series?.children || []).map((c) => ({ label: c.name, value: c.id }));
 });
 
-// 品牌变化时清空系列和型号
 function onBrandChange() {
   form.seriesId = '';
   form.categoryId = '';
 }
 
-// 系列变化时清空型号
 function onSeriesChange() {
   form.categoryId = '';
 }
 
-// 根据categoryId反推brandId和seriesId
 function resolveCategoryPath(categoryId: string) {
   for (const brand of categories.value) {
-    for (const series of (brand.children || [])) {
-      for (const model of (series.children || [])) {
+    for (const series of brand.children || []) {
+      for (const model of series.children || []) {
         if (model.id === categoryId) {
           return { brandId: brand.id, seriesId: series.id };
         }
@@ -153,8 +182,8 @@ function resolveCategoryPath(categoryId: string) {
 const categoryNameMap = computed(() => {
   const map: Record<string, string> = {};
   for (const brand of categories.value) {
-    for (const series of (brand.children || [])) {
-      for (const model of (series.children || [])) {
+    for (const series of brand.children || []) {
+      for (const model of series.children || []) {
         map[model.id] = `${brand.name} / ${series.name} / ${model.name}`;
       }
     }
@@ -162,38 +191,32 @@ const categoryNameMap = computed(() => {
   return map;
 });
 
-// 搜索过滤后的商品列表（按名称首字母分组排序）
 const filteredRows = computed(() => {
   let list = rows.value;
-  
-  // 搜索过滤
   const keyword = searchKeyword.value.trim().toLowerCase();
   if (keyword) {
-    list = list.filter(p => 
-      p.name.toLowerCase().includes(keyword) || 
-      p.id.toLowerCase().includes(keyword) ||
-      (p.frameConfig || '').toLowerCase().includes(keyword) ||
-      (p.batteryConfig || '').toLowerCase().includes(keyword)
+    list = list.filter(
+      (p) =>
+        p.name.toLowerCase().includes(keyword) ||
+        p.id.toLowerCase().includes(keyword) ||
+        (p.frameConfig || '').toLowerCase().includes(keyword) ||
+        (p.batteryConfig || '').toLowerCase().includes(keyword)
     );
   }
-  
-  // 按名称首字母分组排序（m开头的在一起，n开头的在一起...）
   return [...list].sort((a, b) => {
     const nameA = a.name.toLowerCase();
     const nameB = b.name.toLowerCase();
-    // 先按首字母排序
     const firstCharA = nameA.charAt(0);
     const firstCharB = nameB.charAt(0);
     if (firstCharA !== firstCharB) {
       return firstCharA.localeCompare(firstCharB);
     }
-    // 首字母相同则按完整名称排序
     return nameA.localeCompare(nameB);
   });
 });
 
 function onSearch() {
-  // 搜索时自动触发computed重新计算
+  // computed will update
 }
 
 const columns: TableColumnData[] = [
@@ -219,34 +242,33 @@ const columns: TableColumnData[] = [
     render: ({ record }: { record: any }) => {
       const items = [];
       const withoutBattery = record.rentWithoutBattery ?? record.rentPerCycle;
-      items.push(h('div', { style: 'white-space: nowrap' }, `空车: ￥${withoutBattery}/期`));
+      items.push(h('div', { style: 'white-space: nowrap' }, `空车: ¥${withoutBattery}/期`));
       if (record.rentWithBattery != null) {
         const batteryName = record.batteryConfig || '含电池';
-        items.push(h('div', { style: 'white-space: nowrap' }, `${batteryName}: ￥${record.rentWithBattery}/期`));
+        items.push(h('div', { style: 'white-space: nowrap' }, `${batteryName}: ¥${record.rentWithBattery}/期`));
       }
       return h('div', { style: 'display: flex; flex-direction: column; gap: 4px' }, items);
     }
   },
   {
     title: '标签',
-    render: ({ record }: { record: any }) => {
-      return h(
+    render: ({ record }: { record: any }) =>
+      h(
         'div',
         { style: 'display:flex; gap:6px; flex-wrap:wrap' },
         (record.tags ?? []).map((t: string) => h(Tag, { bordered: true }, () => t))
-      );
-    }
+      )
   },
   {
     title: '操作',
-    render: ({ record }: { record: any }) => {
-      return h('div', { style: 'display: flex; gap: 8px' }, [
+    render: ({ record }: { record: any }) =>
+      h('div', { style: 'display: flex; gap: 8px' }, [
         h(Button, { size: 'small', onClick: () => openEdit(record) }, () => '编辑'),
         h(Button, { size: 'small', status: 'danger', onClick: () => confirmDelete(record) }, () => '删除')
-      ]);
-    }
+      ])
   }
 ];
+
 const form = reactive({
   id: '',
   name: '',
@@ -307,7 +329,6 @@ function openCreate() {
 function openEdit(p: Product) {
   form.id = p.id;
   form.name = p.name;
-  // 反推品牌和系列
   const path = resolveCategoryPath(p.categoryId ?? '');
   form.brandId = path.brandId;
   form.seriesId = path.seriesId;
@@ -342,7 +363,7 @@ function removeImage(idx: number) {
 }
 
 async function onSelectFiles(fileList: any, fileItem?: any) {
-  const items = fileItem ? [fileItem] : (fileList ?? []);
+  const items = fileItem ? [fileItem] : fileList ?? [];
   if (!items.length) return;
 
   const MAX_IMAGES = 10;
@@ -409,25 +430,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-.toolbar .left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.toolbar .right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.hint {
-  color: var(--color-text-3);
-}
 .image-card {
   display: flex;
   flex-direction: column;

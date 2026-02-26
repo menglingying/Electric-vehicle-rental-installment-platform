@@ -1,7 +1,9 @@
 package com.evlease.installment.controller.callback;
 
 import com.evlease.installment.juzheng.JuzhengClient;
+import com.evlease.installment.juzheng.NotaryService;
 import com.evlease.installment.model.Order;
+import com.evlease.installment.repo.ContractRepository;
 import com.evlease.installment.repo.OrderRepository;
 import com.evlease.installment.service.OrderLogService;
 import org.slf4j.Logger;
@@ -21,16 +23,22 @@ public class JuzhengCallbackController {
   private static final Logger log = LoggerFactory.getLogger(JuzhengCallbackController.class);
   
   private final JuzhengClient juzhengClient;
+  private final NotaryService notaryService;
   private final OrderRepository orderRepository;
+  private final ContractRepository contractRepository;
   private final OrderLogService orderLogService;
   
   public JuzhengCallbackController(
       JuzhengClient juzhengClient,
+      NotaryService notaryService,
       OrderRepository orderRepository,
+      ContractRepository contractRepository,
       OrderLogService orderLogService
   ) {
     this.juzhengClient = juzhengClient;
+    this.notaryService = notaryService;
     this.orderRepository = orderRepository;
+    this.contractRepository = contractRepository;
     this.orderLogService = orderLogService;
   }
   
@@ -127,6 +135,23 @@ public class JuzhengCallbackController {
     order.setNotaryStatus("33"); // 已出证
     order.setNotaryCertifiedTime(certifiedTime);
     order.setNotaryName(notaryName);
+
+    // 获取公证证书下载链接（失败不影响回调）
+    try {
+      var result = notaryService.getNotarizationDownloadUrl(outOrderNo);
+      String url = extractUrl(result);
+      if (url != null && !url.isBlank()) {
+        order.setNotaryCertUrl(url);
+        var contract = contractRepository.findById(order.getId()).orElse(null);
+        if (contract != null) {
+          contract.setNotaryCertUrl(url);
+          contractRepository.save(contract);
+        }
+      }
+    } catch (Exception ex) {
+      log.warn("获取公证证书链接失败: {}", ex.getMessage());
+    }
+
     orderLogService.add(order, "NOTARY_CERTIFIED", "CALLBACK", l -> l.setActor("公证书已出证，公证员: " + notaryName));
     orderRepository.save(order);
   }
@@ -186,5 +211,22 @@ public class JuzhengCallbackController {
   private Order findOrderByNotaryOrderNo(String notaryOrderNo) {
     if (notaryOrderNo == null) return null;
     return orderRepository.findByNotaryOrderNo(notaryOrderNo).orElse(null);
+  }
+
+  private String extractUrl(Map<String, Object> result) {
+    if (result == null) return null;
+    Object direct = result.get("fileUrl");
+    if (direct == null) direct = result.get("downloadUrl");
+    if (direct == null) direct = result.get("url");
+    if (direct != null) return String.valueOf(direct);
+
+    Object data = result.get("data");
+    if (data instanceof Map<?, ?> map) {
+      Object nested = map.get("fileUrl");
+      if (nested == null) nested = map.get("downloadUrl");
+      if (nested == null) nested = map.get("url");
+      if (nested != null) return String.valueOf(nested);
+    }
+    return null;
   }
 }

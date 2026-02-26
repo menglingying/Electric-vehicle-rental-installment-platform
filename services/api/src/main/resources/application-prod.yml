@@ -19,9 +19,10 @@ spring:
     open-in-view: false
 
 app:
+  public-base-url: ${APP_PUBLIC_BASE_URL:}
   auth:
     fixed-code:
-      enabled: false
+      enabled: ${APP_AUTH_FIXED_CODE_ENABLED:false}
       value: "123456"
       whitelist-phones: ${APP_AUTH_FIXED_CODE_WHITELIST_PHONES:}
   upload:
@@ -34,3 +35,52 @@ app:
     mock: false
     api-id: ${SMS_API_ID:C13900499}
     api-key: ${SMS_API_KEY:dba47bdd16c5982cab4201f6cd6cc398}
+
+juzheng:
+  base-url: ${JUZHENG_BASE_URL:https://gz.51juzheng.cn}
+  client-id: ${JUZHENG_CLIENT_ID:85214ca40bd316951d6114365cdcc62f}
+  client-secret: ${JUZHENG_CLIENT_SECRET:bb22e39a17b09962df93f492b1426183}
+  public-key: ${JUZHENG_PUBLIC_KEY:MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCUk7H4dj8v008hvdhb9arVHy7N8DNE5R66fb6pY2k7qDe+jiEA5oEqcQKq03AcEjdlkPgYK/kNwSt8lQfwfduGMELweDFnAu00EzHoXtvLqodkIe0WvjopZPD5wyQKqJzTCFm7wLEdIseI7sKdi7WKPJdxanfBUMLvDbLgxiyWQQIDAQAB}
+  private-key: ${JUZHENG_PRIVATE_KEY:MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBAJSTsfh2Py/TTyG92Fv1qtUfLs3wM0TlHrp9vqljaTuoN76OIQDmgSpxAqrTcBwSN2WQ+Bgr+Q3BK3yVB/B924YwQvB4MWcC7TQTMehe28uqh2Qh7Ra+Oilk8PnDJAqonNMIWbvAsR0ix4juwp2LtYo8l3Fqd8FQwu8NsuDGLJZBAgMBAAECgYBUxcSIwGcjEY0X8msNZSlYupcI96E5EQWsYGy11zvGxx8vQYcBLYPLRHnCICvaSGaFM+bqW8SZnXsDdUD3bcgfbq8aAnUNzZTHkaVHjaGPx2ZHXy3twAy8hKWgndu0VZ21Pn4hq0TGqaNRnT8Sktwkv394p+vAq+7/4uAem9r4xQJBAPY5iJRQ996sDxni+ucF9U7VCN4QbIzYdH+Mdm0Klmj65IX85345uAFEct9eDxkXG7lYaDbYzaDIzdTZWjdws18CQQCaebvJWOQqjksR72T0mYT9yXbInxcvP8liVbWxk4AAVRBAtjnJOxZbDfPqDIW548eQTOmCBVNwxnLz75ErWbpfAkATwC+1ff00Dmczs2Je77pqtWn9riGW9rH5nUHOo1/HUgDMwqmrFWQuLdhtFHVvlMvzhSTu6VstP45LOZgkBFVPAkALxDoJnDvFAhG1zAZkm00GB9KEdZnOf41XcC/m1tVpMRGL3FWKfnW1edqaeVm2TyNkWndu7/jrHjKjYhwssSkBAkA0Z7RQE5AyrfSooVRms587Qn5VHa3DMxrnXjDvAT2pJtJV31CA6FVUsWapiDVFCNzKoBBYk/ztOb5/L1iKzhYO}
+  company-name: ${JUZHENG_COMPANY_NAME:四川时代华锦科技有限公司}
+  company-cert-no: ${JUZHENG_COMPANY_CERT_NO:91510700MABW8GW58B}
+  company-address: ${JUZHENG_COMPANY_ADDRESS:四川省绵阳市}
+  legal-name: ${JUZHENG_LEGAL_NAME:}
+  legal-cert-no: ${JUZHENG_LEGAL_CERT_NO:}
+  legal-phone: ${JUZHENG_LEGAL_PHONE:}
+  company-type: ${JUZHENG_COMPANY_TYPE:30}
+  callback-url: ${JUZHENG_CALLBACK_URL:}
+
+asign:
+  base-url: ${ASIGN_BASE_URL:https://oapi.asign.cn}
+  app-id: ${ASIGN_APP_ID:}
+  private-key: ${ASIGN_PRIVATE_KEY:}
+  public-key: ${ASIGN_PUBLIC_KEY:}
+  template-no: ${ASIGN_TEMPLATE_NO:}
+  template-fill-json: ${ASIGN_TEMPLATE_FILL_JSON:}
+  company-account: ${ASIGN_COMPANY_ACCOUNT:}
+  company-name: ${ASIGN_COMPANY_NAME:}
+  company-cert-no: ${ASIGN_COMPANY_CERT_NO:}
+  company-serial-no: ${ASIGN_COMPANY_SERIAL_NO:}
+  legal-name: ${ASIGN_LEGAL_NAME:}
+  legal-cert-no: ${ASIGN_LEGAL_CERT_NO:}
+  legal-phone: ${ASIGN_LEGAL_PHONE:}
+  company-mobile: ${ASIGN_COMPANY_MOBILE:}
+  company-contact-name: ${ASIGN_COMPANY_CONTACT_NAME:}
+  company-contact-id-card: ${ASIGN_COMPANY_CONTACT_ID_CARD:}
+  sign-order: ${ASIGN_SIGN_ORDER:1}
+  company-sign-type: ${ASIGN_COMPANY_SIGN_TYPE:3}
+  user-sign-type: ${ASIGN_USER_SIGN_TYPE:3}
+  company-sign-key: ${ASIGN_COMPANY_SIGN_KEY:}
+  user-sign-key: ${ASIGN_USER_SIGN_KEY:}
+  company-sign-strategy-json: ${ASIGN_COMPANY_SIGN_STRATEGY_JSON:}
+  user-sign-strategy-json: ${ASIGN_USER_SIGN_STRATEGY_JSON:}
+  notify-url: ${ASIGN_NOTIFY_URL:}
+  callback-url: ${ASIGN_CALLBACK_URL:}
+  user-notify-url: ${ASIGN_USER_NOTIFY_URL:}
+  auth-notify-url: ${ASIGN_AUTH_NOTIFY_URL:}
+  auth-redirect-url: ${ASIGN_AUTH_REDIRECT_URL:}
+  redirect-url: ${ASIGN_REDIRECT_URL:}
+  use-stranger: ${ASIGN_USE_STRANGER:false}
+  sign-attach-no: ${ASIGN_SIGN_ATTACH_NO:1}
+  sign-location-mode: ${ASIGN_SIGN_LOCATION_MODE:4}

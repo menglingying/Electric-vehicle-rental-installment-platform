@@ -1,12 +1,21 @@
 package com.evlease.installment.juzheng;
 
+import com.evlease.installment.config.AppProperties;
 import com.evlease.installment.model.Order;
+import com.evlease.installment.model.Product;
 import com.evlease.installment.model.RepaymentPlanItem;
+import com.evlease.installment.repo.ProductRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
+import java.security.MessageDigest;
 import java.util.*;
 
 /**
@@ -24,10 +33,14 @@ public class NotaryService {
   
   private final JuzhengClient client;
   private final JuzhengConfig config;
+  private final AppProperties appProperties;
+  private final ProductRepository productRepository;
   
-  public NotaryService(JuzhengClient client, JuzhengConfig config) {
+  public NotaryService(JuzhengClient client, JuzhengConfig config, AppProperties appProperties, ProductRepository productRepository) {
     this.client = client;
     this.config = config;
+    this.appProperties = appProperties;
+    this.productRepository = productRepository;
   }
   
   /**
@@ -70,12 +83,27 @@ public class NotaryService {
     List<Map<String, Object>> fileInfos = (List<Map<String, Object>>) result.get("fileInfos");
     if (fileInfos != null && !fileInfos.isEmpty()) {
       Map<String, Object> info = fileInfos.get(0);
-      if ("E00000".equals(info.get("code"))) {
-        return (String) info.get("fileId");
+      Object codeValue = info.get("code");
+      String code = codeValue == null ? null : String.valueOf(codeValue);
+      if ("E00000".equals(code) || "0".equals(code) || "200".equals(code)) {
+        Object fileId = info.get("fileId");
+        if (fileId == null) {
+          throw new RuntimeException("Missing fileId in upload response");
+        }
+        return String.valueOf(fileId);
       }
-      throw new RuntimeException("文件上传失败: " + info.get("message"));
+      Object message = info.get("message");
+      if (message == null) message = info.get("msg");
+      throw new RuntimeException("文件上传失败: " + message);
     }
     throw new RuntimeException("文件上传响应异常");
+  }
+
+  public String applyLeaseNotary(Order order) throws Exception {
+    ensureConfigReady();
+    String idCardFrontFileId = resolveFileId(order, order.getIdCardFront(), "idCardFront");
+    String idCardBackFileId = resolveFileId(order, order.getIdCardBack(), "idCardBack");
+    return applyLeaseNotary(order, idCardFrontFileId, idCardBackFileId);
   }
   
   /**
@@ -86,9 +114,14 @@ public class NotaryService {
    * @return 聚证订单号(outOrderNo)
    */
   public String applyLeaseNotary(Order order, String idCardFrontFileId, String idCardBackFileId) throws Exception {
+    ensureConfigReady();
     Map<String, Object> params = buildLeaseNotaryParams(order, idCardFrontFileId, idCardBackFileId);
     Map<String, Object> result = client.post("/api/fx/notary/apply", params);
-    return (String) result.get("outOrderNo");
+    Object outOrderNo = result.get("outOrderNo");
+    if (outOrderNo == null) {
+      throw new RuntimeException("Missing outOrderNo in apply response");
+    }
+    return String.valueOf(outOrderNo);
   }
   
   /**
@@ -147,25 +180,28 @@ public class NotaryService {
         ("WITH_BATTERY".equals(order.getBatteryOption()) ? "含电池" : "空车") : "标准配置");
     lease.put("num", 1);
     
+    // 从商品获取真实的每期租金（RepaymentPlanItem.amount 已扣除押金抵扣，不能直接用于公证合同）
+    int rentPerCycle = resolveRentPerCycle(order);
+    
     // 计算租赁时间
     List<RepaymentPlanItem> plan = order.getRepaymentPlan();
     if (plan != null && !plan.isEmpty()) {
       lease.put("startTime", plan.get(0).getDueDate().format(DATE_FORMAT));
       lease.put("endTime", plan.get(plan.size() - 1).getDueDate().format(DATE_FORMAT));
       
-      // 计算总租金
-      int totalRent = plan.stream().mapToInt(RepaymentPlanItem::getAmount).sum();
-      lease.put("totalRent", String.format("%.2f", totalRent / 100.0));
+      // 计算总租金（系统金额单位为“元”，不做分转元）
+      BigDecimal totalRent = BigDecimal.valueOf((long) rentPerCycle * plan.size());
+      lease.put("totalRent", formatAmount(totalRent));
       
       // 总价金（租赁物价值130%）
-      lease.put("compensation", String.format("%.2f", totalRent * 1.3 / 100.0));
+      lease.put("compensation", formatAmount(totalRent.multiply(BigDecimal.valueOf(1.3))));
       
-      // 租金支付信息
+      // 租金支付信息（每期显示真实租金）
       List<Map<String, Object>> payInfo = new ArrayList<>();
       for (RepaymentPlanItem item : plan) {
         Map<String, Object> pay = new LinkedHashMap<>();
         pay.put("payDate", item.getDueDate().format(DATE_FORMAT));
-        pay.put("payAmount", String.format("%.2f", item.getAmount() / 100.0));
+        pay.put("payAmount", formatAmount(BigDecimal.valueOf(rentPerCycle)));
         pay.put("payTerm", item.getPeriod());
         payInfo.add(pay);
       }
@@ -173,6 +209,120 @@ public class NotaryService {
     }
     
     return lease;
+  }
+  
+  /**
+   * 从商品获取真实的每期租金（根据电池选项）
+   * RepaymentPlanItem.amount 是押金抵扣后的金额，不能用于公证合同
+   */
+  private int resolveRentPerCycle(Order order) {
+    Product product = productRepository.findById(order.getProductId()).orElse(null);
+    if (product == null) {
+      log.warn("公证申请：商品不存在 productId={}, 回退使用还款计划金额", order.getProductId());
+      List<RepaymentPlanItem> plan = order.getRepaymentPlan();
+      if (plan != null && !plan.isEmpty()) {
+        return plan.stream().mapToInt(RepaymentPlanItem::getAmount).max().orElse(0);
+      }
+      return 0;
+    }
+    
+    String batteryOption = order.getBatteryOption();
+    if ("WITH_BATTERY".equals(batteryOption) && product.getRentWithBattery() != null) {
+      return product.getRentWithBattery();
+    } else if ("WITHOUT_BATTERY".equals(batteryOption) && product.getRentWithoutBattery() != null) {
+      return product.getRentWithoutBattery();
+    }
+    return product.getRentPerCycle();
+  }
+
+  private void ensureConfigReady() {
+    if (isBlank(config.getBaseUrl())
+      || isBlank(config.getClientId())
+      || isBlank(config.getClientSecret())
+      || isBlank(config.getPublicKey())
+      || isBlank(config.getPrivateKey())) {
+      throw new IllegalStateException("公证配置缺失：baseUrl/clientId/clientSecret/publicKey/privateKey");
+    }
+    if (isBlank(config.getCompanyName())
+      || isBlank(config.getCompanyCertNo())
+      || isBlank(config.getCompanyAddress())
+      || isBlank(config.getLegalName())
+      || isBlank(config.getLegalCertNo())
+      || isBlank(config.getLegalPhone())
+      || isBlank(config.getCallbackUrl())) {
+      throw new IllegalStateException("公证配置缺失：企业/法人/回调信息未完整填写");
+    }
+  }
+
+  private String resolveFileId(Order order, String fileUrl, String label) throws Exception {
+    if (fileUrl == null || fileUrl.isBlank()) {
+      throw new IllegalStateException("公证文件缺失: " + label);
+    }
+
+    String publicUrl = toPublicUrl(fileUrl);
+    Path localPath = resolveLocalPath(fileUrl);
+    if (localPath == null || !Files.exists(localPath)) {
+      throw new IllegalStateException("公证文件不存在: " + label);
+    }
+
+    long fileSize = Files.size(localPath);
+    String fileMd5 = md5Hex(localPath);
+    String fileName = localPath.getFileName().toString();
+    return uploadFileByUrl(publicUrl, fileName, fileSize, fileMd5);
+  }
+
+  private String toPublicUrl(String fileUrl) {
+    String trimmed = fileUrl.trim();
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+    String baseUrl = appProperties.getPublicBaseUrl();
+    if (baseUrl == null || baseUrl.isBlank()) {
+      throw new IllegalStateException("APP_PUBLIC_BASE_URL 未配置，无法生成公证文件公网地址");
+    }
+    if (trimmed.startsWith("/")) {
+      return baseUrl + trimmed;
+    }
+    return baseUrl + "/" + trimmed;
+  }
+
+  private Path resolveLocalPath(String fileUrl) {
+    String trimmed = fileUrl == null ? "" : fileUrl.trim();
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return null;
+    String uploadDir = appProperties.getUpload().getDir();
+    if (uploadDir == null || uploadDir.isBlank()) return null;
+    Path dir = Path.of(uploadDir).toAbsolutePath().normalize();
+    if (trimmed.startsWith("/uploads/")) {
+      return dir.resolve(trimmed.substring("/uploads/".length())).normalize();
+    }
+    if (trimmed.startsWith("uploads/")) {
+      return dir.resolve(trimmed.substring("uploads/".length())).normalize();
+    }
+    return dir.resolve(trimmed).normalize();
+  }
+
+  private String md5Hex(Path path) throws Exception {
+    MessageDigest md5 = MessageDigest.getInstance("MD5");
+    try (InputStream in = Files.newInputStream(path)) {
+      byte[] buf = new byte[8192];
+      int read;
+      while ((read = in.read(buf)) != -1) {
+        md5.update(buf, 0, read);
+      }
+    }
+    byte[] digest = md5.digest();
+    StringBuilder sb = new StringBuilder(digest.length * 2);
+    for (byte b : digest) {
+      sb.append(String.format("%02x", b));
+    }
+    return sb.toString();
+  }
+
+  private boolean isBlank(String value) {
+    return value == null || value.isBlank();
+  }
+
+  private String formatAmount(BigDecimal amount) {
+    if (amount == null) return "0.00";
+    return amount.setScale(2, RoundingMode.HALF_UP).toPlainString();
   }
   
   /**

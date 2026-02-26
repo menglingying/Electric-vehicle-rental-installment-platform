@@ -1,54 +1,73 @@
-<template>
+﻿<template>
   <div class="page">
-    <van-nav-bar title="商品列表" />
-    <div class="category-panel">
-      <div class="panel-title">大分类</div>
-      <van-tabs v-model:active="categoryIndex" shrink swipeable>
-        <van-tab v-for="c in categories" :key="c.id" :title="c.name" />
-      </van-tabs>
-      <div class="panel-title">系列</div>
-      <van-tabs v-model:active="seriesIndex" shrink swipeable>
-        <van-tab v-for="s in seriesList" :key="s.id" :title="s.name" />
-      </van-tabs>
-      <div class="panel-title">车型</div>
-      <div class="model-list">
-        <van-button
-          v-for="m in modelList"
-          :key="m.id"
-          size="small"
-          :type="m.id === selectedModelId ? 'primary' : 'default'"
-          plain
-          @click="selectModel(m.id)"
+    <van-nav-bar title="分类" left-arrow @click-left="router.back()" />
+
+    <div class="search-wrap">
+      <van-field v-model="keyword" left-icon="search" placeholder="请输入搜索内容" clearable />
+      <van-button class="search-btn" type="primary" size="small" @click="onSearch">搜索</van-button>
+    </div>
+
+    <div class="category-layout">
+      <div class="category-left">
+        <button
+          v-for="item in brandCategories"
+          :key="item.id"
+          class="category-item"
+          :class="{ active: item.id === selectedBrandId }"
+          @click="selectBrand(item.id)"
         >
-          {{ m.name }}
-        </van-button>
+          {{ item.name }}
+        </button>
+      </div>
+      <div class="category-right">
+        <div class="category-block">
+          <div class="block-title">系列</div>
+          <div class="block-options">
+            <button
+              v-for="item in seriesCategories"
+              :key="item.id"
+              class="option-btn"
+              :class="{ active: item.id === selectedSeriesId }"
+              @click="selectSeries(item.id)"
+            >
+              {{ item.name }}
+            </button>
+          </div>
+        </div>
+        <div class="category-block">
+          <div class="block-title">车型</div>
+          <div class="block-options">
+            <button
+              v-for="item in modelCategories"
+              :key="item.id"
+              class="option-btn"
+              :class="{ active: item.id === selectedModelId }"
+              @click="selectModel(item.id)"
+            >
+              {{ item.name }}
+            </button>
+          </div>
+        </div>
+        <van-pull-refresh v-model="refreshing" @refresh="loadProducts">
+          <div v-if="loading" class="empty-text">
+            <van-loading size="20px" />
+          </div>
+          <div v-else-if="filteredProducts.length === 0" class="empty-text">暂无商品</div>
+          <div v-else class="product-grid">
+            <div v-for="p in filteredProducts" :key="p.id" class="product-card" @click="go(p.id)">
+              <div class="product-image">
+                <van-image :src="p.coverUrl" width="100%" height="120" fit="cover" />
+              </div>
+              <div class="product-name">{{ p.name }}</div>
+              <div class="product-price">
+                ¥{{ displayPrice(p) }}<span>/期起</span>
+              </div>
+            </div>
+          </div>
+        </van-pull-refresh>
       </div>
     </div>
 
-    <van-pull-refresh v-model="refreshing" @refresh="loadProducts">
-      <van-list v-model:loading="loading" :finished="true" finished-text="没有更多了">
-        <van-cell
-          v-for="p in products"
-          :key="p.id"
-          :title="p.name"
-          :label="`租金/期：￥${p.rentPerCycle}`"
-          is-link
-          @click="go(p.id)"
-        >
-          <template #icon>
-            <van-image
-              v-if="p.coverUrl"
-              :src="p.coverUrl"
-              width="44"
-              height="44"
-              fit="cover"
-              radius="8"
-              style="margin-right: 12px"
-            />
-          </template>
-        </van-cell>
-      </van-list>
-    </van-pull-refresh>
     <van-tabbar route>
       <van-tabbar-item replace to="/products" icon="shop-o">商品</van-tabbar-item>
       <van-tabbar-item replace to="/orders" icon="orders-o">订单</van-tabbar-item>
@@ -67,19 +86,41 @@ const products = ref<Product[]>([]);
 const loading = ref(false);
 const refreshing = ref(false);
 const categories = ref<CategoryNode[]>([]);
-const categoryIndex = ref(0);
-const seriesIndex = ref(0);
+const selectedBrandId = ref('');
+const selectedSeriesId = ref('');
 const selectedModelId = ref('');
+const keyword = ref('');
 
-const seriesList = computed(() => categories.value[categoryIndex.value]?.children ?? []);
-const modelList = computed(() => seriesList.value[seriesIndex.value]?.children ?? []);
+const brandCategories = computed(() => categories.value);
+
+const seriesCategories = computed(() => {
+  const brand = categories.value.find((item) => item.id === selectedBrandId.value);
+  return brand?.children || [];
+});
+
+const modelCategories = computed(() => {
+  const series = seriesCategories.value.find((item) => item.id === selectedSeriesId.value);
+  return series?.children || [];
+});
+
+const filteredProducts = computed(() => {
+  const list = products.value;
+  const text = keyword.value.trim();
+  if (!text) return list;
+  return list.filter((p) => p.name.toLowerCase().includes(text.toLowerCase()));
+});
 
 function initSelection() {
-  if (!categories.value.length) return;
-  categoryIndex.value = 0;
-  seriesIndex.value = 0;
-  const firstModel = modelList.value[0];
-  selectedModelId.value = firstModel?.id ?? '';
+  if (!brandCategories.value.length) return;
+  selectedBrandId.value = brandCategories.value[0].id;
+  const seriesList = seriesCategories.value;
+  if (seriesList.length) {
+    selectedSeriesId.value = seriesList[0].id;
+    const modelList = modelCategories.value;
+    if (modelList.length) {
+      selectedModelId.value = modelList[0].id;
+    }
+  }
 }
 
 async function loadCategories() {
@@ -92,13 +133,14 @@ async function loadCategories() {
 }
 
 async function loadProducts() {
+  if (!selectedModelId.value) {
+    products.value = [];
+    refreshing.value = false;
+    return;
+  }
   loading.value = true;
   try {
-    if (!selectedModelId.value) {
-      products.value = [];
-    } else {
-      products.value = await listProductsByCategory(selectedModelId.value);
-    }
+    products.value = await listProductsByCategory(selectedModelId.value);
   } catch (e: any) {
     showFailToast(e?.response?.data?.message ?? '加载失败');
   } finally {
@@ -107,25 +149,37 @@ async function loadProducts() {
   }
 }
 
-function go(id: string) {
-  router.push(`/products/${id}`);
+function selectBrand(id: string) {
+  selectedBrandId.value = id;
+  const seriesList = seriesCategories.value;
+  selectedSeriesId.value = seriesList.length ? seriesList[0].id : '';
+  const modelList = modelCategories.value;
+  selectedModelId.value = modelList.length ? modelList[0].id : '';
+}
+
+function selectSeries(id: string) {
+  selectedSeriesId.value = id;
+  const modelList = modelCategories.value;
+  selectedModelId.value = modelList.length ? modelList[0].id : '';
 }
 
 function selectModel(id: string) {
   selectedModelId.value = id;
-  loadProducts();
 }
 
-watch([categoryIndex], () => {
-  seriesIndex.value = 0;
-  const firstModel = modelList.value[0];
-  selectedModelId.value = firstModel?.id ?? '';
-  loadProducts();
-});
+function go(id: string) {
+  router.push(`/products/${id}`);
+}
 
-watch([seriesIndex], () => {
-  const firstModel = modelList.value[0];
-  selectedModelId.value = firstModel?.id ?? '';
+function displayPrice(product: Product) {
+  return product.rentWithoutBattery ?? product.rentPerCycle;
+}
+
+function onSearch() {
+  // search uses computed
+}
+
+watch(selectedModelId, () => {
   loadProducts();
 });
 
@@ -136,21 +190,30 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.page {
-  padding-bottom: 60px;
+.category-block {
+  margin-bottom: 12px;
 }
-.category-panel {
-  padding: 8px 12px;
+.block-title {
+  font-size: 12px;
+  color: var(--h5-muted);
+  margin-bottom: 6px;
 }
-.panel-title {
-  font-size: 13px;
-  color: var(--van-gray-7);
-  margin: 8px 0 4px;
-}
-.model-list {
+.block-options {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 4px 0 8px;
+}
+.option-btn {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--h5-border);
+  background: #fff;
+  font-size: 12px;
+  color: var(--h5-text);
+}
+.option-btn.active {
+  color: #fff;
+  background: var(--h5-primary);
+  border-color: var(--h5-primary);
 }
 </style>

@@ -1,6 +1,7 @@
 package com.evlease.installment.controller;
 
 import com.evlease.installment.common.ApiException;
+import com.evlease.installment.juzheng.NotaryService;
 import com.evlease.installment.repo.ContractRepository;
 import com.evlease.installment.repo.OrderRepository;
 import com.evlease.installment.repo.PaymentRepository;
@@ -22,17 +23,20 @@ public class CallbackController {
   private final ContractRepository contractRepository;
   private final PaymentRepository paymentRepository;
   private final OrderLogService orderLogService;
+  private final NotaryService notaryService;
 
   public CallbackController(
     OrderRepository orderRepository,
     ContractRepository contractRepository,
     PaymentRepository paymentRepository,
-    OrderLogService orderLogService
+    OrderLogService orderLogService,
+    NotaryService notaryService
   ) {
     this.orderRepository = orderRepository;
     this.contractRepository = contractRepository;
     this.paymentRepository = paymentRepository;
     this.orderLogService = orderLogService;
+    this.notaryService = notaryService;
   }
 
   public record EsignCallback(@NotBlank String orderId, String status) {}
@@ -46,6 +50,16 @@ public class CallbackController {
     contractRepository.save(contract);
     orderLogService.add(order, "CONTRACT_CALLBACK", "CALLBACK", l -> l.setContractStatus(contract.getStatus()));
     orderRepository.save(order);
+
+    if ("SIGNED".equalsIgnoreCase(contract.getStatus())) {
+      try {
+        applyNotary(order);
+      } catch (Exception ex) {
+        order.setNotaryStatus("FAILED");
+        orderLogService.add(order, "NOTARY_AUTO_FAILED", "CALLBACK", l -> l.setActor(ex.getMessage()));
+        orderRepository.save(order);
+      }
+    }
     return Map.of("ok", true);
   }
 
@@ -66,5 +80,19 @@ public class CallbackController {
       orderRepository.save(order);
     }
     return Map.of("ok", true);
+  }
+
+  private void applyNotary(com.evlease.installment.model.Order order) throws Exception {
+    if (order.getNotaryOrderNo() != null && !order.getNotaryOrderNo().isBlank()) {
+      return;
+    }
+    if (!order.isKycCompleted()) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "客户未完成KYC，无法发起公证");
+    }
+    String outOrderNo = notaryService.applyLeaseNotary(order);
+    order.setNotaryOrderNo(outOrderNo);
+    order.setNotaryStatus("10");
+    orderLogService.add(order, "NOTARY_APPLY", "CALLBACK", l -> l.setActor("签署完成后自动发起"));
+    orderRepository.save(order);
   }
 }

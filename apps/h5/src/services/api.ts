@@ -33,6 +33,8 @@ export type Order = {
   batteryOption?: string;
   repaymentMethod?: string;
   kycCompleted?: boolean;
+  asignSerialNo?: string;
+  asignAuthResult?: string;
   createdAt: string;
 };
 
@@ -143,6 +145,11 @@ export async function startPayment(orderId: string) {
   return data as PaymentIntent;
 }
 
+export async function startAsignAuth(orderId: string) {
+  const { data } = await http.post(`/h5/orders/${orderId}/asign-auth`);
+  return data as { authUrl: string; serialNo?: string };
+}
+
 export async function uploadKycImage(file: File) {
   const form = new FormData();
   form.append('file', file);
@@ -159,6 +166,12 @@ export async function submitKyc(orderId: string, kycData: {
   contactName: string;
   contactPhone: string;
   contactRelation: string;
+  contactName2: string;
+  contactPhone2: string;
+  contactRelation2: string;
+  contactName3: string;
+  contactPhone3: string;
+  contactRelation3: string;
   employmentStatus: string;
   employmentName: string;
   incomeRangeCode: string;
@@ -169,4 +182,9 @@ export async function submitKyc(orderId: string, kycData: {
 }) {
   const { data } = await http.post(`/h5/orders/${orderId}/kyc`, kycData);
   return data;
+}
+
+export async function getNotarySignUrl(orderId: string) {
+  const { data } = await http.get(`/h5/notary/${orderId}/sign-url`);
+  return data as { signUrl: string };
 }

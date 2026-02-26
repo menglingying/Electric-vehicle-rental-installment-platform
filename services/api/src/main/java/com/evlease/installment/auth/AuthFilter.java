@@ -28,6 +28,7 @@ public class AuthFilter extends OncePerRequestFilter {
     if (path.startsWith("/api/h5/products")) return true;  // 商品列表公开访问
     if (path.startsWith("/api/admin/auth/")) return true;
     if (path.startsWith("/api/callbacks/")) return true;
+    if (path.startsWith("/api/callback/")) return true;
     if (path.equals("/api/health")) return true;
     return false;
   }

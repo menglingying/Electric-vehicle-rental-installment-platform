@@ -17,6 +17,7 @@ spring:
     open-in-view: false
 
 app:
+  public-base-url: ${APP_PUBLIC_BASE_URL:}
   auth:
     fixed-code:
       enabled: true
@@ -26,3 +27,18 @@ app:
   sms:
     enabled: true
     mock: true
+
+juzheng:
+  base-url: ${JUZHENG_BASE_URL:https://test.gz.51juzheng.cn}
+  client-id: ${JUZHENG_CLIENT_ID:85214ca40bd316951d6114365cdcc62f}
+  client-secret: ${JUZHENG_CLIENT_SECRET:bb22e39a17b09962df93f492b1426183}
+  public-key: ${JUZHENG_PUBLIC_KEY:MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCUk7H4dj8v008hvdhb9arVHy7N8DNE5R66fb6pY2k7qDe+jiEA5oEqcQKq03AcEjdlkPgYK/kNwSt8lQfwfduGMELweDFnAu00EzHoXtvLqodkIe0WvjopZPD5wyQKqJzTCFm7wLEdIseI7sKdi7WKPJdxanfBUMLvDbLgxiyWQQIDAQAB}
+  private-key: ${JUZHENG_PRIVATE_KEY:MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBAJSTsfh2Py/TTyG92Fv1qtUfLs3wM0TlHrp9vqljaTuoN76OIQDmgSpxAqrTcBwSN2WQ+Bgr+Q3BK3yVB/B924YwQvB4MWcC7TQTMehe28uqh2Qh7Ra+Oilk8PnDJAqonNMIWbvAsR0ix4juwp2LtYo8l3Fqd8FQwu8NsuDGLJZBAgMBAAECgYBUxcSIwGcjEY0X8msNZSlYupcI96E5EQWsYGy11zvGxx8vQYcBLYPLRHnCICvaSGaFM+bqW8SZnXsDdUD3bcgfbq8aAnUNzZTHkaVHjaGPx2ZHXy3twAy8hKWgndu0VZ21Pn4hq0TGqaNRnT8Sktwkv394p+vAq+7/4uAem9r4xQJBAPY5iJRQ996sDxni+ucF9U7VCN4QbIzYdH+Mdm0Klmj65IX85345uAFEct9eDxkXG7lYaDbYzaDIzdTZWjdws18CQQCaebvJWOQqjksR72T0mYT9yXbInxcvP8liVbWxk4AAVRBAtjnJOxZbDfPqDIW548eQTOmCBVNwxnLz75ErWbpfAkATwC+1ff00Dmczs2Je77pqtWn9riGW9rH5nUHOo1/HUgDMwqmrFWQuLdhtFHVvlMvzhSTu6VstP45LOZgkBFVPAkALxDoJnDvFAhG1zAZkm00GB9KEdZnOf41XcC/m1tVpMRGL3FWKfnW1edqaeVm2TyNkWndu7/jrHjKjYhwssSkBAkA0Z7RQE5AyrfSooVRms587Qn5VHa3DMxrnXjDvAT2pJtJV31CA6FVUsWapiDVFCNzKoBBYk/ztOb5/L1iKzhYO}
+  company-name: ${JUZHENG_COMPANY_NAME:四川时代华锦科技有限公司}
+  company-cert-no: ${JUZHENG_COMPANY_CERT_NO:91510700MABW8GW58B}
+  company-address: ${JUZHENG_COMPANY_ADDRESS:四川省绵阳市}
+  legal-name: ${JUZHENG_LEGAL_NAME:}
+  legal-cert-no: ${JUZHENG_LEGAL_CERT_NO:}
+  legal-phone: ${JUZHENG_LEGAL_PHONE:}
+  company-type: ${JUZHENG_COMPANY_TYPE:30}
+  callback-url: ${JUZHENG_CALLBACK_URL:}

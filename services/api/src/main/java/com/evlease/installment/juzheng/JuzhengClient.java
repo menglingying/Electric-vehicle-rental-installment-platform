@@ -60,11 +60,20 @@ public class JuzhengClient {
       throw new RuntimeException("获取聚证Token失败: " + response.getStatusCode());
     }
     
-    // 响应是加密的，需要解密
-    String decrypted = JuzhengCryptoUtil.decrypt(response.getBody(), config.getPrivateKey());
-    Map<String, Object> result = objectMapper.readValue(decrypted, new TypeReference<>() {});
-    
-    this.accessToken = (String) result.get("access_token");
+    Map<String, Object> result = parseResponse(response.getBody());
+
+    Object codeValue = result.get("code");
+    String code = codeValue == null ? null : String.valueOf(codeValue);
+    if (!isSuccessCode(code)) {
+      throw new RuntimeException("聚证Token获取失败: " + code + " - " + getMessage(result));
+    }
+
+    String token = (String) result.get("access_token");
+    if (token == null || token.isBlank()) {
+      throw new RuntimeException("聚证Token缺失: " + getMessage(result));
+    }
+
+    this.accessToken = token;
     this.tokenExpireTime = Instant.now().getEpochSecond() + 7200; // 2小时有效期
     
     log.info("聚证Token刷新成功");
@@ -97,16 +106,15 @@ public class JuzhengClient {
       throw new RuntimeException("聚证API请求失败: " + response.getStatusCode());
     }
     
-    // 解密响应
-    String decrypted = JuzhengCryptoUtil.decrypt(response.getBody(), config.getPrivateKey());
-    Map<String, Object> result = objectMapper.readValue(decrypted, new TypeReference<>() {});
+    Map<String, Object> result = parseResponse(response.getBody());
     
     log.info("聚证API响应: {}", result);
     
     // 检查业务状态码
-    String code = (String) result.get("code");
-    if (code != null && !"E00000".equals(code)) {
-      throw new RuntimeException("聚证业务错误: " + code + " - " + result.get("message"));
+    Object codeValue = result.get("code");
+    String code = codeValue == null ? null : String.valueOf(codeValue);
+    if (!isSuccessCode(code)) {
+      throw new RuntimeException("聚证业务错误: " + code + " - " + getMessage(result));
     }
     
     return result;
@@ -116,7 +124,72 @@ public class JuzhengClient {
    * 解密回调数据
    */
   public Map<String, Object> decryptCallback(String encryptedData) throws Exception {
-    String decrypted = JuzhengCryptoUtil.decrypt(encryptedData, config.getPrivateKey());
+    String trimmed = encryptedData == null ? "" : encryptedData.trim();
+    
+    // 如果是JSON格式，先解析
+    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+      Map<String, Object> json = objectMapper.readValue(trimmed, new TypeReference<>() {});
+      
+      // 检查是否包含encryptData字段需要解密
+      Object encryptData = json.get("encryptData");
+      if (encryptData instanceof String s && !s.isBlank()) {
+        log.info("解密回调encryptData字段");
+        String decrypted = JuzhengCryptoUtil.decrypt(s, config.getPrivateKey());
+        return objectMapper.readValue(decrypted, new TypeReference<>() {});
+      }
+      
+      // 直接返回解析后的JSON
+      return json;
+    }
+    
+    // 直接是加密字符串
+    String decrypted = JuzhengCryptoUtil.decrypt(trimmed, config.getPrivateKey());
     return objectMapper.readValue(decrypted, new TypeReference<>() {});
+  }
+
+  private Map<String, Object> parseResponse(String body) throws Exception {
+    String trimmed = body == null ? "" : body.trim();
+    if (trimmed.isBlank()) return Map.of();
+
+    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+      Map<String, Object> json = objectMapper.readValue(trimmed, new TypeReference<>() {});
+      Object encryptData = json.get("encryptData");
+      if (encryptData instanceof String s && !s.isBlank()) {
+        String decrypted = JuzhengCryptoUtil.decrypt(s, config.getPrivateKey());
+        return objectMapper.readValue(decrypted, new TypeReference<>() {});
+      }
+      Object data = json.get("data");
+      if (data instanceof String s && !s.isBlank()) {
+        String dataTrimmed = s.trim();
+        if (dataTrimmed.startsWith("{") || dataTrimmed.startsWith("[")) {
+          return objectMapper.readValue(dataTrimmed, new TypeReference<>() {});
+        }
+        try {
+          String decrypted = JuzhengCryptoUtil.decrypt(dataTrimmed, config.getPrivateKey());
+          return objectMapper.readValue(decrypted, new TypeReference<>() {});
+        } catch (Exception ignored) {
+          // Fall through to return the raw JSON.
+        }
+      }
+      return json;
+    }
+
+    String decrypted = JuzhengCryptoUtil.decrypt(trimmed, config.getPrivateKey());
+    return objectMapper.readValue(decrypted, new TypeReference<>() {});
+  }
+
+  private String getMessage(Map<String, Object> result) {
+    Object message = result.get("message");
+    if (message == null) {
+      message = result.get("msg");
+    }
+    return message == null ? null : String.valueOf(message);
+  }
+
+  private boolean isSuccessCode(String code) {
+    if (code == null || code.isBlank()) {
+      return true;
+    }
+    return "E00000".equals(code) || "0".equals(code) || "200".equals(code);
   }
 }

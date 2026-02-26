@@ -9,13 +9,16 @@ import com.evlease.installment.repo.OrderRepository;
 import com.evlease.installment.service.OrderEnricher;
 import com.evlease.installment.service.OrderLogService;
 import com.evlease.installment.service.OrderPlanService;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -194,5 +197,54 @@ public class AdminOrderController {
     orderLogService.add(order, "PRICE_ADJUSTED", "ADMIN", l -> l.setActor(req.reason()));
     orderRepository.save(order);
     return order;
+  }
+
+  @DeleteMapping("/{orderId}")
+  @Transactional
+  public void delete(@PathVariable String orderId) {
+    var order = orderRepository.findById(orderId)
+      .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "订单不存在"));
+    
+    // 只允许删除未完成的订单
+    if (order.getStatus() == OrderStatus.SETTLED || order.getStatus() == OrderStatus.IN_USE) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "已结清或使用中的订单不能删除");
+    }
+    
+    // 删除关联的合同
+    contractRepository.deleteById(orderId);
+    
+    // 删除调价记录
+    adjustmentRepository.deleteByOrderId(orderId);
+    
+    // 删除订单
+    orderRepository.deleteById(orderId);
+  }
+
+  /**
+   * 重置订单为ACTIVE状态，删除合同，方便测试
+   */
+  @PostMapping("/{orderId}/reset-for-test")
+  @Transactional
+  public Map<String, Object> resetForTest(@PathVariable String orderId) {
+    var order = orderRepository.findById(orderId)
+      .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "订单不存在"));
+    
+    // 重置订单状态为 ACTIVE
+    order.setStatus(OrderStatus.ACTIVE);
+    
+    // 删除关联的合同
+    contractRepository.deleteById(orderId);
+    
+    // 清除公证相关字段
+    order.setNotaryOrderNo(null);
+    order.setNotaryStatus(null);
+    order.setNotaryCertifiedTime(null);
+    order.setNotaryName(null);
+    order.setNotaryCertUrl(null);
+    
+    orderLogService.add(order, "RESET_FOR_TEST", "ADMIN");
+    orderRepository.save(order);
+    
+    return orderEnricher.enrich(order);
   }
 }

@@ -7,18 +7,38 @@ const products = ref([]);
 const loading = ref(false);
 const refreshing = ref(false);
 const categories = ref([]);
-const categoryIndex = ref(0);
-const seriesIndex = ref(0);
+const selectedBrandId = ref('');
+const selectedSeriesId = ref('');
 const selectedModelId = ref('');
-const seriesList = computed(() => categories.value[categoryIndex.value]?.children ?? []);
-const modelList = computed(() => seriesList.value[seriesIndex.value]?.children ?? []);
+const keyword = ref('');
+const brandCategories = computed(() => categories.value);
+const seriesCategories = computed(() => {
+    const brand = categories.value.find((item) => item.id === selectedBrandId.value);
+    return brand?.children || [];
+});
+const modelCategories = computed(() => {
+    const series = seriesCategories.value.find((item) => item.id === selectedSeriesId.value);
+    return series?.children || [];
+});
+const filteredProducts = computed(() => {
+    const list = products.value;
+    const text = keyword.value.trim();
+    if (!text)
+        return list;
+    return list.filter((p) => p.name.toLowerCase().includes(text.toLowerCase()));
+});
 function initSelection() {
-    if (!categories.value.length)
+    if (!brandCategories.value.length)
         return;
-    categoryIndex.value = 0;
-    seriesIndex.value = 0;
-    const firstModel = modelList.value[0];
-    selectedModelId.value = firstModel?.id ?? '';
+    selectedBrandId.value = brandCategories.value[0].id;
+    const seriesList = seriesCategories.value;
+    if (seriesList.length) {
+        selectedSeriesId.value = seriesList[0].id;
+        const modelList = modelCategories.value;
+        if (modelList.length) {
+            selectedModelId.value = modelList[0].id;
+        }
+    }
 }
 async function loadCategories() {
     try {
@@ -30,14 +50,14 @@ async function loadCategories() {
     }
 }
 async function loadProducts() {
+    if (!selectedModelId.value) {
+        products.value = [];
+        refreshing.value = false;
+        return;
+    }
     loading.value = true;
     try {
-        if (!selectedModelId.value) {
-            products.value = [];
-        }
-        else {
-            products.value = await listProductsByCategory(selectedModelId.value);
-        }
+        products.value = await listProductsByCategory(selectedModelId.value);
     }
     catch (e) {
         showFailToast(e?.response?.data?.message ?? '加载失败');
@@ -47,22 +67,31 @@ async function loadProducts() {
         refreshing.value = false;
     }
 }
-function go(id) {
-    router.push(`/products/${id}`);
+function selectBrand(id) {
+    selectedBrandId.value = id;
+    const seriesList = seriesCategories.value;
+    selectedSeriesId.value = seriesList.length ? seriesList[0].id : '';
+    const modelList = modelCategories.value;
+    selectedModelId.value = modelList.length ? modelList[0].id : '';
+}
+function selectSeries(id) {
+    selectedSeriesId.value = id;
+    const modelList = modelCategories.value;
+    selectedModelId.value = modelList.length ? modelList[0].id : '';
 }
 function selectModel(id) {
     selectedModelId.value = id;
-    loadProducts();
 }
-watch([categoryIndex], () => {
-    seriesIndex.value = 0;
-    const firstModel = modelList.value[0];
-    selectedModelId.value = firstModel?.id ?? '';
-    loadProducts();
-});
-watch([seriesIndex], () => {
-    const firstModel = modelList.value[0];
-    selectedModelId.value = firstModel?.id ?? '';
+function go(id) {
+    router.push(`/products/${id}`);
+}
+function displayPrice(product) {
+    return product.rentWithoutBattery ?? product.rentPerCycle;
+}
+function onSearch() {
+    // search uses computed
+}
+watch(selectedModelId, () => {
     loadProducts();
 });
 onMounted(async () => {
@@ -73,6 +102,7 @@ debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_ctx = {};
 let __VLS_components;
 let __VLS_directives;
+/** @type {__VLS_StyleScopedClasses['option-btn']} */ ;
 // CSS variable injection 
 // CSS variable injection end 
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -82,262 +112,293 @@ const __VLS_0 = {}.VanNavBar;
 /** @type {[typeof __VLS_components.VanNavBar, typeof __VLS_components.vanNavBar, ]} */ ;
 // @ts-ignore
 const __VLS_1 = __VLS_asFunctionalComponent(__VLS_0, new __VLS_0({
-    title: "商品列表",
+    ...{ 'onClickLeft': {} },
+    title: "分类",
+    leftArrow: true,
 }));
 const __VLS_2 = __VLS_1({
-    title: "商品列表",
+    ...{ 'onClickLeft': {} },
+    title: "分类",
+    leftArrow: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_1));
+let __VLS_4;
+let __VLS_5;
+let __VLS_6;
+const __VLS_7 = {
+    onClickLeft: (...[$event]) => {
+        __VLS_ctx.router.back();
+    }
+};
+var __VLS_3;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "category-panel" },
+    ...{ class: "search-wrap" },
 });
-__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "panel-title" },
-});
-const __VLS_4 = {}.VanTabs;
-/** @type {[typeof __VLS_components.VanTabs, typeof __VLS_components.vanTabs, typeof __VLS_components.VanTabs, typeof __VLS_components.vanTabs, ]} */ ;
+const __VLS_8 = {}.VanField;
+/** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
 // @ts-ignore
-const __VLS_5 = __VLS_asFunctionalComponent(__VLS_4, new __VLS_4({
-    active: (__VLS_ctx.categoryIndex),
-    shrink: true,
-    swipeable: true,
+const __VLS_9 = __VLS_asFunctionalComponent(__VLS_8, new __VLS_8({
+    modelValue: (__VLS_ctx.keyword),
+    leftIcon: "search",
+    placeholder: "请输入搜索内容",
+    clearable: true,
 }));
-const __VLS_6 = __VLS_5({
-    active: (__VLS_ctx.categoryIndex),
-    shrink: true,
-    swipeable: true,
-}, ...__VLS_functionalComponentArgsRest(__VLS_5));
-__VLS_7.slots.default;
-for (const [c] of __VLS_getVForSourceType((__VLS_ctx.categories))) {
-    const __VLS_8 = {}.VanTab;
-    /** @type {[typeof __VLS_components.VanTab, typeof __VLS_components.vanTab, ]} */ ;
-    // @ts-ignore
-    const __VLS_9 = __VLS_asFunctionalComponent(__VLS_8, new __VLS_8({
-        key: (c.id),
-        title: (c.name),
-    }));
-    const __VLS_10 = __VLS_9({
-        key: (c.id),
-        title: (c.name),
-    }, ...__VLS_functionalComponentArgsRest(__VLS_9));
-}
-var __VLS_7;
-__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "panel-title" },
-});
-const __VLS_12 = {}.VanTabs;
-/** @type {[typeof __VLS_components.VanTabs, typeof __VLS_components.vanTabs, typeof __VLS_components.VanTabs, typeof __VLS_components.vanTabs, ]} */ ;
+const __VLS_10 = __VLS_9({
+    modelValue: (__VLS_ctx.keyword),
+    leftIcon: "search",
+    placeholder: "请输入搜索内容",
+    clearable: true,
+}, ...__VLS_functionalComponentArgsRest(__VLS_9));
+const __VLS_12 = {}.VanButton;
+/** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
 // @ts-ignore
 const __VLS_13 = __VLS_asFunctionalComponent(__VLS_12, new __VLS_12({
-    active: (__VLS_ctx.seriesIndex),
-    shrink: true,
-    swipeable: true,
+    ...{ 'onClick': {} },
+    ...{ class: "search-btn" },
+    type: "primary",
+    size: "small",
 }));
 const __VLS_14 = __VLS_13({
-    active: (__VLS_ctx.seriesIndex),
-    shrink: true,
-    swipeable: true,
+    ...{ 'onClick': {} },
+    ...{ class: "search-btn" },
+    type: "primary",
+    size: "small",
 }, ...__VLS_functionalComponentArgsRest(__VLS_13));
+let __VLS_16;
+let __VLS_17;
+let __VLS_18;
+const __VLS_19 = {
+    onClick: (__VLS_ctx.onSearch)
+};
 __VLS_15.slots.default;
-for (const [s] of __VLS_getVForSourceType((__VLS_ctx.seriesList))) {
-    const __VLS_16 = {}.VanTab;
-    /** @type {[typeof __VLS_components.VanTab, typeof __VLS_components.vanTab, ]} */ ;
-    // @ts-ignore
-    const __VLS_17 = __VLS_asFunctionalComponent(__VLS_16, new __VLS_16({
-        key: (s.id),
-        title: (s.name),
-    }));
-    const __VLS_18 = __VLS_17({
-        key: (s.id),
-        title: (s.name),
-    }, ...__VLS_functionalComponentArgsRest(__VLS_17));
-}
 var __VLS_15;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "panel-title" },
+    ...{ class: "category-layout" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "model-list" },
+    ...{ class: "category-left" },
 });
-for (const [m] of __VLS_getVForSourceType((__VLS_ctx.modelList))) {
-    const __VLS_20 = {}.VanButton;
-    /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
-    // @ts-ignore
-    const __VLS_21 = __VLS_asFunctionalComponent(__VLS_20, new __VLS_20({
-        ...{ 'onClick': {} },
-        key: (m.id),
-        size: "small",
-        type: (m.id === __VLS_ctx.selectedModelId ? 'primary' : 'default'),
-        plain: true,
-    }));
-    const __VLS_22 = __VLS_21({
-        ...{ 'onClick': {} },
-        key: (m.id),
-        size: "small",
-        type: (m.id === __VLS_ctx.selectedModelId ? 'primary' : 'default'),
-        plain: true,
-    }, ...__VLS_functionalComponentArgsRest(__VLS_21));
-    let __VLS_24;
-    let __VLS_25;
-    let __VLS_26;
-    const __VLS_27 = {
-        onClick: (...[$event]) => {
-            __VLS_ctx.selectModel(m.id);
-        }
-    };
-    __VLS_23.slots.default;
-    (m.name);
-    var __VLS_23;
+for (const [item] of __VLS_getVForSourceType((__VLS_ctx.brandCategories))) {
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+        ...{ onClick: (...[$event]) => {
+                __VLS_ctx.selectBrand(item.id);
+            } },
+        key: (item.id),
+        ...{ class: "category-item" },
+        ...{ class: ({ active: item.id === __VLS_ctx.selectedBrandId }) },
+    });
+    (item.name);
 }
-const __VLS_28 = {}.VanPullRefresh;
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "category-right" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "category-block" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "block-title" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "block-options" },
+});
+for (const [item] of __VLS_getVForSourceType((__VLS_ctx.seriesCategories))) {
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+        ...{ onClick: (...[$event]) => {
+                __VLS_ctx.selectSeries(item.id);
+            } },
+        key: (item.id),
+        ...{ class: "option-btn" },
+        ...{ class: ({ active: item.id === __VLS_ctx.selectedSeriesId }) },
+    });
+    (item.name);
+}
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "category-block" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "block-title" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "block-options" },
+});
+for (const [item] of __VLS_getVForSourceType((__VLS_ctx.modelCategories))) {
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+        ...{ onClick: (...[$event]) => {
+                __VLS_ctx.selectModel(item.id);
+            } },
+        key: (item.id),
+        ...{ class: "option-btn" },
+        ...{ class: ({ active: item.id === __VLS_ctx.selectedModelId }) },
+    });
+    (item.name);
+}
+const __VLS_20 = {}.VanPullRefresh;
 /** @type {[typeof __VLS_components.VanPullRefresh, typeof __VLS_components.vanPullRefresh, typeof __VLS_components.VanPullRefresh, typeof __VLS_components.vanPullRefresh, ]} */ ;
 // @ts-ignore
-const __VLS_29 = __VLS_asFunctionalComponent(__VLS_28, new __VLS_28({
+const __VLS_21 = __VLS_asFunctionalComponent(__VLS_20, new __VLS_20({
     ...{ 'onRefresh': {} },
     modelValue: (__VLS_ctx.refreshing),
 }));
-const __VLS_30 = __VLS_29({
+const __VLS_22 = __VLS_21({
     ...{ 'onRefresh': {} },
     modelValue: (__VLS_ctx.refreshing),
-}, ...__VLS_functionalComponentArgsRest(__VLS_29));
-let __VLS_32;
-let __VLS_33;
-let __VLS_34;
-const __VLS_35 = {
+}, ...__VLS_functionalComponentArgsRest(__VLS_21));
+let __VLS_24;
+let __VLS_25;
+let __VLS_26;
+const __VLS_27 = {
     onRefresh: (__VLS_ctx.loadProducts)
 };
-__VLS_31.slots.default;
-const __VLS_36 = {}.VanList;
-/** @type {[typeof __VLS_components.VanList, typeof __VLS_components.vanList, typeof __VLS_components.VanList, typeof __VLS_components.vanList, ]} */ ;
-// @ts-ignore
-const __VLS_37 = __VLS_asFunctionalComponent(__VLS_36, new __VLS_36({
-    loading: (__VLS_ctx.loading),
-    finished: (true),
-    finishedText: "没有更多了",
-}));
-const __VLS_38 = __VLS_37({
-    loading: (__VLS_ctx.loading),
-    finished: (true),
-    finishedText: "没有更多了",
-}, ...__VLS_functionalComponentArgsRest(__VLS_37));
-__VLS_39.slots.default;
-for (const [p] of __VLS_getVForSourceType((__VLS_ctx.products))) {
-    const __VLS_40 = {}.VanCell;
-    /** @type {[typeof __VLS_components.VanCell, typeof __VLS_components.vanCell, typeof __VLS_components.VanCell, typeof __VLS_components.vanCell, ]} */ ;
+__VLS_23.slots.default;
+if (__VLS_ctx.loading) {
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+        ...{ class: "empty-text" },
+    });
+    const __VLS_28 = {}.VanLoading;
+    /** @type {[typeof __VLS_components.VanLoading, typeof __VLS_components.vanLoading, ]} */ ;
     // @ts-ignore
-    const __VLS_41 = __VLS_asFunctionalComponent(__VLS_40, new __VLS_40({
-        ...{ 'onClick': {} },
-        key: (p.id),
-        title: (p.name),
-        label: (`租金/期：￥${p.rentPerCycle}`),
-        isLink: true,
+    const __VLS_29 = __VLS_asFunctionalComponent(__VLS_28, new __VLS_28({
+        size: "20px",
     }));
-    const __VLS_42 = __VLS_41({
-        ...{ 'onClick': {} },
-        key: (p.id),
-        title: (p.name),
-        label: (`租金/期：￥${p.rentPerCycle}`),
-        isLink: true,
-    }, ...__VLS_functionalComponentArgsRest(__VLS_41));
-    let __VLS_44;
-    let __VLS_45;
-    let __VLS_46;
-    const __VLS_47 = {
-        onClick: (...[$event]) => {
-            __VLS_ctx.go(p.id);
-        }
-    };
-    __VLS_43.slots.default;
-    {
-        const { icon: __VLS_thisSlot } = __VLS_43.slots;
-        if (p.coverUrl) {
-            const __VLS_48 = {}.VanImage;
-            /** @type {[typeof __VLS_components.VanImage, typeof __VLS_components.vanImage, ]} */ ;
-            // @ts-ignore
-            const __VLS_49 = __VLS_asFunctionalComponent(__VLS_48, new __VLS_48({
-                src: (p.coverUrl),
-                width: "44",
-                height: "44",
-                fit: "cover",
-                radius: "8",
-                ...{ style: {} },
-            }));
-            const __VLS_50 = __VLS_49({
-                src: (p.coverUrl),
-                width: "44",
-                height: "44",
-                fit: "cover",
-                radius: "8",
-                ...{ style: {} },
-            }, ...__VLS_functionalComponentArgsRest(__VLS_49));
-        }
-    }
-    var __VLS_43;
+    const __VLS_30 = __VLS_29({
+        size: "20px",
+    }, ...__VLS_functionalComponentArgsRest(__VLS_29));
 }
-var __VLS_39;
-var __VLS_31;
-const __VLS_52 = {}.VanTabbar;
+else if (__VLS_ctx.filteredProducts.length === 0) {
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+        ...{ class: "empty-text" },
+    });
+}
+else {
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+        ...{ class: "product-grid" },
+    });
+    for (const [p] of __VLS_getVForSourceType((__VLS_ctx.filteredProducts))) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ onClick: (...[$event]) => {
+                    if (!!(__VLS_ctx.loading))
+                        return;
+                    if (!!(__VLS_ctx.filteredProducts.length === 0))
+                        return;
+                    __VLS_ctx.go(p.id);
+                } },
+            key: (p.id),
+            ...{ class: "product-card" },
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "product-image" },
+        });
+        const __VLS_32 = {}.VanImage;
+        /** @type {[typeof __VLS_components.VanImage, typeof __VLS_components.vanImage, ]} */ ;
+        // @ts-ignore
+        const __VLS_33 = __VLS_asFunctionalComponent(__VLS_32, new __VLS_32({
+            src: (p.coverUrl),
+            width: "100%",
+            height: "120",
+            fit: "cover",
+        }));
+        const __VLS_34 = __VLS_33({
+            src: (p.coverUrl),
+            width: "100%",
+            height: "120",
+            fit: "cover",
+        }, ...__VLS_functionalComponentArgsRest(__VLS_33));
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "product-name" },
+        });
+        (p.name);
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "product-price" },
+        });
+        (__VLS_ctx.displayPrice(p));
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
+    }
+}
+var __VLS_23;
+const __VLS_36 = {}.VanTabbar;
 /** @type {[typeof __VLS_components.VanTabbar, typeof __VLS_components.vanTabbar, typeof __VLS_components.VanTabbar, typeof __VLS_components.vanTabbar, ]} */ ;
 // @ts-ignore
-const __VLS_53 = __VLS_asFunctionalComponent(__VLS_52, new __VLS_52({
+const __VLS_37 = __VLS_asFunctionalComponent(__VLS_36, new __VLS_36({
     route: true,
 }));
-const __VLS_54 = __VLS_53({
+const __VLS_38 = __VLS_37({
     route: true,
-}, ...__VLS_functionalComponentArgsRest(__VLS_53));
-__VLS_55.slots.default;
-const __VLS_56 = {}.VanTabbarItem;
+}, ...__VLS_functionalComponentArgsRest(__VLS_37));
+__VLS_39.slots.default;
+const __VLS_40 = {}.VanTabbarItem;
 /** @type {[typeof __VLS_components.VanTabbarItem, typeof __VLS_components.vanTabbarItem, typeof __VLS_components.VanTabbarItem, typeof __VLS_components.vanTabbarItem, ]} */ ;
 // @ts-ignore
-const __VLS_57 = __VLS_asFunctionalComponent(__VLS_56, new __VLS_56({
+const __VLS_41 = __VLS_asFunctionalComponent(__VLS_40, new __VLS_40({
     replace: true,
     to: "/products",
     icon: "shop-o",
 }));
-const __VLS_58 = __VLS_57({
+const __VLS_42 = __VLS_41({
     replace: true,
     to: "/products",
     icon: "shop-o",
-}, ...__VLS_functionalComponentArgsRest(__VLS_57));
-__VLS_59.slots.default;
-var __VLS_59;
-const __VLS_60 = {}.VanTabbarItem;
+}, ...__VLS_functionalComponentArgsRest(__VLS_41));
+__VLS_43.slots.default;
+var __VLS_43;
+const __VLS_44 = {}.VanTabbarItem;
 /** @type {[typeof __VLS_components.VanTabbarItem, typeof __VLS_components.vanTabbarItem, typeof __VLS_components.VanTabbarItem, typeof __VLS_components.vanTabbarItem, ]} */ ;
 // @ts-ignore
-const __VLS_61 = __VLS_asFunctionalComponent(__VLS_60, new __VLS_60({
+const __VLS_45 = __VLS_asFunctionalComponent(__VLS_44, new __VLS_44({
     replace: true,
     to: "/orders",
     icon: "orders-o",
 }));
-const __VLS_62 = __VLS_61({
+const __VLS_46 = __VLS_45({
     replace: true,
     to: "/orders",
     icon: "orders-o",
-}, ...__VLS_functionalComponentArgsRest(__VLS_61));
-__VLS_63.slots.default;
-var __VLS_63;
-var __VLS_55;
+}, ...__VLS_functionalComponentArgsRest(__VLS_45));
+__VLS_47.slots.default;
+var __VLS_47;
+var __VLS_39;
 /** @type {__VLS_StyleScopedClasses['page']} */ ;
-/** @type {__VLS_StyleScopedClasses['category-panel']} */ ;
-/** @type {__VLS_StyleScopedClasses['panel-title']} */ ;
-/** @type {__VLS_StyleScopedClasses['panel-title']} */ ;
-/** @type {__VLS_StyleScopedClasses['panel-title']} */ ;
-/** @type {__VLS_StyleScopedClasses['model-list']} */ ;
+/** @type {__VLS_StyleScopedClasses['search-wrap']} */ ;
+/** @type {__VLS_StyleScopedClasses['search-btn']} */ ;
+/** @type {__VLS_StyleScopedClasses['category-layout']} */ ;
+/** @type {__VLS_StyleScopedClasses['category-left']} */ ;
+/** @type {__VLS_StyleScopedClasses['category-item']} */ ;
+/** @type {__VLS_StyleScopedClasses['category-right']} */ ;
+/** @type {__VLS_StyleScopedClasses['category-block']} */ ;
+/** @type {__VLS_StyleScopedClasses['block-title']} */ ;
+/** @type {__VLS_StyleScopedClasses['block-options']} */ ;
+/** @type {__VLS_StyleScopedClasses['option-btn']} */ ;
+/** @type {__VLS_StyleScopedClasses['category-block']} */ ;
+/** @type {__VLS_StyleScopedClasses['block-title']} */ ;
+/** @type {__VLS_StyleScopedClasses['block-options']} */ ;
+/** @type {__VLS_StyleScopedClasses['option-btn']} */ ;
+/** @type {__VLS_StyleScopedClasses['empty-text']} */ ;
+/** @type {__VLS_StyleScopedClasses['empty-text']} */ ;
+/** @type {__VLS_StyleScopedClasses['product-grid']} */ ;
+/** @type {__VLS_StyleScopedClasses['product-card']} */ ;
+/** @type {__VLS_StyleScopedClasses['product-image']} */ ;
+/** @type {__VLS_StyleScopedClasses['product-name']} */ ;
+/** @type {__VLS_StyleScopedClasses['product-price']} */ ;
 var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {
         return {
-            products: products,
+            router: router,
             loading: loading,
             refreshing: refreshing,
-            categories: categories,
-            categoryIndex: categoryIndex,
-            seriesIndex: seriesIndex,
+            selectedBrandId: selectedBrandId,
+            selectedSeriesId: selectedSeriesId,
             selectedModelId: selectedModelId,
-            seriesList: seriesList,
-            modelList: modelList,
+            keyword: keyword,
+            brandCategories: brandCategories,
+            seriesCategories: seriesCategories,
+            modelCategories: modelCategories,
+            filteredProducts: filteredProducts,
             loadProducts: loadProducts,
-            go: go,
+            selectBrand: selectBrand,
+            selectSeries: selectSeries,
             selectModel: selectModel,
+            go: go,
+            displayPrice: displayPrice,
+            onSearch: onSearch,
         };
     },
 });

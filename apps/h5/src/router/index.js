@@ -24,7 +24,7 @@ export function createRouter() {
         if (publicPaths.has(to.path))
             return true;
         if (!getH5Token())
-            return '/login';
+            return { path: '/login', query: { redirect: to.fullPath } };
         return true;
     });
     return router;

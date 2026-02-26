@@ -1,21 +1,19 @@
-<template>
+﻿<template>
   <div class="page">
     <van-nav-bar title="我的订单" />
     <van-pull-refresh v-model="refreshing" @refresh="load">
-      <van-list v-model:loading="loading" :finished="true" finished-text="没有更多了">
-        <div v-for="o in orders" :key="o.id" class="order-item" @click="go(o.id)">
-          <van-cell :title="o.productName" is-link>
-            <template #label>
-              <div class="order-info">
-                <span>{{ statusText(o.status) }} · {{ o.periods }}期 · {{ o.cycleDays }}天/期</span>
-              </div>
-              <van-tag v-if="!o.kycCompleted" type="warning" style="margin-top: 4px">
-                待补充资料
-              </van-tag>
-            </template>
-          </van-cell>
+      <div v-if="loading" class="empty-text">
+        <van-loading size="20px" />
+      </div>
+      <div v-else-if="orders.length === 0" class="empty-text">暂无订单</div>
+      <div v-else>
+        <div v-for="o in orders" :key="o.id" class="h5-card order-card" @click="go(o.id)">
+          <div class="order-title">{{ o.productName }}</div>
+          <div class="order-sub">{{ statusText(o.status) }} · {{ o.periods }}期 · {{ o.cycleDays }}天/期</div>
+          <div class="order-sub">创建时间：{{ o.createdAt }}</div>
+          <van-tag v-if="!o.kycCompleted" type="warning" style="margin-top: 6px">待补充资料</van-tag>
         </div>
-      </van-list>
+      </div>
     </van-pull-refresh>
     <van-tabbar route>
       <van-tabbar-item replace to="/products" icon="shop-o">商品</van-tabbar-item>
@@ -78,7 +76,16 @@ onMounted(load);
 </script>
 
 <style scoped>
-.page {
-  padding-bottom: 60px;
+.order-card {
+  cursor: pointer;
+}
+.order-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+.order-sub {
+  margin-top: 6px;
+  color: var(--h5-muted);
+  font-size: 12px;
 }
 </style>

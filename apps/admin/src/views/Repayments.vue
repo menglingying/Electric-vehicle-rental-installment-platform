@@ -1,6 +1,10 @@
-<template>
-  <a-card title="还款管理">
-    <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center">
+﻿<template>
+  <div class="panel">
+    <div class="panel-title">
+      <div>还款管理</div>
+      <span class="link">人工标记与计划查看</span>
+    </div>
+    <div class="section-toolbar">
       <a-select v-model="selectedOrderId" placeholder="选择订单" style="width: 320px" @change="onSelect">
         <a-option v-for="o in orders" :key="o.id" :value="o.id">
           {{ o.id }} · {{ o.phone }} · {{ o.productName }}
@@ -11,31 +15,33 @@
     </div>
 
     <a-alert style="margin-bottom: 12px" type="info">
-      一期：还款记录先通过后台“标记已还”产生；后续对接收银台/回调后可自动入账。
+      一期：还款记录先通过后台“标记已还”产生；后续对接收银台回调后可自动入账。
     </a-alert>
 
-    <a-table :data="planRows" :pagination="false">
-      <a-table-column title="期次" data-index="period" />
-      <a-table-column title="应还日" data-index="dueDate" />
-      <a-table-column title="金额" :render="({ record }: any) => `￥${record.amount}`" />
-      <a-table-column title="状态" :render="({ record }: any) => (record.paid ? '已还' : '未还')" />
-      <a-table-column
-        title="操作"
-        :render="({ record }: any) =>
-          h(
-            Button,
-            { type: 'primary', size: 'small', disabled: record.paid || record.amount <= 0, onClick: () => markPaid(record.period) },
-            () => '标记已还'
-          )
-        "
-      />
-    </a-table>
-  </a-card>
+    <div class="table-wrap">
+      <a-table :data="planRows" :pagination="false">
+        <a-table-column title="期次" data-index="period" />
+        <a-table-column title="应还日期" data-index="dueDate" />
+        <a-table-column title="金额" :render="({ record }: any) => `¥${record.amount}`" />
+        <a-table-column title="状态" :render="({ record }: any) => (record.paid ? '已还' : '未还')" />
+        <a-table-column
+          title="操作"
+          :render="({ record }: any) =>
+            h(
+              Button,
+              { type: 'primary', size: 'small', disabled: record.paid || record.amount <= 0, onClick: () => markPaid(record.period) },
+              () => '标记已还'
+            )
+          "
+        />
+      </a-table>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { h, onMounted, ref } from 'vue';
-import { Alert as AAlert, Button, Message } from '@arco-design/web-vue';
+import { Button, Message } from '@arco-design/web-vue';
 import { getRepayments, listOrders, markPeriodPaid } from '@/services/api';
 import { downloadCsv } from '@/services/download';
 

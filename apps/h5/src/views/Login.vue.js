@@ -1,9 +1,10 @@
 import { ref, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { showFailToast, showSuccessToast } from 'vant';
 import { login, requestLoginCode } from '@/services/api';
 import { setH5Token } from '@/services/auth';
 const router = useRouter();
+const route = useRoute();
 const phone = ref('');
 const code = ref('');
 const countdown = ref(0);
@@ -33,16 +34,14 @@ async function onRequestCode() {
     }
     try {
         const res = await requestLoginCode(phone.value);
-        // 开发环境返回固定验证码
         if (res.devFixedCode) {
             devFixedCode.value = res.devFixedCode;
-            showSuccessToast(`已发送（dev 固定码：${res.devFixedCode}）`);
+            showSuccessToast(`已发送（dev固定码：${res.devFixedCode}）`);
         }
         else {
             devFixedCode.value = '';
             showSuccessToast('验证码已发送');
         }
-        // 开始60秒倒计时
         startCountdown(60);
     }
     catch (e) {
@@ -54,7 +53,9 @@ async function onSubmit() {
         const res = await login(phone.value, code.value);
         setH5Token(res.token);
         showSuccessToast('登录成功');
-        await router.replace('/products');
+        const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '';
+        const target = redirect.startsWith('/') ? redirect : '/products';
+        await router.replace(target);
     }
     catch (e) {
         showFailToast(e?.response?.data?.message ?? '登录失败');
@@ -73,13 +74,16 @@ const __VLS_0 = {}.VanNavBar;
 /** @type {[typeof __VLS_components.VanNavBar, typeof __VLS_components.vanNavBar, ]} */ ;
 // @ts-ignore
 const __VLS_1 = __VLS_asFunctionalComponent(__VLS_0, new __VLS_0({
-    title: "手机号登录",
+    title: "登录",
 }));
 const __VLS_2 = __VLS_1({
-    title: "手机号登录",
+    title: "登录",
 }, ...__VLS_functionalComponentArgsRest(__VLS_1));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "card" },
+    ...{ class: "h5-card login-card" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "section-title" },
 });
 const __VLS_4 = {}.VanForm;
 /** @type {[typeof __VLS_components.VanForm, typeof __VLS_components.vanForm, typeof __VLS_components.VanForm, typeof __VLS_components.vanForm, ]} */ ;
@@ -128,7 +132,7 @@ const __VLS_18 = __VLS_17({
     placeholder: "请输入验证码",
 }, ...__VLS_functionalComponentArgsRest(__VLS_17));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ style: {} },
+    ...{ class: "login-actions" },
 });
 const __VLS_20 = {}.VanButton;
 /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
@@ -179,7 +183,10 @@ if (__VLS_ctx.devFixedCode) {
 }
 var __VLS_7;
 /** @type {__VLS_StyleScopedClasses['page']} */ ;
-/** @type {__VLS_StyleScopedClasses['card']} */ ;
+/** @type {__VLS_StyleScopedClasses['h5-card']} */ ;
+/** @type {__VLS_StyleScopedClasses['login-card']} */ ;
+/** @type {__VLS_StyleScopedClasses['section-title']} */ ;
+/** @type {__VLS_StyleScopedClasses['login-actions']} */ ;
 /** @type {__VLS_StyleScopedClasses['hint']} */ ;
 var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({

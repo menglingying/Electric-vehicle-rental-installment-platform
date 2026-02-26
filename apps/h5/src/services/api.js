@@ -56,6 +56,10 @@ export async function startPayment(orderId) {
     const { data } = await http.post(`/h5/orders/${orderId}/payment/start`);
     return data;
 }
+export async function startAsignAuth(orderId) {
+    const { data } = await http.post(`/h5/orders/${orderId}/asign-auth`);
+    return data;
+}
 export async function uploadKycImage(file) {
     const form = new FormData();
     form.append('file', file);
@@ -64,5 +68,9 @@ export async function uploadKycImage(file) {
 }
 export async function submitKyc(orderId, kycData) {
     const { data } = await http.post(`/h5/orders/${orderId}/kyc`, kycData);
+    return data;
+}
+export async function getNotarySignUrl(orderId) {
+    const { data } = await http.get(`/h5/notary/${orderId}/sign-url`);
     return data;
 }

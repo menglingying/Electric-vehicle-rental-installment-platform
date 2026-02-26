@@ -19,6 +19,7 @@ spring:
     open-in-view: false
 
 app:
+  public-base-url: ${APP_PUBLIC_BASE_URL:}
   auth:
     fixed-code:
       enabled: false
@@ -39,3 +40,52 @@ app:
     verification:
       expire-minutes: 15
       length: 6
+
+juzheng:
+  base-url: ${JUZHENG_BASE_URL:https://test.gz.51juzheng.cn}
+  client-id: ${JUZHENG_CLIENT_ID:}
+  client-secret: ${JUZHENG_CLIENT_SECRET:}
+  public-key: ${JUZHENG_PUBLIC_KEY:}
+  private-key: ${JUZHENG_PRIVATE_KEY:}
+  company-name: ${JUZHENG_COMPANY_NAME:}
+  company-cert-no: ${JUZHENG_COMPANY_CERT_NO:}
+  company-address: ${JUZHENG_COMPANY_ADDRESS:}
+  legal-name: ${JUZHENG_LEGAL_NAME:}
+  legal-cert-no: ${JUZHENG_LEGAL_CERT_NO:}
+  legal-phone: ${JUZHENG_LEGAL_PHONE:}
+  company-type: ${JUZHENG_COMPANY_TYPE:30}
+  callback-url: ${JUZHENG_CALLBACK_URL:}
+
+asign:
+  base-url: ${ASIGN_BASE_URL:https://prev.asign.cn}
+  app-id: ${ASIGN_APP_ID:}
+  private-key: ${ASIGN_PRIVATE_KEY:}
+  public-key: ${ASIGN_PUBLIC_KEY:}
+  template-no: ${ASIGN_TEMPLATE_NO:}
+  template-fill-json: ${ASIGN_TEMPLATE_FILL_JSON:}
+  company-account: ${ASIGN_COMPANY_ACCOUNT:}
+  company-name: ${ASIGN_COMPANY_NAME:}
+  company-cert-no: ${ASIGN_COMPANY_CERT_NO:}
+  company-serial-no: ${ASIGN_COMPANY_SERIAL_NO:}
+  legal-name: ${ASIGN_LEGAL_NAME:}
+  legal-cert-no: ${ASIGN_LEGAL_CERT_NO:}
+  legal-phone: ${ASIGN_LEGAL_PHONE:}
+  company-mobile: ${ASIGN_COMPANY_MOBILE:}
+  company-contact-name: ${ASIGN_COMPANY_CONTACT_NAME:}
+  company-contact-id-card: ${ASIGN_COMPANY_CONTACT_ID_CARD:}
+  sign-order: ${ASIGN_SIGN_ORDER:1}
+  company-sign-type: ${ASIGN_COMPANY_SIGN_TYPE:3}
+  user-sign-type: ${ASIGN_USER_SIGN_TYPE:3}
+  company-sign-key: ${ASIGN_COMPANY_SIGN_KEY:}
+  user-sign-key: ${ASIGN_USER_SIGN_KEY:}
+  company-sign-strategy-json: ${ASIGN_COMPANY_SIGN_STRATEGY_JSON:}
+  user-sign-strategy-json: ${ASIGN_USER_SIGN_STRATEGY_JSON:}
+  notify-url: ${ASIGN_NOTIFY_URL:}
+  callback-url: ${ASIGN_CALLBACK_URL:}
+  user-notify-url: ${ASIGN_USER_NOTIFY_URL:}
+  auth-notify-url: ${ASIGN_AUTH_NOTIFY_URL:}
+  auth-redirect-url: ${ASIGN_AUTH_REDIRECT_URL:}
+  redirect-url: ${ASIGN_REDIRECT_URL:}
+  use-stranger: ${ASIGN_USE_STRANGER:false}
+  sign-attach-no: ${ASIGN_SIGN_ATTACH_NO:1}
+  sign-location-mode: ${ASIGN_SIGN_LOCATION_MODE:4}

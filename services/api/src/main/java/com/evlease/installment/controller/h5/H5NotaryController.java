@@ -62,11 +62,7 @@ public class H5NotaryController {
     }
     
     try {
-      // 发起公证（身份证图片需要先上传到聚证获取fileId，这里简化处理）
-      String idCardFrontFileId = "placeholder_front"; // TODO: 实际需要上传文件
-      String idCardBackFileId = "placeholder_back";
-      
-      String outOrderNo = notaryService.applyLeaseNotary(order, idCardFrontFileId, idCardBackFileId);
+      String outOrderNo = notaryService.applyLeaseNotary(order);
       
       order.setNotaryOrderNo(outOrderNo);
       order.setNotaryStatus("10"); // 预审中

@@ -13,8 +13,27 @@ public class Contract {
   private String id;
   @Id
   private String orderId;
+  // ORDER / MANUAL
+  private String contractType;
+  // ASIGN / MANUAL
+  private String provider;
+  // 合同编号
+  private String contractNo;
+  // 模板ID（电子签）
+  private String templateId;
   private String status;
   private String signUrl;
+  // 合同文件URL（签署后或历史PDF）
+  private String fileUrl;
+  // 签署完成时间
+  private Instant signedAt;
+  // 签署人
+  private String signedBy;
+  // 关键字段JSON
+  @Column(columnDefinition = "text")
+  private String meta;
+  // 公证证书下载链接（存档）
+  private String notaryCertUrl;
   private String voidReason;
   private Instant createdAt;
   private Instant updatedAt;
@@ -51,6 +70,78 @@ public class Contract {
 
   public void setSignUrl(String signUrl) {
     this.signUrl = signUrl;
+  }
+
+  public String getContractType() {
+    return contractType;
+  }
+
+  public void setContractType(String contractType) {
+    this.contractType = contractType;
+  }
+
+  public String getProvider() {
+    return provider;
+  }
+
+  public void setProvider(String provider) {
+    this.provider = provider;
+  }
+
+  public String getContractNo() {
+    return contractNo;
+  }
+
+  public void setContractNo(String contractNo) {
+    this.contractNo = contractNo;
+  }
+
+  public String getTemplateId() {
+    return templateId;
+  }
+
+  public void setTemplateId(String templateId) {
+    this.templateId = templateId;
+  }
+
+  public String getFileUrl() {
+    return fileUrl;
+  }
+
+  public void setFileUrl(String fileUrl) {
+    this.fileUrl = fileUrl;
+  }
+
+  public Instant getSignedAt() {
+    return signedAt;
+  }
+
+  public void setSignedAt(Instant signedAt) {
+    this.signedAt = signedAt;
+  }
+
+  public String getSignedBy() {
+    return signedBy;
+  }
+
+  public void setSignedBy(String signedBy) {
+    this.signedBy = signedBy;
+  }
+
+  public String getMeta() {
+    return meta;
+  }
+
+  public void setMeta(String meta) {
+    this.meta = meta;
+  }
+
+  public String getNotaryCertUrl() {
+    return notaryCertUrl;
+  }
+
+  public void setNotaryCertUrl(String notaryCertUrl) {
+    this.notaryCertUrl = notaryCertUrl;
   }
 
   public String getVoidReason() {

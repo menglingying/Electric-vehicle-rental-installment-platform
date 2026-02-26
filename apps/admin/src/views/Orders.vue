@@ -1,10 +1,16 @@
-<template>
-  <a-card title="订单管理（人工审核 + 履约）">
-    <div style="display: flex; gap: 8px; margin-bottom: 12px">
+﻿<template>
+  <div class="panel">
+    <div class="panel-title">
+      <div>订单管理（人工审核 + 履约）</div>
+      <span class="link">状态流转与调价</span>
+    </div>
+    <div class="section-toolbar">
       <a-button @click="exportOrders">导出订单CSV</a-button>
     </div>
-    <a-table :data="rows" :columns="columns" :pagination="false" />
-  </a-card>
+    <div class="table-wrap">
+      <a-table :data="rows" :columns="columns" :pagination="false" />
+    </div>
+  </div>
 
   <a-drawer v-model:visible="detailVisible" width="600" title="订单详情" :footer="false">
     <template v-if="detail">
@@ -19,7 +25,7 @@
         <a-descriptions-item label="周期">{{ detail.cycleDays }}天/期</a-descriptions-item>
         <a-descriptions-item label="合同状态">{{ detail.contract?.status || '未发起' }}</a-descriptions-item>
         <a-descriptions-item label="收款状态">{{ detail.payment?.status || '未发起' }}</a-descriptions-item>
-        <a-descriptions-item label="剩余应还">￥{{ detail.remainingAmount }}</a-descriptions-item>
+        <a-descriptions-item label="剩余应还">¥{{ detail.remainingAmount }}</a-descriptions-item>
       </a-descriptions>
 
       <a-divider />
@@ -34,10 +40,16 @@
         <a-descriptions-item label="就业状态">{{ employmentStatusText(detail.employmentStatus) }}</a-descriptions-item>
         <a-descriptions-item label="单位/职业">{{ detail.employmentName || detail.occupation || '-' }}</a-descriptions-item>
         <a-descriptions-item label="月收入">{{ incomeRangeText(detail.incomeRangeCode) }}</a-descriptions-item>
-        <a-descriptions-item label="住家地址" :span="2">{{ formatAddress(detail) }}</a-descriptions-item>
-        <a-descriptions-item label="紧急联系人">{{ detail.contactName }}</a-descriptions-item>
-        <a-descriptions-item label="联系人电话">{{ detail.contactPhone }}</a-descriptions-item>
-        <a-descriptions-item label="与客户关系">{{ contactRelationText(detail.contactRelation) }}</a-descriptions-item>
+        <a-descriptions-item label="住址" :span="2">{{ formatAddress(detail) }}</a-descriptions-item>
+        <a-descriptions-item label="联系人1">{{ detail.contactName }}</a-descriptions-item>
+        <a-descriptions-item label="联系人1电话">{{ detail.contactPhone }}</a-descriptions-item>
+        <a-descriptions-item label="联系人1关系">{{ contactRelationText(detail.contactRelation) }}</a-descriptions-item>
+        <a-descriptions-item label="联系人2">{{ detail.contactName2 || '-' }}</a-descriptions-item>
+        <a-descriptions-item label="联系人2电话">{{ detail.contactPhone2 || '-' }}</a-descriptions-item>
+        <a-descriptions-item label="联系人2关系">{{ contactRelationText(detail.contactRelation2) }}</a-descriptions-item>
+        <a-descriptions-item label="联系人3">{{ detail.contactName3 || '-' }}</a-descriptions-item>
+        <a-descriptions-item label="联系人3电话">{{ detail.contactPhone3 || '-' }}</a-descriptions-item>
+        <a-descriptions-item label="联系人3关系">{{ contactRelationText(detail.contactRelation3) }}</a-descriptions-item>
       </a-descriptions>
       <div v-if="detail.kycCompleted" style="margin-top: 12px; display: flex; gap: 12px">
         <div v-if="detail.idCardFront" class="kyc-image">
@@ -52,6 +64,91 @@
           <div class="label">人脸自拍</div>
           <a-image :src="detail.facePhoto" width="80" height="80" fit="cover" />
         </div>
+      </div>
+
+      <a-divider />
+      <div style="font-weight: 600; margin-bottom: 8px">
+        爱签实名认证
+        <a-tag v-if="detail.asignSerialNo" color="green">已完成</a-tag>
+        <a-tag v-else color="orange">未完成</a-tag>
+      </div>
+      <a-descriptions :column="2" size="small" bordered>
+        <a-descriptions-item label="认证流水号">{{ detail.asignSerialNo || '-' }}</a-descriptions-item>
+        <a-descriptions-item label="认证结果">{{ detail.asignAuthResult || '-' }}</a-descriptions-item>
+      </a-descriptions>
+      <div v-if="!detail.asignSerialNo && detail.kycCompleted" style="margin-top: 8px">
+        <a-alert type="warning" :show-icon="true">
+          客户需在H5订单详情页点击"去实名认证"完成爱签人脸认证后，才能生成合同
+        </a-alert>
+      </div>
+
+      <a-divider />
+      <div style="font-weight: 600; margin-bottom: 8px">合同信息</div>
+      <a-descriptions :column="2" size="small" bordered>
+        <a-descriptions-item label="合同编号">{{ detail.contract?.contractNo || '-' }}</a-descriptions-item>
+        <a-descriptions-item label="合同状态">{{ detail.contract?.status || '未发起' }}</a-descriptions-item>
+        <a-descriptions-item label="签署链接" :span="2">
+          <span v-if="detail.contract?.signUrl">{{ detail.contract.signUrl }}</span>
+          <span v-else>—</span>
+        </a-descriptions-item>
+        <a-descriptions-item label="签署时间">{{ detail.contract?.signedAt || '-' }}</a-descriptions-item>
+        <a-descriptions-item label="签署人">{{ detail.contract?.signedBy || '-' }}</a-descriptions-item>
+        <a-descriptions-item label="合同文件" :span="2">
+          <span v-if="detail.contract?.fileUrl">{{ detail.contract.fileUrl }}</span>
+          <span v-else>—</span>
+        </a-descriptions-item>
+      </a-descriptions>
+      <div style="margin-top: 12px; display: flex; gap: 12px; flex-wrap: wrap">
+        <a-button
+          v-if="detail.status === 'ACTIVE' && !detail.contract && detail.asignSerialNo"
+          type="primary"
+          @click="prepareContractForOrder(detail.id)"
+        >
+          生成合同
+        </a-button>
+        <a-button
+          v-if="detail.status === 'ACTIVE' && !detail.contract && !detail.asignSerialNo"
+          type="primary"
+          disabled
+        >
+          生成合同（需先完成爱签认证）
+        </a-button>
+        <a-button v-if="detail.contract?.signUrl" @click="copyText(detail.contract.signUrl)">复制签署链接</a-button>
+        <a-button v-if="detail.contract?.status === 'SIGNING'" @click="markSigned(detail.id)">标记已签署</a-button>
+        <a-button v-if="detail.contract?.fileUrl" @click="openUrl(detail.contract.fileUrl)">下载合同</a-button>
+        <a-button v-else-if="detail.contract?.status === 'SIGNED' && !detail.contract?.fileUrl" :loading="downloadingContract" @click="handleDownloadContract(detail.id)">下载合同</a-button>
+        <a-button v-if="detail.contract" status="warning" @click="resetForTest(detail.id)">重置测试</a-button>
+      </div>
+
+      <a-divider />
+      <div style="font-weight: 600; margin-bottom: 8px">公证信息</div>
+      <a-descriptions :column="2" size="small" bordered>
+        <a-descriptions-item label="公证状态">{{ notaryStatusText(detail.notaryStatus) }}</a-descriptions-item>
+        <a-descriptions-item label="公证单号">{{ detail.notaryOrderNo || '-' }}</a-descriptions-item>
+        <a-descriptions-item label="出证时间">{{ detail.notaryCertifiedTime || '-' }}</a-descriptions-item>
+        <a-descriptions-item label="公证员">{{ detail.notaryName || '-' }}</a-descriptions-item>
+        <a-descriptions-item v-if="notarySignUrl" label="签署链接" :span="2">
+          <a :href="notarySignUrl" target="_blank" style="word-break: break-all">{{ notarySignUrl }}</a>
+        </a-descriptions-item>
+        <a-descriptions-item label="证书链接" :span="2">
+          <span v-if="detail.notaryCertUrl">{{ detail.notaryCertUrl }}</span>
+          <span v-else>—</span>
+        </a-descriptions-item>
+      </a-descriptions>
+      <div style="margin-top: 12px; display: flex; gap: 12px; flex-wrap: wrap">
+        <a-button v-if="detail.contract?.status === 'SIGNED' && !detail.notaryOrderNo" type="primary" @click="applyNotaryForOrder(detail.id)">
+          发起公证
+        </a-button>
+        <a-button v-if="detail.notaryStatus === '20'" type="primary" :loading="notarySignLoading" @click="getNotarySignUrl(detail.id)">
+          获取签署链接
+        </a-button>
+        <a-button v-if="notarySignUrl" @click="copyText(notarySignUrl)">复制签署链接</a-button>
+        <a-button v-if="detail.notaryOrderNo" @click="refreshNotaryStatus(detail.id)">刷新状态</a-button>
+        <a-button v-if="detail.notaryOrderNo && detail.notaryStatus === '33'" @click="fetchNotaryCert(detail.id)">获取证书链接</a-button>
+        <a-button v-if="detail.notaryCertUrl" @click="openUrl(detail.notaryCertUrl)">下载证书</a-button>
+      </div>
+      <div v-if="detail.notaryStatus === '20'" style="margin-top: 8px">
+        <a-alert type="info">客户需点击签署链接完成公证文件签署，签署完成后状态会自动更新</a-alert>
       </div>
 
       <a-divider />
@@ -79,7 +176,7 @@
       <a-form-item label="调价原因" field="reason">
         <a-input v-model="adjustForm.reason" placeholder="请输入原因" />
       </a-form-item>
-      <a-alert type="warning" :show-icon="true" title="调价仅限审核前，调价后需重签合同。" />
+      <a-alert type="warning" :show-icon="true" title="调价仅限审核前，调价后需重新签合同。" />
     </a-form>
   </a-modal>
 </template>
@@ -92,13 +189,22 @@ import {
   adjustOrderPrice,
   approveOrder,
   closeOrder,
+  deleteOrder,
   deliverOrder,
   getOrderDetail,
+  prepareContract,
+  markContractSigned,
+  downloadContractFile,
   listOrders,
   pickupOrder,
   rejectOrder,
+  resetOrderForTest,
   returnOrder,
   settleOrder,
+  applyNotary,
+  refreshNotary,
+  fetchNotaryCertUrl,
+  getNotarySignUrl as getNotarySignUrlApi,
   type Order
 } from '@/services/api';
 import { downloadCsv } from '@/services/download';
@@ -114,27 +220,27 @@ const adjustForm = ref({
   cycleDays: 0,
   reason: ''
 });
+const notarySignUrl = ref('');
+const notarySignLoading = ref(false);
+const downloadingContract = ref(false);
 
-// 辅助函数：电池配置文本
 function batteryOptionText(option: string) {
   const map: Record<string, string> = {
-    'WITHOUT_BATTERY': '空车',
-    'WITH_BATTERY': '含电池'
+    WITHOUT_BATTERY: '空车',
+    WITH_BATTERY: '含电池'
   };
   return map[option] || option || '-';
 }
 
-// 辅助函数：还款方式文本
 function repaymentMethodText(method: string) {
   const map: Record<string, string> = {
-    'AUTO_DEDUCT': '自动扣款',
-    'MANUAL_TRANSFER': '手动转账',
-    'OFFLINE': '线下收款'
+    AUTO_DEDUCT: '自动扣款',
+    MANUAL_TRANSFER: '手动转账',
+    OFFLINE: '线下收款'
   };
   return map[method] || method || '-';
 }
 
-// 辅助函数：身份证号脱敏
 function maskIdCard(idCard: string) {
   if (!idCard || idCard.length < 10) return idCard || '-';
   return idCard.slice(0, 6) + '********' + idCard.slice(-4);
@@ -142,13 +248,13 @@ function maskIdCard(idCard: string) {
 
 function employmentStatusText(code: string) {
   const map: Record<string, string> = {
-    employed: '\u5168\u804c',
-    part_time: '\u517c\u804c',
-    freelancer: '\u81ea\u7531\u804c\u4e1a',
-    self_employed: '\u4e2a\u4f53\u7ecf\u8425',
-    student: '\u5b66\u751f',
-    unemployed: '\u5168\u804c',
-    retired: '\u9000\u4f11'
+    employed: '全职',
+    part_time: '兼职',
+    freelancer: '自由职业',
+    self_employed: '个体经营',
+    student: '学生',
+    unemployed: '无业',
+    retired: '退休'
   };
   return map[code] || '-';
 }
@@ -171,14 +277,153 @@ function incomeRangeText(code: string) {
 
 function contactRelationText(code: string) {
   const map: Record<string, string> = {
-    parent: '\u7236\u6bcd',
-    spouse: '\u914d\u5076',
-    child: '\u5b50\u5973',
-    colleague: '\u540c\u4e8b',
-    friend: '\u670b\u53cb',
-    other: '\u5176\u4ed6'
+    parent: '父母',
+    spouse: '配偶',
+    child: '子女',
+    colleague: '同事',
+    friend: '朋友',
+    other: '其他'
   };
   return map[code] || code || '-';
+}
+
+function notaryStatusText(status?: string) {
+  if (!status) return '未发起';
+  const map: Record<string, string> = {
+    '10': '预审中',
+    '11': '预审不通过',
+    '20': '申办中',
+    '21': '申办终止',
+    '22': '申办成功',
+    '23': '申办完结',
+    '31': '受理中',
+    '33': '已出证',
+    '34': '异常终止',
+    FAILED: '发起失败'
+  };
+  return map[status] || status;
+}
+
+function openUrl(url: string) {
+  window.open(url, '_blank');
+}
+
+async function prepareContractForOrder(orderId: string) {
+  let contractNo = '';
+  let productFrameNo = '';
+  Modal.confirm({
+    title: '生成合同',
+    content: () =>
+      h('div', { style: 'display: flex; flex-direction: column; gap: 12px' }, [
+        h(Input, {
+          placeholder: '车架号（必填）',
+          'onUpdate:modelValue': (v: string) => (productFrameNo = v),
+          onChange: (v: string) => (productFrameNo = v)
+        }),
+        h(Input, {
+          placeholder: '合同编号（可选）',
+          'onUpdate:modelValue': (v: string) => (contractNo = v),
+          onChange: (v: string) => (contractNo = v)
+        })
+      ]),
+    onOk: async () => {
+      if (!productFrameNo.trim()) {
+        Message.warning('请输入车架号');
+        return false;
+      }
+      try {
+        await prepareContract(orderId, { contractNo, productFrameNo });
+        Message.success('合同已生成，等待签署');
+        await openDetail(orderId);
+      } catch (e: any) {
+        Message.error(e?.response?.data?.message ?? '生成失败');
+      }
+    }
+  });
+}
+
+async function markSigned(orderId: string) {
+  try {
+    await markContractSigned(orderId, { signedBy: 'admin' });
+    Message.success('已标记签署完成');
+    await openDetail(orderId);
+  } catch (e: any) {
+    Message.error(e?.response?.data?.message ?? '操作失败');
+  }
+}
+
+async function handleDownloadContract(orderId: string) {
+  downloadingContract.value = true;
+  try {
+    const updated = await downloadContractFile(orderId);
+    if (updated.fileUrl) {
+      openUrl(updated.fileUrl);
+      await openDetail(orderId);
+    } else {
+      Message.error('下载失败：未获取到文件');
+    }
+  } catch (e: any) {
+    Message.error(e?.response?.data?.message ?? '下载合同失败');
+  } finally {
+    downloadingContract.value = false;
+  }
+}
+
+function copyText(text: string) {
+  if (!text) return;
+  if (navigator?.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).then(() => Message.success('已复制')).catch(() => Message.error('复制失败'));
+  } else {
+    Message.info('浏览器不支持复制，请手动复制');
+  }
+}
+
+async function applyNotaryForOrder(orderId: string) {
+  try {
+    await applyNotary(orderId);
+    Message.success('已发起公证');
+    await openDetail(orderId);
+  } catch (e: any) {
+    Message.error(e?.response?.data?.message ?? '发起失败');
+  }
+}
+
+async function refreshNotaryStatus(orderId: string) {
+  try {
+    await refreshNotary(orderId);
+    Message.success('已刷新状态');
+    await openDetail(orderId);
+  } catch (e: any) {
+    Message.error(e?.response?.data?.message ?? '刷新失败');
+  }
+}
+
+async function fetchNotaryCert(orderId: string) {
+  try {
+    const res = await fetchNotaryCertUrl(orderId);
+    Message.success('已获取证书链接');
+    if (res.url) openUrl(res.url);
+    await openDetail(orderId);
+  } catch (e: any) {
+    Message.error(e?.response?.data?.message ?? '获取失败');
+  }
+}
+
+async function getNotarySignUrl(orderId: string) {
+  notarySignLoading.value = true;
+  try {
+    const res = await getNotarySignUrlApi(orderId);
+    notarySignUrl.value = res.signUrl || '';
+    if (notarySignUrl.value) {
+      Message.success('签署链接获取成功');
+    } else {
+      Message.warning('未获取到签署链接');
+    }
+  } catch (e: any) {
+    Message.error(e?.response?.data?.message ?? '获取签署链接失败');
+  } finally {
+    notarySignLoading.value = false;
+  }
 }
 
 function formatAddress(order: any) {
@@ -194,19 +439,47 @@ function formatAddress(order: any) {
 const columns: TableColumnData[] = [
   { title: 'ID', dataIndex: 'id' },
   { title: '手机号', dataIndex: 'phone' },
+  { title: '客户姓名', render: ({ record }: { record: any }) => record.realName || '-' },
   { title: '商品', dataIndex: 'productName' },
   { title: '电池配置', render: ({ record }: { record: any }) => batteryOptionText(record.batteryOption) },
   { title: '还款方式', render: ({ record }: { record: any }) => repaymentMethodText(record.repaymentMethod) },
-  { 
-    title: 'KYC', 
-    render: ({ record }: { record: any }) => h('span', { style: record.kycCompleted ? 'color: green' : 'color: orange' }, 
-      record.kycCompleted ? '已完成' : '未完成')
+  {
+    title: 'KYC',
+    render: ({ record }: { record: any }) =>
+      h(
+        'span',
+        { style: record.kycCompleted ? 'color: green' : 'color: orange' },
+        record.kycCompleted ? '已完成' : '未完成'
+      )
   },
-  { title: '状态', dataIndex: 'status' },
+  {
+    title: '状态',
+    render: ({ record }: { record: any }) => {
+      const statusMap: Record<string, { text: string; color: string }> = {
+        PENDING_REVIEW: { text: '待审核', color: '#faad14' },
+        ACTIVE: { text: '待交付', color: '#1890ff' },
+        DELIVERED: { text: '已交付', color: '#52c41a' },
+        IN_USE: { text: '租赁中', color: '#722ed1' },
+        RETURNED: { text: '已归还', color: '#13c2c2' },
+        SETTLED: { text: '已结清', color: '#52c41a' },
+        REJECTED: { text: '已驳回', color: '#ff4d4f' },
+        CLOSED: { text: '已关闭', color: '#8c8c8c' }
+      };
+      const s = statusMap[record.status] || { text: record.status, color: '#8c8c8c' };
+      return h('span', { style: `color: ${s.color}; font-weight: 500` }, s.text);
+    }
+  },
   { title: '期数', dataIndex: 'periods' },
-  { title: '创建时间', dataIndex: 'createdAt' },
-  { 
-    title: '操作', 
+  {
+    title: '创建时间',
+    render: ({ record }: { record: any }) => {
+      if (!record.createdAt) return '-';
+      const d = new Date(record.createdAt);
+      return d.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+  },
+  {
+    title: '操作',
     render: ({ record }: { record: any }) => {
       const status = record.status;
       const buttons: any[] = [];
@@ -228,6 +501,10 @@ const columns: TableColumnData[] = [
       } else if (status === 'RETURNED') {
         buttons.push(h(Button, { type: 'primary', size: 'small', onClick: () => settle(record.id) }, () => '结清'));
         buttons.push(h(Button, { size: 'small', onClick: () => close(record.id) }, () => '关闭'));
+      }
+      // 只有未使用和已结清以外的状态可以删除
+      if (status !== 'IN_USE' && status !== 'SETTLED') {
+        buttons.push(h(Button, { status: 'danger', size: 'small', onClick: () => doDelete(record.id) }, () => '删除'));
       }
       return h('div', { style: 'display:flex; gap:8px; flex-wrap:wrap' }, buttons);
     }
@@ -321,8 +598,44 @@ async function close(id: string) {
   });
 }
 
+async function doDelete(id: string) {
+  Modal.confirm({
+    title: '删除订单',
+    content: '确认要删除该订单吗？此操作不可恢复！',
+    okButtonProps: { status: 'danger' },
+    onOk: async () => {
+      try {
+        await deleteOrder(id);
+        Message.success('已删除');
+        await load();
+      } catch (e: any) {
+        Message.error(e?.response?.data?.message ?? '删除失败');
+      }
+    }
+  });
+}
+
+async function resetForTest(id: string) {
+  Modal.confirm({
+    title: '重置测试',
+    content: '将订单重置为ACTIVE状态，删除合同记录，方便重新测试。确认吗？',
+    okButtonProps: { status: 'warning' },
+    onOk: async () => {
+      try {
+        await resetOrderForTest(id);
+        Message.success('已重置，可重新生成合同');
+        await openDetail(id);
+        await load();
+      } catch (e: any) {
+        Message.error(e?.response?.data?.message ?? '重置失败');
+      }
+    }
+  });
+}
+
 async function openDetail(id: string) {
   try {
+    notarySignUrl.value = ''; // 清除之前的签署链接
     detail.value = await getOrderDetail(id);
     detailVisible.value = true;
   } catch (e: any) {

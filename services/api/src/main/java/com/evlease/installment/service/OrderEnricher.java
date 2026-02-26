@@ -107,6 +107,12 @@ public class OrderEnricher {
     dto.put("contactName", order.getContactName());
     dto.put("contactPhone", order.getContactPhone());
     dto.put("contactRelation", order.getContactRelation());
+    dto.put("contactName2", order.getContactName2());
+    dto.put("contactPhone2", order.getContactPhone2());
+    dto.put("contactRelation2", order.getContactRelation2());
+    dto.put("contactName3", order.getContactName3());
+    dto.put("contactPhone3", order.getContactPhone3());
+    dto.put("contactRelation3", order.getContactRelation3());
     dto.put("employmentStatus", order.getEmploymentStatus());
     dto.put("employmentName", order.getOccupation());
     dto.put("incomeRangeCode", order.getIncomeRangeCode());
@@ -117,6 +123,16 @@ public class OrderEnricher {
     dto.put("homeProvinceName", resolveRegionName(order.getHomeProvinceCode()));
     dto.put("homeCityName", resolveRegionName(order.getHomeCityCode()));
     dto.put("homeDistrictName", resolveRegionName(order.getHomeDistrictCode()));
+
+    // 公证信息
+    dto.put("notaryOrderNo", order.getNotaryOrderNo());
+    dto.put("notaryStatus", order.getNotaryStatus());
+    dto.put("notaryCertifiedTime", order.getNotaryCertifiedTime());
+    dto.put("notaryName", order.getNotaryName());
+    dto.put("notaryCertUrl", order.getNotaryCertUrl());
+
+    dto.put("asignSerialNo", order.getAsignSerialNo());
+    dto.put("asignAuthResult", order.getAsignAuthResult());
     
     return dto;
   }

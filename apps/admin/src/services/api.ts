@@ -28,6 +28,7 @@ export type Order = {
   id: string;
   status: string;
   phone: string;
+  realName?: string;
   productName: string;
   periods: number;
   cycleDays: number;
@@ -42,6 +43,24 @@ export type ReminderItem = {
   period: number;
   dueDate: string;
   amount: number;
+};
+
+export type Contract = {
+  id: string;
+  orderId: string;
+  contractType?: string;
+  provider?: string;
+  contractNo?: string;
+  templateId?: string;
+  status?: string;
+  signUrl?: string;
+  fileUrl?: string;
+  signedAt?: string;
+  signedBy?: string;
+  meta?: string;
+  notaryCertUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export async function adminLogin(username: string, password: string) {
@@ -73,6 +92,82 @@ export async function uploadProductImage(file: File) {
 export async function listOrders() {
   const { data } = await http.get('/admin/orders');
   return data as Order[];
+}
+
+export async function listContracts(type?: string) {
+  const { data } = await http.get('/admin/contracts', { params: type ? { type } : undefined });
+  return data as Contract[];
+}
+
+export async function getContract(orderId: string) {
+  const { data } = await http.get(`/admin/contracts/${orderId}`);
+  return data as Contract | null;
+}
+
+export async function prepareContract(orderId: string, payload: { contractNo?: string; templateId?: string; productFrameNo?: string }) {
+  const { data } = await http.post(`/admin/contracts/${orderId}/prepare`, payload);
+  return data as Contract;
+}
+
+export async function markContractSigned(orderId: string, payload: { signedBy?: string }) {
+  const { data } = await http.post(`/admin/contracts/${orderId}/mark-signed`, payload);
+  return data as Contract;
+}
+
+export async function uploadContractPdf(file: File) {
+  const form = new FormData();
+  form.append('file', file);
+  const { data } = await http.post('/admin/contracts/upload', form);
+  return data as { url: string };
+}
+
+export async function downloadContractFile(orderId: string) {
+  const { data } = await http.post(`/admin/contracts/${orderId}/download`);
+  return data as Contract;
+}
+
+export async function upsertManualContract(payload: {
+  id?: string;
+  contractNo?: string;
+  orderNo?: string;
+  productName?: string;
+  renterName?: string;
+  renterIdNumber?: string;
+  renterPhone?: string;
+  leaseStart?: string;
+  leaseEnd?: string;
+  periods?: number;
+  cycleDays?: number;
+  rentPerPeriod?: number;
+  depositRatio?: number;
+  signedAt?: string;
+  signedBy?: string;
+  status?: string;
+  fileUrl?: string;
+  remark?: string;
+}) {
+  const { data } = await http.post('/admin/contracts/manual', payload);
+  return data as Contract;
+}
+
+export async function applyNotary(orderId: string) {
+  const { data } = await http.post(`/admin/notary/${orderId}/apply`);
+  return data as any;
+}
+
+export async function refreshNotary(orderId: string) {
+  const { data } = await http.post(`/admin/notary/${orderId}/refresh`);
+  return data as any;
+}
+
+export async function fetchNotaryCertUrl(orderId: string) {
+  const { data } = await http.post(`/admin/notary/${orderId}/cert-url`);
+  return data as { url: string };
+}
+
+export async function getNotarySignUrl(orderId: string) {
+  const { data } = await http.get(`/admin/notary/${orderId}/sign-url`);
+  return data as { signUrl: string };
 }
 
 export async function getOrderDetail(orderId: string) {
@@ -112,6 +207,16 @@ export async function settleOrder(orderId: string) {
 
 export async function closeOrder(orderId: string) {
   const { data } = await http.post(`/admin/orders/${orderId}/close`);
+  return data;
+}
+
+export async function deleteOrder(orderId: string) {
+  const { data } = await http.delete(`/admin/orders/${orderId}`);
+  return data;
+}
+
+export async function resetOrderForTest(orderId: string) {
+  const { data } = await http.post(`/admin/orders/${orderId}/reset-for-test`);
   return data;
 }
 

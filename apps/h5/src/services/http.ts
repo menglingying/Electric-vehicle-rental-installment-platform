@@ -22,7 +22,9 @@ http.interceptors.response.use(
       clearH5Token();
       const msg = error.response?.data?.message || '登录已过期，请重新登录';
       alert(msg);
-      window.location.href = '/login';
+      const current = window.location.pathname + window.location.search + window.location.hash;
+      const redirect = `/login?redirect=${encodeURIComponent(current)}`;
+      window.location.replace(redirect);
     }
     return Promise.reject(error);
   }

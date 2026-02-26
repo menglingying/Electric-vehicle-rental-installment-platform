@@ -5,6 +5,7 @@ import Dashboard from '@/views/Dashboard.vue';
 import Products from '@/views/Products.vue';
 import Categories from '@/views/Categories.vue';
 import Orders from '@/views/Orders.vue';
+import Contracts from '@/views/Contracts.vue';
 import Blacklist from '@/views/Blacklist.vue';
 import Repayments from '@/views/Repayments.vue';
 import Reminders from '@/views/Reminders.vue';
@@ -24,6 +25,7 @@ export function createRouter() {
                     { path: 'categories', component: Categories },
                     { path: 'products', component: Products },
                     { path: 'orders', component: Orders },
+                    { path: 'contracts', component: Contracts },
                     { path: 'repayments', component: Repayments },
                     { path: 'reminders', component: Reminders },
                     { path: 'overdue', component: Overdue },
@@ -36,7 +38,7 @@ export function createRouter() {
         if (to.path === '/login')
             return true;
         if (!getAdminToken())
-            return '/login';
+            return { path: '/login', query: { redirect: to.fullPath } };
         return true;
     });
     return router;

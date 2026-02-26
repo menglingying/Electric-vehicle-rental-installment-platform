@@ -24,10 +24,9 @@ export function createRouter() {
   router.beforeEach((to) => {
     const publicPaths = new Set(['/login']);
     if (publicPaths.has(to.path)) return true;
-    if (!getH5Token()) return '/login';
+    if (!getH5Token()) return { path: '/login', query: { redirect: to.fullPath } };
     return true;
   });
 
   return router;
 }
-

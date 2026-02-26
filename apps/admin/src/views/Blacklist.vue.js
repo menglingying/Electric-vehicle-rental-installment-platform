@@ -41,123 +41,129 @@ debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_ctx = {};
 let __VLS_components;
 let __VLS_directives;
-const __VLS_0 = {}.ACard;
-/** @type {[typeof __VLS_components.ACard, typeof __VLS_components.aCard, typeof __VLS_components.ACard, typeof __VLS_components.aCard, ]} */ ;
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "panel" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "panel-title" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+    ...{ class: "link" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "section-toolbar" },
+});
+const __VLS_0 = {}.AInput;
+/** @type {[typeof __VLS_components.AInput, typeof __VLS_components.aInput, ]} */ ;
 // @ts-ignore
 const __VLS_1 = __VLS_asFunctionalComponent(__VLS_0, new __VLS_0({
-    title: "黑名单",
+    modelValue: (__VLS_ctx.phone),
+    placeholder: "手机号",
+    ...{ style: {} },
 }));
 const __VLS_2 = __VLS_1({
-    title: "黑名单",
+    modelValue: (__VLS_ctx.phone),
+    placeholder: "手机号",
+    ...{ style: {} },
 }, ...__VLS_functionalComponentArgsRest(__VLS_1));
-var __VLS_4 = {};
-__VLS_3.slots.default;
-__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ style: {} },
-});
-const __VLS_5 = {}.AInput;
+const __VLS_4 = {}.AInput;
 /** @type {[typeof __VLS_components.AInput, typeof __VLS_components.aInput, ]} */ ;
 // @ts-ignore
-const __VLS_6 = __VLS_asFunctionalComponent(__VLS_5, new __VLS_5({
-    modelValue: (__VLS_ctx.phone),
-    placeholder: "手机号",
-    ...{ style: {} },
-}));
-const __VLS_7 = __VLS_6({
-    modelValue: (__VLS_ctx.phone),
-    placeholder: "手机号",
-    ...{ style: {} },
-}, ...__VLS_functionalComponentArgsRest(__VLS_6));
-const __VLS_9 = {}.AInput;
-/** @type {[typeof __VLS_components.AInput, typeof __VLS_components.aInput, ]} */ ;
-// @ts-ignore
-const __VLS_10 = __VLS_asFunctionalComponent(__VLS_9, new __VLS_9({
+const __VLS_5 = __VLS_asFunctionalComponent(__VLS_4, new __VLS_4({
     modelValue: (__VLS_ctx.reason),
     placeholder: "原因",
     ...{ style: {} },
 }));
-const __VLS_11 = __VLS_10({
+const __VLS_6 = __VLS_5({
     modelValue: (__VLS_ctx.reason),
     placeholder: "原因",
     ...{ style: {} },
-}, ...__VLS_functionalComponentArgsRest(__VLS_10));
-const __VLS_13 = {}.AButton;
+}, ...__VLS_functionalComponentArgsRest(__VLS_5));
+const __VLS_8 = {}.AButton;
 /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
 // @ts-ignore
-const __VLS_14 = __VLS_asFunctionalComponent(__VLS_13, new __VLS_13({
+const __VLS_9 = __VLS_asFunctionalComponent(__VLS_8, new __VLS_8({
     ...{ 'onClick': {} },
     type: "primary",
 }));
-const __VLS_15 = __VLS_14({
+const __VLS_10 = __VLS_9({
     ...{ 'onClick': {} },
     type: "primary",
-}, ...__VLS_functionalComponentArgsRest(__VLS_14));
-let __VLS_17;
-let __VLS_18;
-let __VLS_19;
-const __VLS_20 = {
+}, ...__VLS_functionalComponentArgsRest(__VLS_9));
+let __VLS_12;
+let __VLS_13;
+let __VLS_14;
+const __VLS_15 = {
     onClick: (__VLS_ctx.add)
 };
-__VLS_16.slots.default;
-var __VLS_16;
-const __VLS_21 = {}.ATable;
+__VLS_11.slots.default;
+var __VLS_11;
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "table-wrap" },
+});
+const __VLS_16 = {}.ATable;
 /** @type {[typeof __VLS_components.ATable, typeof __VLS_components.aTable, typeof __VLS_components.ATable, typeof __VLS_components.aTable, ]} */ ;
 // @ts-ignore
-const __VLS_22 = __VLS_asFunctionalComponent(__VLS_21, new __VLS_21({
+const __VLS_17 = __VLS_asFunctionalComponent(__VLS_16, new __VLS_16({
     data: (__VLS_ctx.rows),
     pagination: (false),
 }));
-const __VLS_23 = __VLS_22({
+const __VLS_18 = __VLS_17({
     data: (__VLS_ctx.rows),
     pagination: (false),
-}, ...__VLS_functionalComponentArgsRest(__VLS_22));
-__VLS_24.slots.default;
-const __VLS_25 = {}.ATableColumn;
+}, ...__VLS_functionalComponentArgsRest(__VLS_17));
+__VLS_19.slots.default;
+const __VLS_20 = {}.ATableColumn;
 /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
 // @ts-ignore
-const __VLS_26 = __VLS_asFunctionalComponent(__VLS_25, new __VLS_25({
+const __VLS_21 = __VLS_asFunctionalComponent(__VLS_20, new __VLS_20({
     title: "手机号",
     dataIndex: "phone",
 }));
-const __VLS_27 = __VLS_26({
+const __VLS_22 = __VLS_21({
     title: "手机号",
     dataIndex: "phone",
-}, ...__VLS_functionalComponentArgsRest(__VLS_26));
-const __VLS_29 = {}.ATableColumn;
+}, ...__VLS_functionalComponentArgsRest(__VLS_21));
+const __VLS_24 = {}.ATableColumn;
 /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
 // @ts-ignore
-const __VLS_30 = __VLS_asFunctionalComponent(__VLS_29, new __VLS_29({
+const __VLS_25 = __VLS_asFunctionalComponent(__VLS_24, new __VLS_24({
     title: "原因",
     dataIndex: "reason",
 }));
-const __VLS_31 = __VLS_30({
+const __VLS_26 = __VLS_25({
     title: "原因",
     dataIndex: "reason",
-}, ...__VLS_functionalComponentArgsRest(__VLS_30));
-const __VLS_33 = {}.ATableColumn;
+}, ...__VLS_functionalComponentArgsRest(__VLS_25));
+const __VLS_28 = {}.ATableColumn;
 /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
 // @ts-ignore
-const __VLS_34 = __VLS_asFunctionalComponent(__VLS_33, new __VLS_33({
+const __VLS_29 = __VLS_asFunctionalComponent(__VLS_28, new __VLS_28({
     title: "创建时间",
     dataIndex: "createdAt",
 }));
-const __VLS_35 = __VLS_34({
+const __VLS_30 = __VLS_29({
     title: "创建时间",
     dataIndex: "createdAt",
-}, ...__VLS_functionalComponentArgsRest(__VLS_34));
-const __VLS_37 = {}.ATableColumn;
+}, ...__VLS_functionalComponentArgsRest(__VLS_29));
+const __VLS_32 = {}.ATableColumn;
 /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
 // @ts-ignore
-const __VLS_38 = __VLS_asFunctionalComponent(__VLS_37, new __VLS_37({
+const __VLS_33 = __VLS_asFunctionalComponent(__VLS_32, new __VLS_32({
     title: "操作",
     render: (({ record }) => __VLS_ctx.h(__VLS_ctx.Button, { status: 'danger', size: 'small', onClick: () => __VLS_ctx.remove(record.phone) }, () => '移除')),
 }));
-const __VLS_39 = __VLS_38({
+const __VLS_34 = __VLS_33({
     title: "操作",
     render: (({ record }) => __VLS_ctx.h(__VLS_ctx.Button, { status: 'danger', size: 'small', onClick: () => __VLS_ctx.remove(record.phone) }, () => '移除')),
-}, ...__VLS_functionalComponentArgsRest(__VLS_38));
-var __VLS_24;
-var __VLS_3;
+}, ...__VLS_functionalComponentArgsRest(__VLS_33));
+var __VLS_19;
+/** @type {__VLS_StyleScopedClasses['panel']} */ ;
+/** @type {__VLS_StyleScopedClasses['panel-title']} */ ;
+/** @type {__VLS_StyleScopedClasses['link']} */ ;
+/** @type {__VLS_StyleScopedClasses['section-toolbar']} */ ;
+/** @type {__VLS_StyleScopedClasses['table-wrap']} */ ;
 var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {

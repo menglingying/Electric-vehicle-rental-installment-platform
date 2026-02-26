@@ -9,6 +9,7 @@ public class AppProperties {
   private final Auth auth = new Auth();
   private final Admin admin = new Admin();
   private final Upload upload = new Upload();
+  private String publicBaseUrl = "";
 
   public Auth getAuth() {
     return auth;
@@ -20,6 +21,14 @@ public class AppProperties {
 
   public Upload getUpload() {
     return upload;
+  }
+
+  public String getPublicBaseUrl() {
+    return publicBaseUrl;
+  }
+
+  public void setPublicBaseUrl(String publicBaseUrl) {
+    this.publicBaseUrl = publicBaseUrl == null ? "" : publicBaseUrl;
   }
 
   public static class Auth {

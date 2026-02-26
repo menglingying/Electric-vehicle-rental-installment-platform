@@ -24,6 +24,52 @@ export async function listOrders() {
     const { data } = await http.get('/admin/orders');
     return data;
 }
+export async function listContracts(type) {
+    const { data } = await http.get('/admin/contracts', { params: type ? { type } : undefined });
+    return data;
+}
+export async function getContract(orderId) {
+    const { data } = await http.get(`/admin/contracts/${orderId}`);
+    return data;
+}
+export async function prepareContract(orderId, payload) {
+    const { data } = await http.post(`/admin/contracts/${orderId}/prepare`, payload);
+    return data;
+}
+export async function markContractSigned(orderId, payload) {
+    const { data } = await http.post(`/admin/contracts/${orderId}/mark-signed`, payload);
+    return data;
+}
+export async function uploadContractPdf(file) {
+    const form = new FormData();
+    form.append('file', file);
+    const { data } = await http.post('/admin/contracts/upload', form);
+    return data;
+}
+export async function downloadContractFile(orderId) {
+    const { data } = await http.post(`/admin/contracts/${orderId}/download`);
+    return data;
+}
+export async function upsertManualContract(payload) {
+    const { data } = await http.post('/admin/contracts/manual', payload);
+    return data;
+}
+export async function applyNotary(orderId) {
+    const { data } = await http.post(`/admin/notary/${orderId}/apply`);
+    return data;
+}
+export async function refreshNotary(orderId) {
+    const { data } = await http.post(`/admin/notary/${orderId}/refresh`);
+    return data;
+}
+export async function fetchNotaryCertUrl(orderId) {
+    const { data } = await http.post(`/admin/notary/${orderId}/cert-url`);
+    return data;
+}
+export async function getNotarySignUrl(orderId) {
+    const { data } = await http.get(`/admin/notary/${orderId}/sign-url`);
+    return data;
+}
 export async function getOrderDetail(orderId) {
     const { data } = await http.get(`/admin/orders/${orderId}`);
     return data;
@@ -54,6 +100,14 @@ export async function settleOrder(orderId) {
 }
 export async function closeOrder(orderId) {
     const { data } = await http.post(`/admin/orders/${orderId}/close`);
+    return data;
+}
+export async function deleteOrder(orderId) {
+    const { data } = await http.delete(`/admin/orders/${orderId}`);
+    return data;
+}
+export async function resetOrderForTest(orderId) {
+    const { data } = await http.post(`/admin/orders/${orderId}/reset-for-test`);
     return data;
 }
 export async function adjustOrderPrice(orderId, payload) {

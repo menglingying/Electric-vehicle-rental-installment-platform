@@ -49,6 +49,8 @@ public class H5ContractController {
     var contract = new Contract();
     contract.setId("c_" + UUID.randomUUID().toString().replace("-", ""));
     contract.setOrderId(orderId);
+    contract.setContractType("ORDER");
+    contract.setProvider("RESERVED");
     contract.setStatus("SIGNING");
     contract.setSignUrl("https://example.com/esign/sign?orderId=" + orderId);
     contract.setCreatedAt(Instant.now());

@@ -1,10 +1,16 @@
-<template>
-  <a-card title="分类管理">
-    <div class="toolbar">
+﻿<template>
+  <div class="panel">
+    <div class="panel-title">
+      <div>分类管理</div>
+      <span class="link">品牌 / 系列 / 型号</span>
+    </div>
+    <div class="section-toolbar">
       <a-button type="primary" @click="openCreate('')">新增大分类</a-button>
     </div>
-    <a-table :data="treeData" :columns="columns" :pagination="false" row-key="id" />
-  </a-card>
+    <div class="table-wrap">
+      <a-table :data="treeData" :columns="columns" :pagination="false" row-key="id" />
+    </div>
+  </div>
 
   <a-modal v-model:visible="visible" :title="form.id ? '编辑分类' : '新增分类'" @ok="save">
     <a-form :model="form" layout="vertical">
@@ -66,13 +72,12 @@ const columns: TableColumnData[] = [
   },
   {
     title: '操作',
-    render: ({ record }: { record: any }) => {
-      return h('div', { style: 'display:flex; gap:8px' }, [
+    render: ({ record }: { record: any }) =>
+      h('div', { style: 'display:flex; gap:8px' }, [
         h(Button, { size: 'small', onClick: () => openCreate(record.id) }, () => '新增子类'),
         h(Button, { size: 'small', onClick: () => openEdit(record) }, () => '编辑'),
         h(Button, { size: 'small', status: 'danger', onClick: () => confirmDelete(record) }, () => '删除')
-      ]);
-    }
+      ])
   }
 ];
 
@@ -141,11 +146,3 @@ function confirmDelete(node: CategoryNode) {
 
 onMounted(load);
 </script>
-
-<style scoped>
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-</style>

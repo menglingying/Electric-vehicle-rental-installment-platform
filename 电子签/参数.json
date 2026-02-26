@@ -1,0 +1,48 @@
+{
+    "callbackUrl": "http://47.120.27.110:8088/api/callbacks/asign/contract",
+    "notifyUrl": "http://47.120.27.110:8088/api/callbacks/asign/contract",
+    "contractName": "n70c 租赁合同",
+    "contractNo": "o_5e2ff724bb0c4df395b36aea14f5c914",
+    "signOrder": 1,
+    "validityDate": "2026-02-28",
+    "templates": [
+      {
+        "templateNo": "TN5222236232334270A6E67A3F2104694C",
+        "fillData": {
+          "partyAName": "成都华兴租赁科技有限公司",
+          "partyAAddress": "四川省成都市成华区",
+          "partyBName": "龙凡",
+          "partyBIdNo": "510704199211053511",
+          "partyBPhone": "15308306820",
+          "partyBAddress": "四川省成都市成华区动物园",
+          "productName": "n70c",
+          "productSpec": "标准型",
+          "productQty": "1",
+          "productFrameNo": "o_5e2ff724bb0c4df395b36aea14f5c914",
+          "productAmount": "7188.00",
+          "leaseStartDate": "2026-02-27",
+          "leaseEndDate": "2027-01-23",
+          "leaseDays": "360",
+          "rentDaily": "19.97",
+          "rentPeriodDays": "30",
+          "rentTotal": "748.75",
+          "rentTotalAmount": "7188.00",
+          "depositTotal": "1797.00",
+          "depositPayType": "2",
+          "depositPeriods": "12",
+          "depositPeriodDays": "30",
+          "depositPerPeriod": "149.75",
+          "firstPayDate": "2026-02-27",
+          "firstPayRent": "599.00",
+          "firstPayDeposit": "149.75",
+          "firstPayTotal": "748.75",
+          "usePurpose": "交通出行",
+          "userSignDate": "2026-02-27",
+          "deliveryCustomerName": "龙凡",
+          "deliveryCustomerIdNo": "510704199211053511",
+          "deliveryReceiveDate": "2026-02-27",
+          "deliveryContractDate": "2026-02-27"
+        }
+      }
+    ]
+  }

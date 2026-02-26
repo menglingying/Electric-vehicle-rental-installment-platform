@@ -55,6 +55,12 @@ public class Order {
   private String contactName;      // 联系人姓名
   private String contactPhone;     // 联系人电话
   private String contactRelation;  // 联系人关系
+  private String contactName2;
+  private String contactPhone2;
+  private String contactRelation2;
+  private String contactName3;
+  private String contactPhone3;
+  private String contactRelation3;
   private boolean kycCompleted;    // KYC是否完成
 
   private String employmentStatus;
@@ -63,6 +69,10 @@ public class Order {
   private String homeCityCode;
   private String homeDistrictCode;
   private String homeAddressDetail;
+
+  // 爱签实名认证
+  private String asignSerialNo;
+  private String asignAuthResult;
   
   // 公证相关字段
   private String notaryOrderNo;       // 聚证公证订单号
@@ -345,6 +355,54 @@ public class Order {
     this.contactRelation = contactRelation;
   }
 
+  public String getContactName2() {
+    return contactName2;
+  }
+
+  public void setContactName2(String contactName2) {
+    this.contactName2 = contactName2;
+  }
+
+  public String getContactPhone2() {
+    return contactPhone2;
+  }
+
+  public void setContactPhone2(String contactPhone2) {
+    this.contactPhone2 = contactPhone2;
+  }
+
+  public String getContactRelation2() {
+    return contactRelation2;
+  }
+
+  public void setContactRelation2(String contactRelation2) {
+    this.contactRelation2 = contactRelation2;
+  }
+
+  public String getContactName3() {
+    return contactName3;
+  }
+
+  public void setContactName3(String contactName3) {
+    this.contactName3 = contactName3;
+  }
+
+  public String getContactPhone3() {
+    return contactPhone3;
+  }
+
+  public void setContactPhone3(String contactPhone3) {
+    this.contactPhone3 = contactPhone3;
+  }
+
+  public String getContactRelation3() {
+    return contactRelation3;
+  }
+
+  public void setContactRelation3(String contactRelation3) {
+    this.contactRelation3 = contactRelation3;
+  }
+
   public boolean isKycCompleted() {
     return kycCompleted;
   }
@@ -439,5 +497,21 @@ public class Order {
 
   public void setNotaryCertUrl(String notaryCertUrl) {
     this.notaryCertUrl = notaryCertUrl;
+  }
+
+  public String getAsignSerialNo() {
+    return asignSerialNo;
+  }
+
+  public void setAsignSerialNo(String asignSerialNo) {
+    this.asignSerialNo = asignSerialNo;
+  }
+
+  public String getAsignAuthResult() {
+    return asignAuthResult;
+  }
+
+  public void setAsignAuthResult(String asignAuthResult) {
+    this.asignAuthResult = asignAuthResult;
   }
 }

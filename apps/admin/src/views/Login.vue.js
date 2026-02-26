@@ -1,9 +1,10 @@
 import { reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { Message } from '@arco-design/web-vue';
 import { adminLogin } from '@/services/api';
 import { setAdminToken } from '@/services/auth';
 const router = useRouter();
+const route = useRoute();
 const loading = ref(false);
 const form = reactive({ username: 'admin', password: 'admin123' });
 async function onSubmit() {
@@ -12,7 +13,9 @@ async function onSubmit() {
         const res = await adminLogin(form.username, form.password);
         setAdminToken(res.token);
         Message.success('登录成功');
-        await router.replace('/dashboard');
+        const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '';
+        const target = redirect.startsWith('/') ? redirect : '/dashboard';
+        await router.replace(target);
     }
     catch (e) {
         Message.error(e?.response?.data?.message ?? '登录失败');
@@ -25,16 +28,32 @@ debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_ctx = {};
 let __VLS_components;
 let __VLS_directives;
-// CSS variable injection 
-// CSS variable injection end 
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "page" },
+    ...{ class: "login-page" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "card" },
+    ...{ class: "login-shell" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "title" },
+    ...{ class: "login-aside" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "aside-title" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "aside-subtitle" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "qr-box" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "login-hint" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "login-panel" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "login-title" },
 });
 const __VLS_0 = {}.AForm;
 /** @type {[typeof __VLS_components.AForm, typeof __VLS_components.aForm, typeof __VLS_components.AForm, typeof __VLS_components.aForm, ]} */ ;
@@ -122,13 +141,19 @@ const __VLS_26 = __VLS_25({
 __VLS_27.slots.default;
 var __VLS_27;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "hint" },
+    ...{ class: "login-hint" },
 });
 var __VLS_3;
-/** @type {__VLS_StyleScopedClasses['page']} */ ;
-/** @type {__VLS_StyleScopedClasses['card']} */ ;
-/** @type {__VLS_StyleScopedClasses['title']} */ ;
-/** @type {__VLS_StyleScopedClasses['hint']} */ ;
+/** @type {__VLS_StyleScopedClasses['login-page']} */ ;
+/** @type {__VLS_StyleScopedClasses['login-shell']} */ ;
+/** @type {__VLS_StyleScopedClasses['login-aside']} */ ;
+/** @type {__VLS_StyleScopedClasses['aside-title']} */ ;
+/** @type {__VLS_StyleScopedClasses['aside-subtitle']} */ ;
+/** @type {__VLS_StyleScopedClasses['qr-box']} */ ;
+/** @type {__VLS_StyleScopedClasses['login-hint']} */ ;
+/** @type {__VLS_StyleScopedClasses['login-panel']} */ ;
+/** @type {__VLS_StyleScopedClasses['login-title']} */ ;
+/** @type {__VLS_StyleScopedClasses['login-hint']} */ ;
 var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {

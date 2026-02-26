@@ -1,8 +1,8 @@
-<template>
+﻿<template>
   <div class="page">
     <van-nav-bar title="商品详情" left-arrow @click-left="router.back()" />
 
-    <van-cell-group inset v-if="product">
+    <div class="h5-card" v-if="product">
       <div v-if="galleryImages.length" class="gallery">
         <van-swipe :autoplay="3500" lazy-render>
           <van-swipe-item v-for="(url, idx) in galleryImages" :key="url + idx">
@@ -10,65 +10,62 @@
           </van-swipe-item>
         </van-swipe>
       </div>
+      <div class="section-title" style="margin-top: 8px">{{ product.name }}</div>
+      <div class="price-line">¥{{ currentRent }}<span>/期</span></div>
+      <div v-if="product.frameConfig" class="detail-line">车架：{{ product.frameConfig }}</div>
+    </div>
 
-      <van-cell :title="product.name" :label="`租金/期：￥${currentRent}`" />
-      <van-cell v-if="product.frameConfig" title="车架" :value="product.frameConfig" />
-    </van-cell-group>
-
-    <!-- 电池配置选择 -->
-    <van-cell-group inset v-if="product && hasBatteryOptions" style="margin-top: 12px">
-      <van-cell title="电池配置" />
-      <van-radio-group v-model="batteryOption" direction="horizontal" style="padding: 8px 16px">
-        <van-radio name="WITHOUT_BATTERY">空车 (￥{{ product.rentWithoutBattery || product.rentPerCycle }}/期)</van-radio>
-        <van-radio name="WITH_BATTERY">含电池 (￥{{ product.rentWithBattery || product.rentPerCycle }}/期)</van-radio>
+    <div class="h5-card" v-if="product && hasBatteryOptions">
+      <div class="section-title">电池配置</div>
+      <van-radio-group v-model="batteryOption" direction="horizontal">
+        <van-radio name="WITHOUT_BATTERY">空车 (¥{{ product.rentWithoutBattery || product.rentPerCycle }}/期)</van-radio>
+        <van-radio name="WITH_BATTERY">含电池 (¥{{ product.rentWithBattery || product.rentPerCycle }}/期)</van-radio>
       </van-radio-group>
-    </van-cell-group>
+    </div>
 
-    <!-- 期数选择 -->
-    <van-cell-group inset v-if="product" style="margin-top: 12px">
-      <van-cell title="分期期数" />
+    <div class="h5-card" v-if="product">
+      <div class="section-title">分期与还款</div>
       <div class="period-selector">
-        <van-button 
-          v-for="p in periodOptions" 
-          :key="p" 
+        <van-button
+          v-for="p in periodOptions"
+          :key="p"
           :type="periods === p ? 'primary' : 'default'"
           size="small"
           @click="periods = p"
-        >{{ p }}期</van-button>
+        >
+          {{ p }}期
+        </van-button>
       </div>
-    </van-cell-group>
+      <div class="form-row">
+        <van-field v-model.number="cycleDays" type="digit" label="周期(天)" placeholder="例如 30" />
+      </div>
+      <div class="form-row">
+        <van-field v-model.number="depositRatioPercent" type="digit" label="押金比例(%)" placeholder="例如 25" />
+      </div>
+      <div class="form-row">
+        <div class="section-title" style="margin-bottom: 6px">还款方式</div>
+        <van-radio-group v-model="repaymentMethod" direction="horizontal">
+          <van-radio name="AUTO_DEDUCT">自动扣款</van-radio>
+          <van-radio name="MANUAL_TRANSFER">手动转账</van-radio>
+          <van-radio name="OFFLINE">线下收款</van-radio>
+        </van-radio-group>
+      </div>
+    </div>
 
-    <!-- 还款方式选择 -->
-    <van-cell-group inset v-if="product" style="margin-top: 12px">
-      <van-cell title="还款方式" />
-      <van-radio-group v-model="repaymentMethod" direction="horizontal" style="padding: 8px 16px">
-        <van-radio name="AUTO_DEDUCT">自动扣款</van-radio>
-        <van-radio name="MANUAL_TRANSFER">手动转账</van-radio>
-        <van-radio name="OFFLINE">线下收款</van-radio>
-      </van-radio-group>
-    </van-cell-group>
-
-    <!-- 押金设置 -->
-    <van-cell-group inset v-if="product" style="margin-top: 12px">
-      <van-field v-model.number="cycleDays" type="digit" label="周期(天)" placeholder="例如 30" />
-      <van-field v-model.number="depositRatioPercent" type="digit" label="押金比例(%)" placeholder="例如 25" />
-    </van-cell-group>
-
-    <!-- 还款计划预览 -->
-    <van-cell-group inset v-if="product && repaymentPlan.length" style="margin-top: 12px">
-      <van-cell title="还款计划预览" />
+    <div class="h5-card" v-if="product && repaymentPlan.length">
+      <div class="section-title">还款计划预览</div>
       <div class="plan-summary">
         <div class="summary-item">
           <span class="label">每期应还</span>
-          <span class="value">￥{{ currentRent }}</span>
+          <span class="value">¥{{ currentRent }}</span>
         </div>
         <div class="summary-item">
           <span class="label">分期总额</span>
-          <span class="value">￥{{ totalAmount }}</span>
+          <span class="value">¥{{ totalAmount }}</span>
         </div>
         <div class="summary-item" v-if="depositAmount > 0">
           <span class="label">押金</span>
-          <span class="value">￥{{ depositAmount }}</span>
+          <span class="value">¥{{ depositAmount }}</span>
         </div>
       </div>
       <van-collapse v-model="planExpanded">
@@ -77,16 +74,16 @@
             <div v-for="item in repaymentPlan" :key="item.period" class="plan-item">
               <span class="period">第{{ item.period }}期</span>
               <span class="date">{{ item.dueDate }}</span>
-              <span class="amount">￥{{ item.amount }}</span>
+              <span class="amount">¥{{ item.amount }}</span>
             </div>
           </div>
         </van-collapse-item>
       </van-collapse>
-    </van-cell-group>
+    </div>
 
-    <van-cell-group inset v-if="product" style="margin-top: 12px">
-      <van-cell icon="info-o" title="订单创建后进入人工审核" />
-    </van-cell-group>
+    <div class="h5-card" v-if="product">
+      <div class="detail-line">订单创建后进入人工审核流程。</div>
+    </div>
 
     <van-action-bar>
       <van-action-bar-button type="primary" :loading="submitting" @click="submit">提交下单</van-action-bar-button>
@@ -104,7 +101,6 @@ const route = useRoute();
 const router = useRouter();
 const product = ref<Product | null>(null);
 
-// 期数选项
 const periodOptions = [3, 6, 9, 12, 18, 24];
 const periods = ref(12);
 const cycleDays = ref(30);
@@ -114,13 +110,11 @@ const repaymentMethod = ref<'AUTO_DEDUCT' | 'MANUAL_TRANSFER' | 'OFFLINE'>('MANU
 const submitting = ref(false);
 const planExpanded = ref<string[]>([]);
 
-// 是否有电池选项
 const hasBatteryOptions = computed(() => {
   if (!product.value) return false;
   return product.value.rentWithoutBattery != null || product.value.rentWithBattery != null;
 });
 
-// 当前租金（根据电池选项）
 const currentRent = computed(() => {
   if (!product.value) return 0;
   if (batteryOption.value === 'WITH_BATTERY' && product.value.rentWithBattery != null) {
@@ -132,22 +126,19 @@ const currentRent = computed(() => {
   return product.value.rentPerCycle;
 });
 
-// 押金金额
 const depositAmount = computed(() => {
-  return Math.round(currentRent.value * periods.value * depositRatioPercent.value / 100);
+  return Math.round((currentRent.value * periods.value * depositRatioPercent.value) / 100);
 });
 
-// 分期总额
 const totalAmount = computed(() => {
   return currentRent.value * periods.value;
 });
 
-// 还款计划
 const repaymentPlan = computed(() => {
   if (!product.value) return [];
   const plan: { period: number; dueDate: string; amount: number }[] = [];
   const today = new Date();
-  
+
   for (let i = 1; i <= periods.value; i++) {
     const dueDate = new Date(today);
     dueDate.setDate(dueDate.getDate() + cycleDays.value * i);
@@ -157,8 +148,7 @@ const repaymentPlan = computed(() => {
       amount: currentRent.value
     });
   }
-  
-  // 押金抵扣最后几期
+
   if (depositRatioPercent.value > 0) {
     let remaining = depositAmount.value;
     for (let i = plan.length - 1; i >= 0 && remaining > 0; i--) {
@@ -167,7 +157,7 @@ const repaymentPlan = computed(() => {
       remaining -= offset;
     }
   }
-  
+
   return plan;
 });
 
@@ -199,7 +189,6 @@ async function submit() {
       repaymentMethod: repaymentMethod.value
     });
     showSuccessToast('下单成功');
-    // 跳转到KYC资料补充页面
     await router.replace(`/orders/${order.id}/kyc`);
   } catch (e: any) {
     showFailToast(e?.response?.data?.message ?? '下单失败');
@@ -212,24 +201,41 @@ onMounted(load);
 </script>
 
 <style scoped>
-.page {
-  padding-bottom: 72px;
-}
 .gallery {
   overflow: hidden;
-  border-radius: var(--van-radius-lg);
+  border-radius: 12px;
+}
+.price-line {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--h5-danger);
+}
+.price-line span {
+  font-size: 12px;
+  font-weight: 400;
+  margin-left: 2px;
+  color: var(--h5-muted);
+}
+.detail-line {
+  margin-top: 6px;
+  color: var(--h5-muted);
+  font-size: 12px;
 }
 .period-selector {
   display: flex;
   gap: 8px;
-  padding: 8px 16px;
+  padding: 8px 0 12px;
   flex-wrap: wrap;
+}
+.form-row {
+  margin-top: 8px;
 }
 .plan-summary {
   display: flex;
   justify-content: space-around;
   padding: 12px 16px;
-  background: var(--van-gray-1);
+  background: #f3f6ff;
+  border-radius: 10px;
 }
 .summary-item {
   display: flex;
@@ -238,12 +244,12 @@ onMounted(load);
 }
 .summary-item .label {
   font-size: 12px;
-  color: var(--van-gray-6);
+  color: var(--h5-muted);
 }
 .summary-item .value {
   font-size: 16px;
   font-weight: bold;
-  color: var(--van-primary-color);
+  color: var(--h5-primary);
 }
 .plan-list {
   padding: 8px 0;
@@ -252,19 +258,19 @@ onMounted(load);
   display: flex;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid var(--van-gray-2);
+  border-bottom: 1px solid var(--h5-border);
 }
 .plan-item:last-child {
   border-bottom: none;
 }
 .plan-item .period {
   width: 60px;
-  color: var(--van-gray-7);
+  color: var(--h5-muted);
 }
 .plan-item .date {
   flex: 1;
   text-align: center;
-  color: var(--van-gray-6);
+  color: var(--h5-muted);
 }
 .plan-item .amount {
   width: 80px;

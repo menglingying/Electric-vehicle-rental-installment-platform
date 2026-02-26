@@ -81,113 +81,120 @@ const __VLS_11 = {
     onRefresh: (__VLS_ctx.load)
 };
 __VLS_7.slots.default;
-const __VLS_12 = {}.VanList;
-/** @type {[typeof __VLS_components.VanList, typeof __VLS_components.vanList, typeof __VLS_components.VanList, typeof __VLS_components.vanList, ]} */ ;
-// @ts-ignore
-const __VLS_13 = __VLS_asFunctionalComponent(__VLS_12, new __VLS_12({
-    loading: (__VLS_ctx.loading),
-    finished: (true),
-    finishedText: "没有更多了",
-}));
-const __VLS_14 = __VLS_13({
-    loading: (__VLS_ctx.loading),
-    finished: (true),
-    finishedText: "没有更多了",
-}, ...__VLS_functionalComponentArgsRest(__VLS_13));
-__VLS_15.slots.default;
-for (const [o] of __VLS_getVForSourceType((__VLS_ctx.orders))) {
+if (__VLS_ctx.loading) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-        ...{ onClick: (...[$event]) => {
-                __VLS_ctx.go(o.id);
-            } },
-        key: (o.id),
-        ...{ class: "order-item" },
+        ...{ class: "empty-text" },
     });
-    const __VLS_16 = {}.VanCell;
-    /** @type {[typeof __VLS_components.VanCell, typeof __VLS_components.vanCell, typeof __VLS_components.VanCell, typeof __VLS_components.vanCell, ]} */ ;
+    const __VLS_12 = {}.VanLoading;
+    /** @type {[typeof __VLS_components.VanLoading, typeof __VLS_components.vanLoading, ]} */ ;
     // @ts-ignore
-    const __VLS_17 = __VLS_asFunctionalComponent(__VLS_16, new __VLS_16({
-        title: (o.productName),
-        isLink: true,
+    const __VLS_13 = __VLS_asFunctionalComponent(__VLS_12, new __VLS_12({
+        size: "20px",
     }));
-    const __VLS_18 = __VLS_17({
-        title: (o.productName),
-        isLink: true,
-    }, ...__VLS_functionalComponentArgsRest(__VLS_17));
-    __VLS_19.slots.default;
-    {
-        const { label: __VLS_thisSlot } = __VLS_19.slots;
+    const __VLS_14 = __VLS_13({
+        size: "20px",
+    }, ...__VLS_functionalComponentArgsRest(__VLS_13));
+}
+else if (__VLS_ctx.orders.length === 0) {
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+        ...{ class: "empty-text" },
+    });
+}
+else {
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({});
+    for (const [o] of __VLS_getVForSourceType((__VLS_ctx.orders))) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-            ...{ class: "order-info" },
+            ...{ onClick: (...[$event]) => {
+                    if (!!(__VLS_ctx.loading))
+                        return;
+                    if (!!(__VLS_ctx.orders.length === 0))
+                        return;
+                    __VLS_ctx.go(o.id);
+                } },
+            key: (o.id),
+            ...{ class: "h5-card order-card" },
         });
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "order-title" },
+        });
+        (o.productName);
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "order-sub" },
+        });
         (__VLS_ctx.statusText(o.status));
         (o.periods);
         (o.cycleDays);
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "order-sub" },
+        });
+        (o.createdAt);
         if (!o.kycCompleted) {
-            const __VLS_20 = {}.VanTag;
+            const __VLS_16 = {}.VanTag;
             /** @type {[typeof __VLS_components.VanTag, typeof __VLS_components.vanTag, typeof __VLS_components.VanTag, typeof __VLS_components.vanTag, ]} */ ;
             // @ts-ignore
-            const __VLS_21 = __VLS_asFunctionalComponent(__VLS_20, new __VLS_20({
+            const __VLS_17 = __VLS_asFunctionalComponent(__VLS_16, new __VLS_16({
                 type: "warning",
                 ...{ style: {} },
             }));
-            const __VLS_22 = __VLS_21({
+            const __VLS_18 = __VLS_17({
                 type: "warning",
                 ...{ style: {} },
-            }, ...__VLS_functionalComponentArgsRest(__VLS_21));
-            __VLS_23.slots.default;
-            var __VLS_23;
+            }, ...__VLS_functionalComponentArgsRest(__VLS_17));
+            __VLS_19.slots.default;
+            var __VLS_19;
         }
     }
-    var __VLS_19;
 }
-var __VLS_15;
 var __VLS_7;
-const __VLS_24 = {}.VanTabbar;
+const __VLS_20 = {}.VanTabbar;
 /** @type {[typeof __VLS_components.VanTabbar, typeof __VLS_components.vanTabbar, typeof __VLS_components.VanTabbar, typeof __VLS_components.vanTabbar, ]} */ ;
 // @ts-ignore
-const __VLS_25 = __VLS_asFunctionalComponent(__VLS_24, new __VLS_24({
+const __VLS_21 = __VLS_asFunctionalComponent(__VLS_20, new __VLS_20({
     route: true,
 }));
-const __VLS_26 = __VLS_25({
+const __VLS_22 = __VLS_21({
     route: true,
+}, ...__VLS_functionalComponentArgsRest(__VLS_21));
+__VLS_23.slots.default;
+const __VLS_24 = {}.VanTabbarItem;
+/** @type {[typeof __VLS_components.VanTabbarItem, typeof __VLS_components.vanTabbarItem, typeof __VLS_components.VanTabbarItem, typeof __VLS_components.vanTabbarItem, ]} */ ;
+// @ts-ignore
+const __VLS_25 = __VLS_asFunctionalComponent(__VLS_24, new __VLS_24({
+    replace: true,
+    to: "/products",
+    icon: "shop-o",
+}));
+const __VLS_26 = __VLS_25({
+    replace: true,
+    to: "/products",
+    icon: "shop-o",
 }, ...__VLS_functionalComponentArgsRest(__VLS_25));
 __VLS_27.slots.default;
+var __VLS_27;
 const __VLS_28 = {}.VanTabbarItem;
 /** @type {[typeof __VLS_components.VanTabbarItem, typeof __VLS_components.vanTabbarItem, typeof __VLS_components.VanTabbarItem, typeof __VLS_components.vanTabbarItem, ]} */ ;
 // @ts-ignore
 const __VLS_29 = __VLS_asFunctionalComponent(__VLS_28, new __VLS_28({
     replace: true,
-    to: "/products",
-    icon: "shop-o",
+    to: "/orders",
+    icon: "orders-o",
 }));
 const __VLS_30 = __VLS_29({
     replace: true,
-    to: "/products",
-    icon: "shop-o",
+    to: "/orders",
+    icon: "orders-o",
 }, ...__VLS_functionalComponentArgsRest(__VLS_29));
 __VLS_31.slots.default;
 var __VLS_31;
-const __VLS_32 = {}.VanTabbarItem;
-/** @type {[typeof __VLS_components.VanTabbarItem, typeof __VLS_components.vanTabbarItem, typeof __VLS_components.VanTabbarItem, typeof __VLS_components.vanTabbarItem, ]} */ ;
-// @ts-ignore
-const __VLS_33 = __VLS_asFunctionalComponent(__VLS_32, new __VLS_32({
-    replace: true,
-    to: "/orders",
-    icon: "orders-o",
-}));
-const __VLS_34 = __VLS_33({
-    replace: true,
-    to: "/orders",
-    icon: "orders-o",
-}, ...__VLS_functionalComponentArgsRest(__VLS_33));
-__VLS_35.slots.default;
-var __VLS_35;
-var __VLS_27;
+var __VLS_23;
 /** @type {__VLS_StyleScopedClasses['page']} */ ;
-/** @type {__VLS_StyleScopedClasses['order-item']} */ ;
-/** @type {__VLS_StyleScopedClasses['order-info']} */ ;
+/** @type {__VLS_StyleScopedClasses['empty-text']} */ ;
+/** @type {__VLS_StyleScopedClasses['empty-text']} */ ;
+/** @type {__VLS_StyleScopedClasses['h5-card']} */ ;
+/** @type {__VLS_StyleScopedClasses['order-card']} */ ;
+/** @type {__VLS_StyleScopedClasses['order-title']} */ ;
+/** @type {__VLS_StyleScopedClasses['order-sub']} */ ;
+/** @type {__VLS_StyleScopedClasses['order-sub']} */ ;
 var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {
