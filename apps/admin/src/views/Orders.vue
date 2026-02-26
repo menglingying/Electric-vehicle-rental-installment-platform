@@ -114,6 +114,7 @@
           生成合同（需先完成爱签认证）
         </a-button>
         <a-button v-if="detail.contract?.signUrl" @click="copyText(detail.contract.signUrl)">复制签署链接</a-button>
+        <a-button v-if="detail.contract?.signUrl" @click="showLinkQr('合同签署二维码', detail.contract.signUrl)">签署二维码</a-button>
         <a-button v-if="detail.contract?.status === 'SIGNING'" @click="markSigned(detail.id)">标记已签署</a-button>
         <a-button v-if="detail.contract?.fileUrl" @click="openUrl(detail.contract.fileUrl)">下载合同</a-button>
         <a-button v-else-if="detail.contract?.status === 'SIGNED' && !detail.contract?.fileUrl" :loading="downloadingContract" @click="handleDownloadContract(detail.id)">下载合同</a-button>
@@ -143,6 +144,7 @@
           获取签署链接
         </a-button>
         <a-button v-if="notarySignUrl" @click="copyText(notarySignUrl)">复制签署链接</a-button>
+        <a-button v-if="notarySignUrl" @click="showLinkQr('公证签署二维码', notarySignUrl)">签署二维码</a-button>
         <a-button v-if="detail.notaryOrderNo" @click="refreshNotaryStatus(detail.id)">刷新状态</a-button>
         <a-button v-if="detail.notaryOrderNo && detail.notaryStatus === '33'" @click="fetchNotaryCert(detail.id)">获取证书链接</a-button>
         <a-button v-if="detail.notaryCertUrl" @click="openUrl(detail.notaryCertUrl)">下载证书</a-button>
@@ -179,10 +181,19 @@
       <a-alert type="warning" :show-icon="true" title="调价仅限审核前，调价后需重新签合同。" />
     </a-form>
   </a-modal>
+
+  <a-modal v-model:visible="qrVisible" :title="qrTitle" :footer="false" width="360">
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px">
+      <img v-if="qrImageUrl" :src="qrImageUrl" alt="签署二维码" style="width: 280px; height: 280px; border: 1px solid #f0f0f0" />
+      <a-typography-paragraph v-if="qrLink" copyable style="word-break: break-all; margin-bottom: 0">
+        {{ qrLink }}
+      </a-typography-paragraph>
+    </div>
+  </a-modal>
 </template>
 
 <script setup lang="ts">
-import { h, onMounted, ref } from 'vue';
+import { computed, h, onMounted, ref } from 'vue';
 import { Button, Message, Modal, Input } from '@arco-design/web-vue';
 import type { TableColumnData } from '@arco-design/web-vue';
 import {
@@ -223,6 +234,14 @@ const adjustForm = ref({
 const notarySignUrl = ref('');
 const notarySignLoading = ref(false);
 const downloadingContract = ref(false);
+const qrVisible = ref(false);
+const qrTitle = ref('签署二维码');
+const qrLink = ref('');
+const qrImageUrl = computed(() =>
+  qrLink.value
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrLink.value)}`
+    : ''
+);
 
 function batteryOptionText(option: string) {
   const map: Record<string, string> = {
@@ -378,6 +397,16 @@ function copyText(text: string) {
   }
 }
 
+function showLinkQr(title: string, link?: string) {
+  if (!link) {
+    Message.warning('暂无可用链接');
+    return;
+  }
+  qrTitle.value = title;
+  qrLink.value = link;
+  qrVisible.value = true;
+}
+
 async function applyNotaryForOrder(orderId: string) {
   try {
     await applyNotary(orderId);
@@ -516,8 +545,8 @@ const columns: TableColumnData[] = [
         buttons.push(h(Button, { type: 'primary', size: 'small', onClick: () => settle(record.id) }, () => '结清'));
         buttons.push(h(Button, { size: 'small', onClick: () => close(record.id) }, () => '关闭'));
       }
-      // 只有未使用和已结清以外的状态可以删除
-      if (status !== 'IN_USE' && status !== 'SETTLED') {
+      // 只有使用中的订单不能删除
+      if (status !== 'IN_USE') {
         buttons.push(h(Button, { status: 'danger', size: 'small', onClick: () => doDelete(record.id) }, () => '删除'));
       }
       return h('div', { style: 'display:flex; gap:8px; flex-wrap:wrap' }, buttons);

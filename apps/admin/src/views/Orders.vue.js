@@ -1,4 +1,4 @@
-import { h, onMounted, ref } from 'vue';
+import { computed, h, onMounted, ref } from 'vue';
 import { Button, Message, Modal, Input } from '@arco-design/web-vue';
 import { adjustOrderPrice, approveOrder, closeOrder, deleteOrder, deliverOrder, getOrderDetail, prepareContract, markContractSigned, downloadContractFile, listOrders, pickupOrder, rejectOrder, resetOrderForTest, returnOrder, settleOrder, applyNotary, refreshNotary, fetchNotaryCertUrl, getNotarySignUrl as getNotarySignUrlApi } from '@/services/api';
 import { downloadCsv } from '@/services/download';
@@ -16,6 +16,12 @@ const adjustForm = ref({
 const notarySignUrl = ref('');
 const notarySignLoading = ref(false);
 const downloadingContract = ref(false);
+const qrVisible = ref(false);
+const qrTitle = ref('签署二维码');
+const qrLink = ref('');
+const qrImageUrl = computed(() => qrLink.value
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrLink.value)}`
+    : '');
 function batteryOptionText(option) {
     const map = {
         WITHOUT_BATTERY: '空车',
@@ -166,6 +172,15 @@ function copyText(text) {
         Message.info('浏览器不支持复制，请手动复制');
     }
 }
+function showLinkQr(title, link) {
+    if (!link) {
+        Message.warning('暂无可用链接');
+        return;
+    }
+    qrTitle.value = title;
+    qrLink.value = link;
+    qrVisible.value = true;
+}
 async function applyNotaryForOrder(orderId) {
     try {
         await applyNotary(orderId);
@@ -306,8 +321,8 @@ const columns = [
                 buttons.push(h(Button, { type: 'primary', size: 'small', onClick: () => settle(record.id) }, () => '结清'));
                 buttons.push(h(Button, { size: 'small', onClick: () => close(record.id) }, () => '关闭'));
             }
-            // 只有未使用和已结清以外的状态可以删除
-            if (status !== 'IN_USE' && status !== 'SETTLED') {
+            // 只有使用中的订单不能删除
+            if (status !== 'IN_USE') {
                 buttons.push(h(Button, { status: 'danger', size: 'small', onClick: () => doDelete(record.id) }, () => '删除'));
             }
             return h('div', { style: 'display:flex; gap:8px; flex-wrap:wrap' }, buttons);
@@ -1292,7 +1307,7 @@ if (__VLS_ctx.detail) {
         __VLS_227.slots.default;
         var __VLS_227;
     }
-    if (__VLS_ctx.detail.contract?.status === 'SIGNING') {
+    if (__VLS_ctx.detail.contract?.signUrl) {
         const __VLS_232 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
@@ -1309,15 +1324,15 @@ if (__VLS_ctx.detail) {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
-                if (!(__VLS_ctx.detail.contract?.status === 'SIGNING'))
+                if (!(__VLS_ctx.detail.contract?.signUrl))
                     return;
-                __VLS_ctx.markSigned(__VLS_ctx.detail.id);
+                __VLS_ctx.showLinkQr('合同签署二维码', __VLS_ctx.detail.contract.signUrl);
             }
         };
         __VLS_235.slots.default;
         var __VLS_235;
     }
-    if (__VLS_ctx.detail.contract?.fileUrl) {
+    if (__VLS_ctx.detail.contract?.status === 'SIGNING') {
         const __VLS_240 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
@@ -1334,30 +1349,55 @@ if (__VLS_ctx.detail) {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
-                if (!(__VLS_ctx.detail.contract?.fileUrl))
+                if (!(__VLS_ctx.detail.contract?.status === 'SIGNING'))
                     return;
-                __VLS_ctx.openUrl(__VLS_ctx.detail.contract.fileUrl);
+                __VLS_ctx.markSigned(__VLS_ctx.detail.id);
             }
         };
         __VLS_243.slots.default;
         var __VLS_243;
     }
-    else if (__VLS_ctx.detail.contract?.status === 'SIGNED' && !__VLS_ctx.detail.contract?.fileUrl) {
+    if (__VLS_ctx.detail.contract?.fileUrl) {
         const __VLS_248 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
         const __VLS_249 = __VLS_asFunctionalComponent(__VLS_248, new __VLS_248({
             ...{ 'onClick': {} },
-            loading: (__VLS_ctx.downloadingContract),
         }));
         const __VLS_250 = __VLS_249({
             ...{ 'onClick': {} },
-            loading: (__VLS_ctx.downloadingContract),
         }, ...__VLS_functionalComponentArgsRest(__VLS_249));
         let __VLS_252;
         let __VLS_253;
         let __VLS_254;
         const __VLS_255 = {
+            onClick: (...[$event]) => {
+                if (!(__VLS_ctx.detail))
+                    return;
+                if (!(__VLS_ctx.detail.contract?.fileUrl))
+                    return;
+                __VLS_ctx.openUrl(__VLS_ctx.detail.contract.fileUrl);
+            }
+        };
+        __VLS_251.slots.default;
+        var __VLS_251;
+    }
+    else if (__VLS_ctx.detail.contract?.status === 'SIGNED' && !__VLS_ctx.detail.contract?.fileUrl) {
+        const __VLS_256 = {}.AButton;
+        /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
+        // @ts-ignore
+        const __VLS_257 = __VLS_asFunctionalComponent(__VLS_256, new __VLS_256({
+            ...{ 'onClick': {} },
+            loading: (__VLS_ctx.downloadingContract),
+        }));
+        const __VLS_258 = __VLS_257({
+            ...{ 'onClick': {} },
+            loading: (__VLS_ctx.downloadingContract),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_257));
+        let __VLS_260;
+        let __VLS_261;
+        let __VLS_262;
+        const __VLS_263 = {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
@@ -1368,25 +1408,25 @@ if (__VLS_ctx.detail) {
                 __VLS_ctx.handleDownloadContract(__VLS_ctx.detail.id);
             }
         };
-        __VLS_251.slots.default;
-        var __VLS_251;
+        __VLS_259.slots.default;
+        var __VLS_259;
     }
     if (__VLS_ctx.detail.contract) {
-        const __VLS_256 = {}.AButton;
+        const __VLS_264 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
-        const __VLS_257 = __VLS_asFunctionalComponent(__VLS_256, new __VLS_256({
+        const __VLS_265 = __VLS_asFunctionalComponent(__VLS_264, new __VLS_264({
             ...{ 'onClick': {} },
             status: "warning",
         }));
-        const __VLS_258 = __VLS_257({
+        const __VLS_266 = __VLS_265({
             ...{ 'onClick': {} },
             status: "warning",
-        }, ...__VLS_functionalComponentArgsRest(__VLS_257));
-        let __VLS_260;
-        let __VLS_261;
-        let __VLS_262;
-        const __VLS_263 = {
+        }, ...__VLS_functionalComponentArgsRest(__VLS_265));
+        let __VLS_268;
+        let __VLS_269;
+        let __VLS_270;
+        const __VLS_271 = {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
@@ -1395,112 +1435,112 @@ if (__VLS_ctx.detail) {
                 __VLS_ctx.resetForTest(__VLS_ctx.detail.id);
             }
         };
-        __VLS_259.slots.default;
-        var __VLS_259;
+        __VLS_267.slots.default;
+        var __VLS_267;
     }
-    const __VLS_264 = {}.ADivider;
+    const __VLS_272 = {}.ADivider;
     /** @type {[typeof __VLS_components.ADivider, typeof __VLS_components.aDivider, ]} */ ;
     // @ts-ignore
-    const __VLS_265 = __VLS_asFunctionalComponent(__VLS_264, new __VLS_264({}));
-    const __VLS_266 = __VLS_265({}, ...__VLS_functionalComponentArgsRest(__VLS_265));
+    const __VLS_273 = __VLS_asFunctionalComponent(__VLS_272, new __VLS_272({}));
+    const __VLS_274 = __VLS_273({}, ...__VLS_functionalComponentArgsRest(__VLS_273));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ style: {} },
     });
-    const __VLS_268 = {}.ADescriptions;
+    const __VLS_276 = {}.ADescriptions;
     /** @type {[typeof __VLS_components.ADescriptions, typeof __VLS_components.aDescriptions, typeof __VLS_components.ADescriptions, typeof __VLS_components.aDescriptions, ]} */ ;
     // @ts-ignore
-    const __VLS_269 = __VLS_asFunctionalComponent(__VLS_268, new __VLS_268({
-        column: (2),
-        size: "small",
-        bordered: true,
-    }));
-    const __VLS_270 = __VLS_269({
-        column: (2),
-        size: "small",
-        bordered: true,
-    }, ...__VLS_functionalComponentArgsRest(__VLS_269));
-    __VLS_271.slots.default;
-    const __VLS_272 = {}.ADescriptionsItem;
-    /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
-    // @ts-ignore
-    const __VLS_273 = __VLS_asFunctionalComponent(__VLS_272, new __VLS_272({
-        label: "公证状态",
-    }));
-    const __VLS_274 = __VLS_273({
-        label: "公证状态",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_273));
-    __VLS_275.slots.default;
-    (__VLS_ctx.notaryStatusText(__VLS_ctx.detail.notaryStatus));
-    var __VLS_275;
-    const __VLS_276 = {}.ADescriptionsItem;
-    /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
-    // @ts-ignore
     const __VLS_277 = __VLS_asFunctionalComponent(__VLS_276, new __VLS_276({
-        label: "公证单号",
+        column: (2),
+        size: "small",
+        bordered: true,
     }));
     const __VLS_278 = __VLS_277({
-        label: "公证单号",
+        column: (2),
+        size: "small",
+        bordered: true,
     }, ...__VLS_functionalComponentArgsRest(__VLS_277));
     __VLS_279.slots.default;
-    (__VLS_ctx.detail.notaryOrderNo || '-');
-    var __VLS_279;
     const __VLS_280 = {}.ADescriptionsItem;
     /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_281 = __VLS_asFunctionalComponent(__VLS_280, new __VLS_280({
-        label: "出证时间",
+        label: "公证状态",
     }));
     const __VLS_282 = __VLS_281({
-        label: "出证时间",
+        label: "公证状态",
     }, ...__VLS_functionalComponentArgsRest(__VLS_281));
     __VLS_283.slots.default;
-    (__VLS_ctx.detail.notaryCertifiedTime || '-');
+    (__VLS_ctx.notaryStatusText(__VLS_ctx.detail.notaryStatus));
     var __VLS_283;
     const __VLS_284 = {}.ADescriptionsItem;
     /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
     // @ts-ignore
     const __VLS_285 = __VLS_asFunctionalComponent(__VLS_284, new __VLS_284({
-        label: "公证员",
+        label: "公证单号",
     }));
     const __VLS_286 = __VLS_285({
-        label: "公证员",
+        label: "公证单号",
     }, ...__VLS_functionalComponentArgsRest(__VLS_285));
     __VLS_287.slots.default;
-    (__VLS_ctx.detail.notaryName || '-');
+    (__VLS_ctx.detail.notaryOrderNo || '-');
     var __VLS_287;
+    const __VLS_288 = {}.ADescriptionsItem;
+    /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
+    // @ts-ignore
+    const __VLS_289 = __VLS_asFunctionalComponent(__VLS_288, new __VLS_288({
+        label: "出证时间",
+    }));
+    const __VLS_290 = __VLS_289({
+        label: "出证时间",
+    }, ...__VLS_functionalComponentArgsRest(__VLS_289));
+    __VLS_291.slots.default;
+    (__VLS_ctx.detail.notaryCertifiedTime || '-');
+    var __VLS_291;
+    const __VLS_292 = {}.ADescriptionsItem;
+    /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
+    // @ts-ignore
+    const __VLS_293 = __VLS_asFunctionalComponent(__VLS_292, new __VLS_292({
+        label: "公证员",
+    }));
+    const __VLS_294 = __VLS_293({
+        label: "公证员",
+    }, ...__VLS_functionalComponentArgsRest(__VLS_293));
+    __VLS_295.slots.default;
+    (__VLS_ctx.detail.notaryName || '-');
+    var __VLS_295;
     if (__VLS_ctx.notarySignUrl) {
-        const __VLS_288 = {}.ADescriptionsItem;
+        const __VLS_296 = {}.ADescriptionsItem;
         /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
         // @ts-ignore
-        const __VLS_289 = __VLS_asFunctionalComponent(__VLS_288, new __VLS_288({
+        const __VLS_297 = __VLS_asFunctionalComponent(__VLS_296, new __VLS_296({
             label: "签署链接",
             span: (2),
         }));
-        const __VLS_290 = __VLS_289({
+        const __VLS_298 = __VLS_297({
             label: "签署链接",
             span: (2),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_289));
-        __VLS_291.slots.default;
+        }, ...__VLS_functionalComponentArgsRest(__VLS_297));
+        __VLS_299.slots.default;
         __VLS_asFunctionalElement(__VLS_intrinsicElements.a, __VLS_intrinsicElements.a)({
             href: (__VLS_ctx.notarySignUrl),
             target: "_blank",
             ...{ style: {} },
         });
         (__VLS_ctx.notarySignUrl);
-        var __VLS_291;
+        var __VLS_299;
     }
-    const __VLS_292 = {}.ADescriptionsItem;
+    const __VLS_300 = {}.ADescriptionsItem;
     /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
     // @ts-ignore
-    const __VLS_293 = __VLS_asFunctionalComponent(__VLS_292, new __VLS_292({
+    const __VLS_301 = __VLS_asFunctionalComponent(__VLS_300, new __VLS_300({
         label: "证书链接",
         span: (2),
     }));
-    const __VLS_294 = __VLS_293({
+    const __VLS_302 = __VLS_301({
         label: "证书链接",
         span: (2),
-    }, ...__VLS_functionalComponentArgsRest(__VLS_293));
-    __VLS_295.slots.default;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_301));
+    __VLS_303.slots.default;
     if (__VLS_ctx.detail.notaryCertUrl) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
         (__VLS_ctx.detail.notaryCertUrl);
@@ -1508,51 +1548,22 @@ if (__VLS_ctx.detail) {
     else {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
     }
-    var __VLS_295;
-    var __VLS_271;
+    var __VLS_303;
+    var __VLS_279;
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ style: {} },
     });
     if (__VLS_ctx.detail.contract?.status === 'SIGNED' && !__VLS_ctx.detail.notaryOrderNo) {
-        const __VLS_296 = {}.AButton;
-        /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
-        // @ts-ignore
-        const __VLS_297 = __VLS_asFunctionalComponent(__VLS_296, new __VLS_296({
-            ...{ 'onClick': {} },
-            type: "primary",
-        }));
-        const __VLS_298 = __VLS_297({
-            ...{ 'onClick': {} },
-            type: "primary",
-        }, ...__VLS_functionalComponentArgsRest(__VLS_297));
-        let __VLS_300;
-        let __VLS_301;
-        let __VLS_302;
-        const __VLS_303 = {
-            onClick: (...[$event]) => {
-                if (!(__VLS_ctx.detail))
-                    return;
-                if (!(__VLS_ctx.detail.contract?.status === 'SIGNED' && !__VLS_ctx.detail.notaryOrderNo))
-                    return;
-                __VLS_ctx.applyNotaryForOrder(__VLS_ctx.detail.id);
-            }
-        };
-        __VLS_299.slots.default;
-        var __VLS_299;
-    }
-    if (__VLS_ctx.detail.notaryStatus === '20') {
         const __VLS_304 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
         const __VLS_305 = __VLS_asFunctionalComponent(__VLS_304, new __VLS_304({
             ...{ 'onClick': {} },
             type: "primary",
-            loading: (__VLS_ctx.notarySignLoading),
         }));
         const __VLS_306 = __VLS_305({
             ...{ 'onClick': {} },
             type: "primary",
-            loading: (__VLS_ctx.notarySignLoading),
         }, ...__VLS_functionalComponentArgsRest(__VLS_305));
         let __VLS_308;
         let __VLS_309;
@@ -1561,23 +1572,27 @@ if (__VLS_ctx.detail) {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
-                if (!(__VLS_ctx.detail.notaryStatus === '20'))
+                if (!(__VLS_ctx.detail.contract?.status === 'SIGNED' && !__VLS_ctx.detail.notaryOrderNo))
                     return;
-                __VLS_ctx.getNotarySignUrl(__VLS_ctx.detail.id);
+                __VLS_ctx.applyNotaryForOrder(__VLS_ctx.detail.id);
             }
         };
         __VLS_307.slots.default;
         var __VLS_307;
     }
-    if (__VLS_ctx.notarySignUrl) {
+    if (__VLS_ctx.detail.notaryStatus === '20') {
         const __VLS_312 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
         const __VLS_313 = __VLS_asFunctionalComponent(__VLS_312, new __VLS_312({
             ...{ 'onClick': {} },
+            type: "primary",
+            loading: (__VLS_ctx.notarySignLoading),
         }));
         const __VLS_314 = __VLS_313({
             ...{ 'onClick': {} },
+            type: "primary",
+            loading: (__VLS_ctx.notarySignLoading),
         }, ...__VLS_functionalComponentArgsRest(__VLS_313));
         let __VLS_316;
         let __VLS_317;
@@ -1586,15 +1601,15 @@ if (__VLS_ctx.detail) {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
-                if (!(__VLS_ctx.notarySignUrl))
+                if (!(__VLS_ctx.detail.notaryStatus === '20'))
                     return;
-                __VLS_ctx.copyText(__VLS_ctx.notarySignUrl);
+                __VLS_ctx.getNotarySignUrl(__VLS_ctx.detail.id);
             }
         };
         __VLS_315.slots.default;
         var __VLS_315;
     }
-    if (__VLS_ctx.detail.notaryOrderNo) {
+    if (__VLS_ctx.notarySignUrl) {
         const __VLS_320 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
@@ -1611,15 +1626,15 @@ if (__VLS_ctx.detail) {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
-                if (!(__VLS_ctx.detail.notaryOrderNo))
+                if (!(__VLS_ctx.notarySignUrl))
                     return;
-                __VLS_ctx.refreshNotaryStatus(__VLS_ctx.detail.id);
+                __VLS_ctx.copyText(__VLS_ctx.notarySignUrl);
             }
         };
         __VLS_323.slots.default;
         var __VLS_323;
     }
-    if (__VLS_ctx.detail.notaryOrderNo && __VLS_ctx.detail.notaryStatus === '33') {
+    if (__VLS_ctx.notarySignUrl) {
         const __VLS_328 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
@@ -1636,15 +1651,15 @@ if (__VLS_ctx.detail) {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
-                if (!(__VLS_ctx.detail.notaryOrderNo && __VLS_ctx.detail.notaryStatus === '33'))
+                if (!(__VLS_ctx.notarySignUrl))
                     return;
-                __VLS_ctx.fetchNotaryCert(__VLS_ctx.detail.id);
+                __VLS_ctx.showLinkQr('公证签署二维码', __VLS_ctx.notarySignUrl);
             }
         };
         __VLS_331.slots.default;
         var __VLS_331;
     }
-    if (__VLS_ctx.detail.notaryCertUrl) {
+    if (__VLS_ctx.detail.notaryOrderNo) {
         const __VLS_336 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
@@ -1661,242 +1676,335 @@ if (__VLS_ctx.detail) {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
-                if (!(__VLS_ctx.detail.notaryCertUrl))
+                if (!(__VLS_ctx.detail.notaryOrderNo))
                     return;
-                __VLS_ctx.openUrl(__VLS_ctx.detail.notaryCertUrl);
+                __VLS_ctx.refreshNotaryStatus(__VLS_ctx.detail.id);
             }
         };
         __VLS_339.slots.default;
         var __VLS_339;
     }
+    if (__VLS_ctx.detail.notaryOrderNo && __VLS_ctx.detail.notaryStatus === '33') {
+        const __VLS_344 = {}.AButton;
+        /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
+        // @ts-ignore
+        const __VLS_345 = __VLS_asFunctionalComponent(__VLS_344, new __VLS_344({
+            ...{ 'onClick': {} },
+        }));
+        const __VLS_346 = __VLS_345({
+            ...{ 'onClick': {} },
+        }, ...__VLS_functionalComponentArgsRest(__VLS_345));
+        let __VLS_348;
+        let __VLS_349;
+        let __VLS_350;
+        const __VLS_351 = {
+            onClick: (...[$event]) => {
+                if (!(__VLS_ctx.detail))
+                    return;
+                if (!(__VLS_ctx.detail.notaryOrderNo && __VLS_ctx.detail.notaryStatus === '33'))
+                    return;
+                __VLS_ctx.fetchNotaryCert(__VLS_ctx.detail.id);
+            }
+        };
+        __VLS_347.slots.default;
+        var __VLS_347;
+    }
+    if (__VLS_ctx.detail.notaryCertUrl) {
+        const __VLS_352 = {}.AButton;
+        /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
+        // @ts-ignore
+        const __VLS_353 = __VLS_asFunctionalComponent(__VLS_352, new __VLS_352({
+            ...{ 'onClick': {} },
+        }));
+        const __VLS_354 = __VLS_353({
+            ...{ 'onClick': {} },
+        }, ...__VLS_functionalComponentArgsRest(__VLS_353));
+        let __VLS_356;
+        let __VLS_357;
+        let __VLS_358;
+        const __VLS_359 = {
+            onClick: (...[$event]) => {
+                if (!(__VLS_ctx.detail))
+                    return;
+                if (!(__VLS_ctx.detail.notaryCertUrl))
+                    return;
+                __VLS_ctx.openUrl(__VLS_ctx.detail.notaryCertUrl);
+            }
+        };
+        __VLS_355.slots.default;
+        var __VLS_355;
+    }
     if (__VLS_ctx.detail.notaryStatus === '20') {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ style: {} },
         });
-        const __VLS_344 = {}.AAlert;
+        const __VLS_360 = {}.AAlert;
         /** @type {[typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, ]} */ ;
         // @ts-ignore
-        const __VLS_345 = __VLS_asFunctionalComponent(__VLS_344, new __VLS_344({
+        const __VLS_361 = __VLS_asFunctionalComponent(__VLS_360, new __VLS_360({
             type: "info",
         }));
-        const __VLS_346 = __VLS_345({
+        const __VLS_362 = __VLS_361({
             type: "info",
-        }, ...__VLS_functionalComponentArgsRest(__VLS_345));
-        __VLS_347.slots.default;
-        var __VLS_347;
+        }, ...__VLS_functionalComponentArgsRest(__VLS_361));
+        __VLS_363.slots.default;
+        var __VLS_363;
     }
-    const __VLS_348 = {}.ADivider;
+    const __VLS_364 = {}.ADivider;
     /** @type {[typeof __VLS_components.ADivider, typeof __VLS_components.aDivider, ]} */ ;
     // @ts-ignore
-    const __VLS_349 = __VLS_asFunctionalComponent(__VLS_348, new __VLS_348({}));
-    const __VLS_350 = __VLS_349({}, ...__VLS_functionalComponentArgsRest(__VLS_349));
+    const __VLS_365 = __VLS_asFunctionalComponent(__VLS_364, new __VLS_364({}));
+    const __VLS_366 = __VLS_365({}, ...__VLS_functionalComponentArgsRest(__VLS_365));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ style: {} },
     });
-    const __VLS_352 = {}.ATable;
+    const __VLS_368 = {}.ATable;
     /** @type {[typeof __VLS_components.ATable, typeof __VLS_components.aTable, typeof __VLS_components.ATable, typeof __VLS_components.aTable, ]} */ ;
     // @ts-ignore
-    const __VLS_353 = __VLS_asFunctionalComponent(__VLS_352, new __VLS_352({
-        data: (__VLS_ctx.detail.statusLogs || []),
-        pagination: (false),
-        size: "small",
-    }));
-    const __VLS_354 = __VLS_353({
-        data: (__VLS_ctx.detail.statusLogs || []),
-        pagination: (false),
-        size: "small",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_353));
-    __VLS_355.slots.default;
-    const __VLS_356 = {}.ATableColumn;
-    /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
-    // @ts-ignore
-    const __VLS_357 = __VLS_asFunctionalComponent(__VLS_356, new __VLS_356({
-        title: "时间",
-        dataIndex: "at",
-    }));
-    const __VLS_358 = __VLS_357({
-        title: "时间",
-        dataIndex: "at",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_357));
-    const __VLS_360 = {}.ATableColumn;
-    /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
-    // @ts-ignore
-    const __VLS_361 = __VLS_asFunctionalComponent(__VLS_360, new __VLS_360({
-        title: "动作",
-        dataIndex: "action",
-    }));
-    const __VLS_362 = __VLS_361({
-        title: "动作",
-        dataIndex: "action",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_361));
-    const __VLS_364 = {}.ATableColumn;
-    /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
-    // @ts-ignore
-    const __VLS_365 = __VLS_asFunctionalComponent(__VLS_364, new __VLS_364({
-        title: "状态",
-        dataIndex: "status",
-    }));
-    const __VLS_366 = __VLS_365({
-        title: "状态",
-        dataIndex: "status",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_365));
-    const __VLS_368 = {}.ATableColumn;
-    /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
-    // @ts-ignore
     const __VLS_369 = __VLS_asFunctionalComponent(__VLS_368, new __VLS_368({
-        title: "来源",
-        dataIndex: "by",
+        data: (__VLS_ctx.detail.statusLogs || []),
+        pagination: (false),
+        size: "small",
     }));
     const __VLS_370 = __VLS_369({
+        data: (__VLS_ctx.detail.statusLogs || []),
+        pagination: (false),
+        size: "small",
+    }, ...__VLS_functionalComponentArgsRest(__VLS_369));
+    __VLS_371.slots.default;
+    const __VLS_372 = {}.ATableColumn;
+    /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
+    // @ts-ignore
+    const __VLS_373 = __VLS_asFunctionalComponent(__VLS_372, new __VLS_372({
+        title: "时间",
+        dataIndex: "at",
+    }));
+    const __VLS_374 = __VLS_373({
+        title: "时间",
+        dataIndex: "at",
+    }, ...__VLS_functionalComponentArgsRest(__VLS_373));
+    const __VLS_376 = {}.ATableColumn;
+    /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
+    // @ts-ignore
+    const __VLS_377 = __VLS_asFunctionalComponent(__VLS_376, new __VLS_376({
+        title: "动作",
+        dataIndex: "action",
+    }));
+    const __VLS_378 = __VLS_377({
+        title: "动作",
+        dataIndex: "action",
+    }, ...__VLS_functionalComponentArgsRest(__VLS_377));
+    const __VLS_380 = {}.ATableColumn;
+    /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
+    // @ts-ignore
+    const __VLS_381 = __VLS_asFunctionalComponent(__VLS_380, new __VLS_380({
+        title: "状态",
+        dataIndex: "status",
+    }));
+    const __VLS_382 = __VLS_381({
+        title: "状态",
+        dataIndex: "status",
+    }, ...__VLS_functionalComponentArgsRest(__VLS_381));
+    const __VLS_384 = {}.ATableColumn;
+    /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
+    // @ts-ignore
+    const __VLS_385 = __VLS_asFunctionalComponent(__VLS_384, new __VLS_384({
         title: "来源",
         dataIndex: "by",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_369));
-    var __VLS_355;
+    }));
+    const __VLS_386 = __VLS_385({
+        title: "来源",
+        dataIndex: "by",
+    }, ...__VLS_functionalComponentArgsRest(__VLS_385));
+    var __VLS_371;
 }
 var __VLS_15;
-const __VLS_372 = {}.AModal;
+const __VLS_388 = {}.AModal;
 /** @type {[typeof __VLS_components.AModal, typeof __VLS_components.aModal, typeof __VLS_components.AModal, typeof __VLS_components.aModal, ]} */ ;
 // @ts-ignore
-const __VLS_373 = __VLS_asFunctionalComponent(__VLS_372, new __VLS_372({
-    ...{ 'onOk': {} },
-    visible: (__VLS_ctx.adjustVisible),
-    title: "订单调价",
-}));
-const __VLS_374 = __VLS_373({
-    ...{ 'onOk': {} },
-    visible: (__VLS_ctx.adjustVisible),
-    title: "订单调价",
-}, ...__VLS_functionalComponentArgsRest(__VLS_373));
-let __VLS_376;
-let __VLS_377;
-let __VLS_378;
-const __VLS_379 = {
-    onOk: (__VLS_ctx.submitAdjust)
-};
-__VLS_375.slots.default;
-const __VLS_380 = {}.AForm;
-/** @type {[typeof __VLS_components.AForm, typeof __VLS_components.aForm, typeof __VLS_components.AForm, typeof __VLS_components.aForm, ]} */ ;
-// @ts-ignore
-const __VLS_381 = __VLS_asFunctionalComponent(__VLS_380, new __VLS_380({
-    model: (__VLS_ctx.adjustForm),
-    layout: "vertical",
-}));
-const __VLS_382 = __VLS_381({
-    model: (__VLS_ctx.adjustForm),
-    layout: "vertical",
-}, ...__VLS_functionalComponentArgsRest(__VLS_381));
-__VLS_383.slots.default;
-const __VLS_384 = {}.AFormItem;
-/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
-// @ts-ignore
-const __VLS_385 = __VLS_asFunctionalComponent(__VLS_384, new __VLS_384({
-    label: "租金/期（元）",
-    field: "rentPerPeriod",
-}));
-const __VLS_386 = __VLS_385({
-    label: "租金/期（元）",
-    field: "rentPerPeriod",
-}, ...__VLS_functionalComponentArgsRest(__VLS_385));
-__VLS_387.slots.default;
-const __VLS_388 = {}.AInputNumber;
-/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
-// @ts-ignore
 const __VLS_389 = __VLS_asFunctionalComponent(__VLS_388, new __VLS_388({
-    modelValue: (__VLS_ctx.adjustForm.rentPerPeriod),
-    min: (1),
+    ...{ 'onOk': {} },
+    visible: (__VLS_ctx.adjustVisible),
+    title: "订单调价",
 }));
 const __VLS_390 = __VLS_389({
-    modelValue: (__VLS_ctx.adjustForm.rentPerPeriod),
-    min: (1),
+    ...{ 'onOk': {} },
+    visible: (__VLS_ctx.adjustVisible),
+    title: "订单调价",
 }, ...__VLS_functionalComponentArgsRest(__VLS_389));
-var __VLS_387;
-const __VLS_392 = {}.AFormItem;
-/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
-// @ts-ignore
-const __VLS_393 = __VLS_asFunctionalComponent(__VLS_392, new __VLS_392({
-    label: "期数",
-    field: "periods",
-}));
-const __VLS_394 = __VLS_393({
-    label: "期数",
-    field: "periods",
-}, ...__VLS_functionalComponentArgsRest(__VLS_393));
-__VLS_395.slots.default;
-const __VLS_396 = {}.AInputNumber;
-/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
+let __VLS_392;
+let __VLS_393;
+let __VLS_394;
+const __VLS_395 = {
+    onOk: (__VLS_ctx.submitAdjust)
+};
+__VLS_391.slots.default;
+const __VLS_396 = {}.AForm;
+/** @type {[typeof __VLS_components.AForm, typeof __VLS_components.aForm, typeof __VLS_components.AForm, typeof __VLS_components.aForm, ]} */ ;
 // @ts-ignore
 const __VLS_397 = __VLS_asFunctionalComponent(__VLS_396, new __VLS_396({
-    modelValue: (__VLS_ctx.adjustForm.periods),
-    min: (3),
+    model: (__VLS_ctx.adjustForm),
+    layout: "vertical",
 }));
 const __VLS_398 = __VLS_397({
-    modelValue: (__VLS_ctx.adjustForm.periods),
-    min: (3),
+    model: (__VLS_ctx.adjustForm),
+    layout: "vertical",
 }, ...__VLS_functionalComponentArgsRest(__VLS_397));
-var __VLS_395;
+__VLS_399.slots.default;
 const __VLS_400 = {}.AFormItem;
 /** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_401 = __VLS_asFunctionalComponent(__VLS_400, new __VLS_400({
-    label: "周期（天）",
-    field: "cycleDays",
+    label: "租金/期（元）",
+    field: "rentPerPeriod",
 }));
 const __VLS_402 = __VLS_401({
-    label: "周期（天）",
-    field: "cycleDays",
+    label: "租金/期（元）",
+    field: "rentPerPeriod",
 }, ...__VLS_functionalComponentArgsRest(__VLS_401));
 __VLS_403.slots.default;
 const __VLS_404 = {}.AInputNumber;
 /** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
 // @ts-ignore
 const __VLS_405 = __VLS_asFunctionalComponent(__VLS_404, new __VLS_404({
-    modelValue: (__VLS_ctx.adjustForm.cycleDays),
-    min: (7),
+    modelValue: (__VLS_ctx.adjustForm.rentPerPeriod),
+    min: (1),
 }));
 const __VLS_406 = __VLS_405({
-    modelValue: (__VLS_ctx.adjustForm.cycleDays),
-    min: (7),
+    modelValue: (__VLS_ctx.adjustForm.rentPerPeriod),
+    min: (1),
 }, ...__VLS_functionalComponentArgsRest(__VLS_405));
 var __VLS_403;
 const __VLS_408 = {}.AFormItem;
 /** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_409 = __VLS_asFunctionalComponent(__VLS_408, new __VLS_408({
-    label: "调价原因",
-    field: "reason",
+    label: "期数",
+    field: "periods",
 }));
 const __VLS_410 = __VLS_409({
-    label: "调价原因",
-    field: "reason",
+    label: "期数",
+    field: "periods",
 }, ...__VLS_functionalComponentArgsRest(__VLS_409));
 __VLS_411.slots.default;
-const __VLS_412 = {}.AInput;
-/** @type {[typeof __VLS_components.AInput, typeof __VLS_components.aInput, ]} */ ;
+const __VLS_412 = {}.AInputNumber;
+/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
 // @ts-ignore
 const __VLS_413 = __VLS_asFunctionalComponent(__VLS_412, new __VLS_412({
-    modelValue: (__VLS_ctx.adjustForm.reason),
-    placeholder: "请输入原因",
+    modelValue: (__VLS_ctx.adjustForm.periods),
+    min: (3),
 }));
 const __VLS_414 = __VLS_413({
-    modelValue: (__VLS_ctx.adjustForm.reason),
-    placeholder: "请输入原因",
+    modelValue: (__VLS_ctx.adjustForm.periods),
+    min: (3),
 }, ...__VLS_functionalComponentArgsRest(__VLS_413));
 var __VLS_411;
-const __VLS_416 = {}.AAlert;
-/** @type {[typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, ]} */ ;
+const __VLS_416 = {}.AFormItem;
+/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_417 = __VLS_asFunctionalComponent(__VLS_416, new __VLS_416({
+    label: "周期（天）",
+    field: "cycleDays",
+}));
+const __VLS_418 = __VLS_417({
+    label: "周期（天）",
+    field: "cycleDays",
+}, ...__VLS_functionalComponentArgsRest(__VLS_417));
+__VLS_419.slots.default;
+const __VLS_420 = {}.AInputNumber;
+/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
+// @ts-ignore
+const __VLS_421 = __VLS_asFunctionalComponent(__VLS_420, new __VLS_420({
+    modelValue: (__VLS_ctx.adjustForm.cycleDays),
+    min: (7),
+}));
+const __VLS_422 = __VLS_421({
+    modelValue: (__VLS_ctx.adjustForm.cycleDays),
+    min: (7),
+}, ...__VLS_functionalComponentArgsRest(__VLS_421));
+var __VLS_419;
+const __VLS_424 = {}.AFormItem;
+/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
+// @ts-ignore
+const __VLS_425 = __VLS_asFunctionalComponent(__VLS_424, new __VLS_424({
+    label: "调价原因",
+    field: "reason",
+}));
+const __VLS_426 = __VLS_425({
+    label: "调价原因",
+    field: "reason",
+}, ...__VLS_functionalComponentArgsRest(__VLS_425));
+__VLS_427.slots.default;
+const __VLS_428 = {}.AInput;
+/** @type {[typeof __VLS_components.AInput, typeof __VLS_components.aInput, ]} */ ;
+// @ts-ignore
+const __VLS_429 = __VLS_asFunctionalComponent(__VLS_428, new __VLS_428({
+    modelValue: (__VLS_ctx.adjustForm.reason),
+    placeholder: "请输入原因",
+}));
+const __VLS_430 = __VLS_429({
+    modelValue: (__VLS_ctx.adjustForm.reason),
+    placeholder: "请输入原因",
+}, ...__VLS_functionalComponentArgsRest(__VLS_429));
+var __VLS_427;
+const __VLS_432 = {}.AAlert;
+/** @type {[typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, ]} */ ;
+// @ts-ignore
+const __VLS_433 = __VLS_asFunctionalComponent(__VLS_432, new __VLS_432({
     type: "warning",
     showIcon: (true),
     title: "调价仅限审核前，调价后需重新签合同。",
 }));
-const __VLS_418 = __VLS_417({
+const __VLS_434 = __VLS_433({
     type: "warning",
     showIcon: (true),
     title: "调价仅限审核前，调价后需重新签合同。",
-}, ...__VLS_functionalComponentArgsRest(__VLS_417));
-var __VLS_383;
-var __VLS_375;
+}, ...__VLS_functionalComponentArgsRest(__VLS_433));
+var __VLS_399;
+var __VLS_391;
+const __VLS_436 = {}.AModal;
+/** @type {[typeof __VLS_components.AModal, typeof __VLS_components.aModal, typeof __VLS_components.AModal, typeof __VLS_components.aModal, ]} */ ;
+// @ts-ignore
+const __VLS_437 = __VLS_asFunctionalComponent(__VLS_436, new __VLS_436({
+    visible: (__VLS_ctx.qrVisible),
+    title: (__VLS_ctx.qrTitle),
+    footer: (false),
+    width: "360",
+}));
+const __VLS_438 = __VLS_437({
+    visible: (__VLS_ctx.qrVisible),
+    title: (__VLS_ctx.qrTitle),
+    footer: (false),
+    width: "360",
+}, ...__VLS_functionalComponentArgsRest(__VLS_437));
+__VLS_439.slots.default;
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ style: {} },
+});
+if (__VLS_ctx.qrImageUrl) {
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.img)({
+        src: (__VLS_ctx.qrImageUrl),
+        alt: "签署二维码",
+        ...{ style: {} },
+    });
+}
+if (__VLS_ctx.qrLink) {
+    const __VLS_440 = {}.ATypographyParagraph;
+    /** @type {[typeof __VLS_components.ATypographyParagraph, typeof __VLS_components.aTypographyParagraph, typeof __VLS_components.ATypographyParagraph, typeof __VLS_components.aTypographyParagraph, ]} */ ;
+    // @ts-ignore
+    const __VLS_441 = __VLS_asFunctionalComponent(__VLS_440, new __VLS_440({
+        copyable: true,
+        ...{ style: {} },
+    }));
+    const __VLS_442 = __VLS_441({
+        copyable: true,
+        ...{ style: {} },
+    }, ...__VLS_functionalComponentArgsRest(__VLS_441));
+    __VLS_443.slots.default;
+    (__VLS_ctx.qrLink);
+    var __VLS_443;
+}
+var __VLS_439;
 /** @type {__VLS_StyleScopedClasses['panel']} */ ;
 /** @type {__VLS_StyleScopedClasses['panel-title']} */ ;
 /** @type {__VLS_StyleScopedClasses['link']} */ ;
@@ -1920,6 +2028,10 @@ const __VLS_self = (await import('vue')).defineComponent({
             notarySignUrl: notarySignUrl,
             notarySignLoading: notarySignLoading,
             downloadingContract: downloadingContract,
+            qrVisible: qrVisible,
+            qrTitle: qrTitle,
+            qrLink: qrLink,
+            qrImageUrl: qrImageUrl,
             batteryOptionText: batteryOptionText,
             repaymentMethodText: repaymentMethodText,
             maskIdCard: maskIdCard,
@@ -1932,6 +2044,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             markSigned: markSigned,
             handleDownloadContract: handleDownloadContract,
             copyText: copyText,
+            showLinkQr: showLinkQr,
             applyNotaryForOrder: applyNotaryForOrder,
             refreshNotaryStatus: refreshNotaryStatus,
             fetchNotaryCert: fetchNotaryCert,

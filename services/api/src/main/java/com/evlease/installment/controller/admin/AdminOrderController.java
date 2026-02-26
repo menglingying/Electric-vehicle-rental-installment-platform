@@ -207,9 +207,9 @@ public class AdminOrderController {
     var order = orderRepository.findById(orderId)
       .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "订单不存在"));
     
-    // 只允许删除未完成的订单
-    if (order.getStatus() == OrderStatus.SETTLED || order.getStatus() == OrderStatus.IN_USE) {
-      throw new ApiException(HttpStatus.BAD_REQUEST, "已结清或使用中的订单不能删除");
+    // 使用中的订单禁止删除，避免履约中数据被误删
+    if (order.getStatus() == OrderStatus.IN_USE) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "使用中的订单不能删除");
     }
     
     // 删除关联的合同
