@@ -193,8 +193,8 @@ public class NotaryService {
       BigDecimal totalRent = BigDecimal.valueOf((long) rentPerCycle * plan.size());
       lease.put("totalRent", formatAmount(totalRent));
       
-      // 总价金（租赁物价值130%）
-      lease.put("compensation", formatAmount(totalRent.multiply(BigDecimal.valueOf(1.3))));
+      // 总价金与总租金保持一致（业务要求）
+      lease.put("compensation", formatAmount(totalRent));
       
       // 租金支付信息（每期显示真实租金）
       List<Map<String, Object>> payInfo = new ArrayList<>();
