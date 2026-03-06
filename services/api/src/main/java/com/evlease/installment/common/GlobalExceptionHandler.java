@@ -36,7 +36,11 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ApiError> handle(Exception ex) {
     log.error("Unhandled exception", ex);
-    ex.printStackTrace();
+    String msg = ex.getMessage();
+    if (msg != null && !msg.isBlank()) {
+      // 第三方 API 错误（爱签/公证等）直接透传具体信息，方便排查
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiError(msg));
+    }
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiError("Server error"));
   }
 }

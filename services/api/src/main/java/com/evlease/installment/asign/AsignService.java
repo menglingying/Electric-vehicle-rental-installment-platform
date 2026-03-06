@@ -5,6 +5,8 @@ import com.evlease.installment.config.AppProperties;
 import com.evlease.installment.model.Contract;
 import com.evlease.installment.model.Order;
 import com.evlease.installment.model.Region;
+import com.evlease.installment.repo.ProductCategoryRepository;
+import com.evlease.installment.repo.ProductRepository;
 import com.evlease.installment.repo.RegionRepository;
 import com.evlease.installment.util.RegionNameUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -33,16 +35,22 @@ public class AsignService {
   private final AppProperties appProperties;
   private final ObjectMapper objectMapper;
   private final RegionRepository regionRepository;
+  private final ProductRepository productRepository;
+  private final ProductCategoryRepository categoryRepository;
   
   // 临时存储当前合同的车架号（由调用方传入）
   private String currentProductFrameNo;
 
-  public AsignService(AsignClient client, AsignConfig config, AppProperties appProperties, RegionRepository regionRepository) {
+  public AsignService(AsignClient client, AsignConfig config, AppProperties appProperties,
+                      RegionRepository regionRepository, ProductRepository productRepository,
+                      ProductCategoryRepository categoryRepository) {
     this.client = client;
     this.config = config;
     this.appProperties = appProperties;
     this.objectMapper = new ObjectMapper();
     this.regionRepository = regionRepository;
+    this.productRepository = productRepository;
+    this.categoryRepository = categoryRepository;
   }
 
   public record PrepareResult(
@@ -439,11 +447,9 @@ public class AsignService {
     filled.put("partyBPhone", safe(order.getPhone()));
     filled.put("partyBAddress", safe(extractHomeAddress(order)));
     
-    // 产品信息 - 规格根据电池方案显示
-    String batteryOption = order.getBatteryOption();
-    String productSpec = "WITH_BATTERY".equals(batteryOption) ? "带电池" : "空车";
+    // 产品信息 - 规格显示车型（品牌+型号）
     filled.put("productName", safe(order.getProductName()));
-    filled.put("productSpec", productSpec);
+    filled.put("productSpec", resolveProductSpec(order));
     filled.put("productQty", "1");
     // productFrameNo（车架号）留空，由用户手动输入
     
@@ -580,16 +586,12 @@ public class AsignService {
     BigDecimal firstPayDeposit = depositPerPeriod;  // 押金为0
     BigDecimal firstPayTotal = firstPayRent.add(firstPayDeposit);  // 首期总额 = 租金 + 押金
 
-    // 规格：根据电池方案显示"空车"或"带电池"
-    String batteryOption = order.getBatteryOption();
-    String productSpec = "WITH_BATTERY".equals(batteryOption) ? "带电池" : "空车";
-
     Map<String, String> vars = new HashMap<>();
     vars.put("orderId", safe(order.getId()));
     vars.put("iphone", safe(order.getPhone()));
     vars.put("yajin", "0");
     vars.put("productName", safe(order.getProductName()));
-    vars.put("productSpec", productSpec);
+    vars.put("productSpec", resolveProductSpec(order));
     vars.put("productQty", "1");
     // productFrameNo（车架号）由调用方传入
     vars.put("productFrameNo", safe(currentProductFrameNo));
@@ -734,11 +736,8 @@ public class AsignService {
   private List<Map<String, Object>> buildDeliveryItems(Order order) {
     List<Map<String, Object>> rows = new ArrayList<>();
     Map<String, Object> row = new HashMap<>();
-    // 规格根据电池方案显示
-    String batteryOption = order.getBatteryOption();
-    String productSpec = "WITH_BATTERY".equals(batteryOption) ? "带电池" : "空车";
     row.put("itemName", safe(order.getProductName()));
-    row.put("itemModel", productSpec);
+    row.put("itemModel", resolveProductSpec(order));
     row.put("itemQty", "1");
     rows.add(row);
     return rows;
@@ -766,6 +765,29 @@ public class AsignService {
       parts.add(order.getHomeAddressDetail());
     }
     return String.join("", parts);
+  }
+
+  /**
+   * 解析车型规格：品牌名 + 产品名（如"九号m385c"）。
+   * 通过 order.productId → product.categoryId → category.name 获取品牌。
+   */
+  private String resolveProductSpec(Order order) {
+    String productName = safe(order.getProductName());
+    if (order.getProductId() == null || order.getProductId().isBlank()) return productName;
+    try {
+      var productOpt = productRepository.findById(order.getProductId());
+      if (productOpt.isEmpty()) return productName;
+      String categoryId = productOpt.get().getCategoryId();
+      if (categoryId == null || categoryId.isBlank()) return productName;
+      var categoryOpt = categoryRepository.findById(categoryId);
+      if (categoryOpt.isEmpty()) return productName;
+      String brandName = categoryOpt.get().getName();
+      if (brandName == null || brandName.isBlank()) return productName;
+      if (productName.startsWith(brandName)) return productName;
+      return brandName + productName;
+    } catch (Exception e) {
+      return productName;
+    }
   }
 
   private String resolveRegionName(String code) {
