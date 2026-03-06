@@ -1,5 +1,7 @@
 package com.evlease.installment.controller.admin;
 
+import com.evlease.installment.auth.AuthContext;
+import com.evlease.installment.auth.PrincipalType;
 import com.evlease.installment.common.ApiException;
 import com.evlease.installment.model.Order;
 import com.evlease.installment.model.OrderStatus;
@@ -9,6 +11,7 @@ import com.evlease.installment.repo.OrderRepository;
 import com.evlease.installment.service.OrderEnricher;
 import com.evlease.installment.service.OrderLogService;
 import com.evlease.installment.service.OrderPlanService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -203,11 +206,14 @@ public class AdminOrderController {
 
   @DeleteMapping("/{orderId}")
   @Transactional
-  public void delete(@PathVariable String orderId) {
+  public void delete(@PathVariable String orderId, HttpServletRequest request) {
+    var principal = AuthContext.require(request, PrincipalType.ADMIN);
+    if (!"SUPER".equals(principal.role())) {
+      throw new ApiException(HttpStatus.FORBIDDEN, "仅总账号可执行删除操作");
+    }
     var order = orderRepository.findById(orderId)
       .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "订单不存在"));
     
-    // 使用中的订单禁止删除，避免履约中数据被误删
     if (order.getStatus() == OrderStatus.IN_USE) {
       throw new ApiException(HttpStatus.BAD_REQUEST, "使用中的订单不能删除");
     }

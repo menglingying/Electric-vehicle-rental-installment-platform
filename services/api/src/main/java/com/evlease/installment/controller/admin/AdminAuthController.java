@@ -26,17 +26,27 @@ public class AdminAuthController {
   }
 
   public record LoginRequest(@NotBlank String username, @NotBlank String password) {}
-  public record LoginResponse(String token) {}
+  public record LoginResponse(String token, String role) {}
 
   @PostMapping("/login")
   public LoginResponse login(@Valid @RequestBody LoginRequest req) {
-    if (!appProperties.getAdmin().getUsername().equals(req.username())
-      || !appProperties.getAdmin().getPassword().equals(req.password())) {
-      throw new ApiException(HttpStatus.UNAUTHORIZED, "账号或密码错误");
+    // 先检查多账号列表
+    var accounts = appProperties.getAdmin().getAccounts();
+    for (var account : accounts) {
+      if (account.getUsername().equals(req.username()) && account.getPassword().equals(req.password())) {
+        var adminId = "a_" + UUID.nameUUIDFromBytes(req.username().getBytes());
+        var token = tokenService.issue(new Principal(PrincipalType.ADMIN, adminId, req.username(), account.getRole()));
+        return new LoginResponse(token, account.getRole());
+      }
     }
-    var adminId = "a_" + UUID.nameUUIDFromBytes(req.username().getBytes());
-    var token = tokenService.issue(new Principal(PrincipalType.ADMIN, adminId, req.username()));
-    return new LoginResponse(token);
+    // 兼容原有默认账号（作为 SUPER 角色）
+    if (appProperties.getAdmin().getUsername().equals(req.username())
+      && appProperties.getAdmin().getPassword().equals(req.password())) {
+      var adminId = "a_" + UUID.nameUUIDFromBytes(req.username().getBytes());
+      var token = tokenService.issue(new Principal(PrincipalType.ADMIN, adminId, req.username(), "SUPER"));
+      return new LoginResponse(token, "SUPER");
+    }
+    throw new ApiException(HttpStatus.UNAUTHORIZED, "账号或密码错误");
   }
 }
 

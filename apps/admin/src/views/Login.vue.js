@@ -2,7 +2,7 @@ import { reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { Message } from '@arco-design/web-vue';
 import { adminLogin } from '@/services/api';
-import { setAdminToken } from '@/services/auth';
+import { setAdminToken, setAdminRole } from '@/services/auth';
 const router = useRouter();
 const route = useRoute();
 const loading = ref(false);
@@ -12,6 +12,7 @@ async function onSubmit() {
     try {
         const res = await adminLogin(form.username, form.password);
         setAdminToken(res.token);
+        setAdminRole(res.role || 'OPERATOR');
         Message.success('登录成功');
         const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '';
         const target = redirect.startsWith('/') ? redirect : '/dashboard';

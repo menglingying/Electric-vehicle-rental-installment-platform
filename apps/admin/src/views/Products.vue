@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="panel">
     <div class="panel-title">
       <div>商品管理</div>
@@ -133,6 +133,7 @@ import {
   type CategoryNode,
   type Product
 } from '@/services/api';
+import { isSuper } from '@/services/auth';
 
 const rows = ref<Product[]>([]);
 const categories = ref<CategoryNode[]>([]);
@@ -264,7 +265,9 @@ const columns: TableColumnData[] = [
     render: ({ record }: { record: any }) =>
       h('div', { style: 'display: flex; gap: 8px' }, [
         h(Button, { size: 'small', onClick: () => openEdit(record) }, () => '编辑'),
-        h(Button, { size: 'small', status: 'danger', onClick: () => confirmDelete(record) }, () => '删除')
+        isSuper()
+          ? h(Button, { size: 'small', status: 'danger', onClick: () => confirmDelete(record) }, () => '删除')
+          : null
       ])
   }
 ];

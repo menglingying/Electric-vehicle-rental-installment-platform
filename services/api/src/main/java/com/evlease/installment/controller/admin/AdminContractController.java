@@ -1,5 +1,7 @@
 package com.evlease.installment.controller.admin;
 
+import com.evlease.installment.auth.AuthContext;
+import com.evlease.installment.auth.PrincipalType;
 import com.evlease.installment.common.ApiException;
 import com.evlease.installment.config.AppProperties;
 import com.evlease.installment.asign.AsignConfig;
@@ -13,6 +15,7 @@ import com.evlease.installment.repo.OrderRepository;
 import com.evlease.installment.service.OrderLogService;
 import com.evlease.installment.sms.SmsService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.HashMap;
@@ -21,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -365,6 +369,18 @@ public class AdminContractController {
     order.setNotaryStatus("10");
     orderLogService.add(order, "NOTARY_APPLY", "ADMIN", l -> l.setActor("自动发起"));
     orderRepository.save(order);
+  }
+
+  @DeleteMapping("/{orderId}")
+  public Map<String, String> delete(@PathVariable String orderId, HttpServletRequest request) {
+    var principal = AuthContext.require(request, PrincipalType.ADMIN);
+    if (!"SUPER".equals(principal.role())) {
+      throw new ApiException(HttpStatus.FORBIDDEN, "仅总账号可执行删除操作");
+    }
+    var contract = contractRepository.findById(orderId)
+        .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "合同不存在"));
+    contractRepository.delete(contract);
+    return Map.of("message", "删除成功");
   }
 
   private String guessExt(String filename, String contentType) {

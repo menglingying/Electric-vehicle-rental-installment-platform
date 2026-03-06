@@ -1,9 +1,12 @@
 package com.evlease.installment.controller.admin;
 
+import com.evlease.installment.auth.AuthContext;
+import com.evlease.installment.auth.PrincipalType;
 import com.evlease.installment.common.ApiException;
 import com.evlease.installment.model.ProductCategory;
 import com.evlease.installment.repo.ProductCategoryRepository;
 import com.evlease.installment.repo.ProductRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.ArrayList;
@@ -76,7 +79,11 @@ public class AdminCategoryController {
   }
 
   @DeleteMapping("/{id}")
-  public void delete(@PathVariable String id) {
+  public void delete(@PathVariable String id, HttpServletRequest request) {
+    var principal = AuthContext.require(request, PrincipalType.ADMIN);
+    if (!"SUPER".equals(principal.role())) {
+      throw new ApiException(HttpStatus.FORBIDDEN, "仅总账号可执行删除操作");
+    }
     if (!categoryRepository.existsById(id)) {
       throw new ApiException(HttpStatus.NOT_FOUND, "分类不存在");
     }

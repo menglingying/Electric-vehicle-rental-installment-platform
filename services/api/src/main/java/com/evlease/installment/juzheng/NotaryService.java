@@ -4,6 +4,7 @@ import com.evlease.installment.config.AppProperties;
 import com.evlease.installment.model.Order;
 import com.evlease.installment.model.Product;
 import com.evlease.installment.model.RepaymentPlanItem;
+import com.evlease.installment.repo.ProductCategoryRepository;
 import com.evlease.installment.repo.ProductRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,12 +36,15 @@ public class NotaryService {
   private final JuzhengConfig config;
   private final AppProperties appProperties;
   private final ProductRepository productRepository;
+  private final ProductCategoryRepository categoryRepository;
   
-  public NotaryService(JuzhengClient client, JuzhengConfig config, AppProperties appProperties, ProductRepository productRepository) {
+  public NotaryService(JuzhengClient client, JuzhengConfig config, AppProperties appProperties,
+                       ProductRepository productRepository, ProductCategoryRepository categoryRepository) {
     this.client = client;
     this.config = config;
     this.appProperties = appProperties;
     this.productRepository = productRepository;
+    this.categoryRepository = categoryRepository;
   }
   
   /**
@@ -176,8 +180,7 @@ public class NotaryService {
     lease.put("orderNo", order.getId());
     lease.put("deliveryAddress", order.getResidenceAddress() != null ? order.getResidenceAddress() : "待确认");
     lease.put("goodsName", order.getProductName());
-    lease.put("spec", order.getBatteryOption() != null ? 
-        ("WITH_BATTERY".equals(order.getBatteryOption()) ? "含电池" : "空车") : "标准配置");
+    lease.put("spec", resolveProductSpec(order));
     lease.put("num", 1);
     
     // 从商品获取真实的每期租金（RepaymentPlanItem.amount 已扣除押金抵扣，不能直接用于公证合同）
@@ -314,6 +317,30 @@ public class NotaryService {
       sb.append(String.format("%02x", b));
     }
     return sb.toString();
+  }
+
+  /**
+   * 解析车型规格：品牌名 + 产品名（如"九号m385c"）。
+   * 通过 order.productId → product.categoryId → category.name 获取品牌。
+   */
+  private String resolveProductSpec(Order order) {
+    String productName = order.getProductName() != null ? order.getProductName() : "";
+    if (order.getProductId() == null || order.getProductId().isBlank()) return productName;
+    try {
+      var productOpt = productRepository.findById(order.getProductId());
+      if (productOpt.isEmpty()) return productName;
+      String categoryId = productOpt.get().getCategoryId();
+      if (categoryId == null || categoryId.isBlank()) return productName;
+      var categoryOpt = categoryRepository.findById(categoryId);
+      if (categoryOpt.isEmpty()) return productName;
+      String brandName = categoryOpt.get().getName();
+      if (brandName == null || brandName.isBlank()) return productName;
+      if (productName.startsWith(brandName)) return productName;
+      return brandName + productName;
+    } catch (Exception e) {
+      log.warn("解析公证商品规格失败: {}", e.getMessage());
+      return productName;
+    }
   }
 
   private boolean isBlank(String value) {

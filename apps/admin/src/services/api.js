@@ -50,6 +50,9 @@ export async function downloadContractFile(orderId) {
     const { data } = await http.post(`/admin/contracts/${orderId}/download`);
     return data;
 }
+export async function deleteContract(orderId) {
+    await http.delete(`/admin/contracts/${encodeURIComponent(orderId)}`);
+}
 export async function upsertManualContract(payload) {
     const { data } = await http.post('/admin/contracts/manual', payload);
     return data;

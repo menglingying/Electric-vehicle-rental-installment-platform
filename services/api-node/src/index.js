@@ -13,8 +13,11 @@ app.use(
 
 const FIXED_CODE_ENABLED = true;
 const FIXED_CODE_VALUE = '123456';
-const ADMIN_USERNAME = 'admin';
-const ADMIN_PASSWORD = 'admin123';
+const ADMIN_ACCOUNTS = [
+  { username: 'admin', password: 'admin123', role: 'SUPER' },
+  { username: 'finance', password: 'finance123', role: 'FINANCE' },
+  { username: 'operator', password: 'operator123', role: 'OPERATOR' },
+];
 
 const products = new Map([
   [
@@ -55,9 +58,9 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-function issueToken(type, phoneOrUsername) {
+function issueToken(type, phoneOrUsername, role) {
   const token = crypto.randomBytes(16).toString('hex');
-  tokens.set(token, { type, phoneOrUsername, expiresAt: Date.now() + 24 * 3600_000 });
+  tokens.set(token, { type, phoneOrUsername, role, expiresAt: Date.now() + 24 * 3600_000 });
   return token;
 }
 
@@ -268,6 +271,28 @@ app.get('/api/h5/contracts/:orderId', (req, res) => {
   res.json(contracts.get(order.id) || null);
 });
 
+// Admin contracts
+app.get('/api/admin/contracts', (req, res) => {
+  const p = requireAuth(req, 'ADMIN');
+  if (!p) return res.status(401).json({ message: '未登录' });
+  const type = req.query.type;
+  let list = [...contracts.values()];
+  if (type && type !== 'ALL') {
+    list = list.filter(c => (c.contractType || '').toUpperCase() === type.toUpperCase());
+  }
+  res.json(list);
+});
+
+app.delete('/api/admin/contracts/:orderId', (req, res) => {
+  const p = requireAuth(req, 'ADMIN');
+  if (!p) return res.status(401).json({ message: '未登录' });
+  if (p.role !== 'SUPER') return res.status(403).json({ message: '仅总账号可执行删除操作' });
+  const orderId = req.params.orderId;
+  if (!contracts.has(orderId)) return res.status(404).json({ message: '合同不存在' });
+  contracts.delete(orderId);
+  res.json({ message: '删除成功' });
+});
+
 // H5 payment (reserved for H5 cashier)
 app.post('/api/h5/orders/:orderId/payment/start', (req, res) => {
   const p = requireAuth(req, 'H5');
@@ -319,11 +344,12 @@ app.post('/api/callbacks/payment', (req, res) => {
 // Admin auth
 app.post('/api/admin/auth/login', (req, res) => {
   const { username, password } = req.body || {};
-  if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+  const account = ADMIN_ACCOUNTS.find(a => a.username === username && a.password === password);
+  if (!account) {
     return res.status(401).json({ message: '账号或密码错误' });
   }
-  const token = issueToken('ADMIN', username);
-  res.json({ token });
+  const token = issueToken('ADMIN', username, account.role);
+  res.json({ token, role: account.role });
 });
 
 // Admin products
@@ -735,6 +761,7 @@ app.post('/api/admin/blacklist', (req, res) => {
 app.delete('/api/admin/blacklist/:phone', (req, res) => {
   const p = requireAuth(req, 'ADMIN');
   if (!p) return res.status(401).json({ message: '未登录' });
+  if (p.role !== 'SUPER') return res.status(403).json({ message: '仅总账号可执行删除操作' });
   blacklist.delete(req.params.phone);
   res.json({ ok: true });
 });

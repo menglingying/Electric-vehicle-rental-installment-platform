@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="panel">
     <div class="panel-title">
       <div>黑名单</div>
@@ -17,7 +17,9 @@
         <a-table-column
           title="操作"
           :render="({ record }: any) =>
-            h(Button, { status: 'danger', size: 'small', onClick: () => remove(record.phone) }, () => '移除')
+            isSuper()
+              ? h(Button, { status: 'danger', size: 'small', onClick: () => remove(record.phone) }, () => '移除')
+              : null
           "
         />
       </a-table>
@@ -29,6 +31,7 @@
 import { h, onMounted, ref } from 'vue';
 import { Button, Message } from '@arco-design/web-vue';
 import { addBlacklist, listBlacklist, removeBlacklist } from '@/services/api';
+import { isSuper } from '@/services/auth';
 
 const rows = ref<{ phone: string; reason: string; createdAt: string }[]>([]);
 const phone = ref('');

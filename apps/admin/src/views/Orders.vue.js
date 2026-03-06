@@ -2,6 +2,7 @@ import { computed, h, onMounted, ref } from 'vue';
 import { Button, Message, Modal, Input } from '@arco-design/web-vue';
 import { adjustOrderPrice, approveOrder, closeOrder, deleteOrder, deliverOrder, getOrderDetail, prepareContract, markContractSigned, downloadContractFile, listOrders, pickupOrder, rejectOrder, resetOrderForTest, returnOrder, settleOrder, applyNotary, refreshNotary, fetchNotaryCertUrl, getNotarySignUrl as getNotarySignUrlApi } from '@/services/api';
 import { downloadCsv } from '@/services/download';
+import { isSuper } from '@/services/auth';
 const rows = ref([]);
 const detailVisible = ref(false);
 const detail = ref(null);
@@ -321,8 +322,7 @@ const columns = [
                 buttons.push(h(Button, { type: 'primary', size: 'small', onClick: () => settle(record.id) }, () => '结清'));
                 buttons.push(h(Button, { size: 'small', onClick: () => close(record.id) }, () => '关闭'));
             }
-            // 只有使用中的订单不能删除
-            if (status !== 'IN_USE') {
+            if (status !== 'IN_USE' && isSuper()) {
                 buttons.push(h(Button, { status: 'danger', size: 'small', onClick: () => doDelete(record.id) }, () => '删除'));
             }
             return h('div', { style: 'display:flex; gap:8px; flex-wrap:wrap' }, buttons);

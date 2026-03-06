@@ -1,6 +1,7 @@
 import { h, onMounted, ref } from 'vue';
 import { Button, Message } from '@arco-design/web-vue';
 import { addBlacklist, listBlacklist, removeBlacklist } from '@/services/api';
+import { isSuper } from '@/services/auth';
 const rows = ref([]);
 const phone = ref('');
 const reason = ref('');
@@ -152,11 +153,15 @@ const __VLS_32 = {}.ATableColumn;
 // @ts-ignore
 const __VLS_33 = __VLS_asFunctionalComponent(__VLS_32, new __VLS_32({
     title: "操作",
-    render: (({ record }) => __VLS_ctx.h(__VLS_ctx.Button, { status: 'danger', size: 'small', onClick: () => __VLS_ctx.remove(record.phone) }, () => '移除')),
+    render: (({ record }) => __VLS_ctx.isSuper()
+        ? __VLS_ctx.h(__VLS_ctx.Button, { status: 'danger', size: 'small', onClick: () => __VLS_ctx.remove(record.phone) }, () => '移除')
+        : null),
 }));
 const __VLS_34 = __VLS_33({
     title: "操作",
-    render: (({ record }) => __VLS_ctx.h(__VLS_ctx.Button, { status: 'danger', size: 'small', onClick: () => __VLS_ctx.remove(record.phone) }, () => '移除')),
+    render: (({ record }) => __VLS_ctx.isSuper()
+        ? __VLS_ctx.h(__VLS_ctx.Button, { status: 'danger', size: 'small', onClick: () => __VLS_ctx.remove(record.phone) }, () => '移除')
+        : null),
 }, ...__VLS_functionalComponentArgsRest(__VLS_33));
 var __VLS_19;
 /** @type {__VLS_StyleScopedClasses['panel']} */ ;
@@ -170,6 +175,7 @@ const __VLS_self = (await import('vue')).defineComponent({
         return {
             h: h,
             Button: Button,
+            isSuper: isSuper,
             rows: rows,
             phone: phone,
             reason: reason,

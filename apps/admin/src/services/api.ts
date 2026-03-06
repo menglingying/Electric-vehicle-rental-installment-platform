@@ -65,7 +65,7 @@ export type Contract = {
 
 export async function adminLogin(username: string, password: string) {
   const { data } = await http.post('/admin/auth/login', { username, password });
-  return data as { token: string };
+  return data as { token: string; role: string };
 }
 
 export async function listProducts() {
@@ -124,6 +124,10 @@ export async function uploadContractPdf(file: File) {
 export async function downloadContractFile(orderId: string) {
   const { data } = await http.post(`/admin/contracts/${orderId}/download`);
   return data as Contract;
+}
+
+export async function deleteContract(orderId: string) {
+  await http.delete(`/admin/contracts/${encodeURIComponent(orderId)}`);
 }
 
 export async function upsertManualContract(payload: {

@@ -29,6 +29,16 @@ app:
   admin:
     username: "admin"
     password: "admin123"
+    accounts:
+      - username: "admin"
+        password: "admin123"
+        role: "SUPER"
+      - username: "finance"
+        password: "finance123"
+        role: "FINANCE"
+      - username: "operator"
+        password: "operator123"
+        role: "OPERATOR"
   sms:
     enabled: true
     mock: true

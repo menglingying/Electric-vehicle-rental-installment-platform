@@ -72,6 +72,7 @@ public class AppProperties {
   public static class Admin {
     private String username = "admin";
     private String password = "admin123";
+    private List<AdminAccount> accounts = List.of();
 
     public String getUsername() {
       return username;
@@ -87,6 +88,44 @@ public class AppProperties {
 
     public void setPassword(String password) {
       this.password = password;
+    }
+
+    public List<AdminAccount> getAccounts() {
+      return accounts;
+    }
+
+    public void setAccounts(List<AdminAccount> accounts) {
+      this.accounts = accounts == null ? List.of() : accounts;
+    }
+  }
+
+  public static class AdminAccount {
+    private String username;
+    private String password;
+    private String role = "OPERATOR";
+
+    public String getUsername() {
+      return username;
+    }
+
+    public void setUsername(String username) {
+      this.username = username;
+    }
+
+    public String getPassword() {
+      return password;
+    }
+
+    public void setPassword(String password) {
+      this.password = password;
+    }
+
+    public String getRole() {
+      return role;
+    }
+
+    public void setRole(String role) {
+      this.role = role;
     }
   }
 

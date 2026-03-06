@@ -1,6 +1,7 @@
 import { h, onMounted, reactive, ref, computed } from 'vue';
 import { Button, Message, Modal } from '@arco-design/web-vue';
 import { deleteCategory, listCategories, upsertCategory } from '@/services/api';
+import { isSuper } from '@/services/auth';
 const treeData = ref([]);
 const visible = ref(false);
 const form = reactive({
@@ -36,7 +37,9 @@ const columns = [
         render: ({ record }) => h('div', { style: 'display:flex; gap:8px' }, [
             h(Button, { size: 'small', onClick: () => openCreate(record.id) }, () => '新增子类'),
             h(Button, { size: 'small', onClick: () => openEdit(record) }, () => '编辑'),
-            h(Button, { size: 'small', status: 'danger', onClick: () => confirmDelete(record) }, () => '删除')
+            isSuper()
+                ? h(Button, { size: 'small', status: 'danger', onClick: () => confirmDelete(record) }, () => '删除')
+                : null
         ])
     }
 ];

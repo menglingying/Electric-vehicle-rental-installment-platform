@@ -1,7 +1,7 @@
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { IconHome, IconApps, IconArchive, IconList, IconCheckCircle, IconNotification, IconExclamationCircle, IconStop } from '@arco-design/web-vue/es/icon';
-import { clearAdminToken } from '@/services/auth';
+import { clearAdminToken, getAdminRole } from '@/services/auth';
 const route = useRoute();
 const router = useRouter();
 const activeKey = computed(() => route.path);
@@ -16,6 +16,16 @@ const menuItems = [
     { key: '/overdue', label: '逾期分层', icon: IconExclamationCircle },
     { key: '/blacklist', label: '黑名单', icon: IconStop }
 ];
+const roleLabel = computed(() => {
+    const role = getAdminRole();
+    if (role === 'SUPER')
+        return '总管理员';
+    if (role === 'FINANCE')
+        return '财务账号';
+    if (role === 'OPERATOR')
+        return '操作账号';
+    return '管理员';
+});
 const currentTitle = computed(() => {
     const item = menuItems.find((entry) => entry.key === route.path);
     return item?.label ?? '平台管理';
@@ -157,6 +167,7 @@ const __VLS_35 = __VLS_34({
 __VLS_36.slots.default;
 var __VLS_36;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
+(__VLS_ctx.roleLabel);
 const __VLS_37 = {}.AButton;
 /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
 // @ts-ignore
@@ -219,6 +230,7 @@ const __VLS_self = (await import('vue')).defineComponent({
         return {
             activeKey: activeKey,
             menuItems: menuItems,
+            roleLabel: roleLabel,
             currentTitle: currentTitle,
             onMenuClick: onMenuClick,
             logout: logout,

@@ -1,6 +1,7 @@
 import { h, onMounted, reactive, ref } from 'vue';
-import { Button, Message } from '@arco-design/web-vue';
-import { listContracts, upsertManualContract, uploadContractPdf, downloadContractFile } from '@/services/api';
+import { Button, Message, Modal } from '@arco-design/web-vue';
+import { listContracts, upsertManualContract, uploadContractPdf, downloadContractFile, deleteContract } from '@/services/api';
+import { isSuper } from '@/services/auth';
 const rows = ref([]);
 const activeType = ref('ALL');
 const visible = ref(false);
@@ -161,6 +162,25 @@ function copyText(text) {
         Message.info('浏览器不支持复制，请手动复制');
     }
 }
+function handleDelete(record) {
+    Modal.warning({
+        title: '确认删除',
+        content: `确定要删除合同 ${record.contractNo || record.orderId} 吗？此操作不可恢复。`,
+        okText: '删除',
+        cancelText: '取消',
+        hideCancel: false,
+        onOk: async () => {
+            try {
+                await deleteContract(record.orderId);
+                Message.success('删除成功');
+                await load();
+            }
+            catch (e) {
+                Message.error(e?.response?.data?.message ?? '删除失败');
+            }
+        }
+    });
+}
 const downloading = ref(false);
 async function handleDownloadContract(record) {
     if (record.fileUrl) {
@@ -244,6 +264,9 @@ const columns = [
                 : null,
             record.notaryCertUrl
                 ? h(Button, { size: 'small', onClick: () => openUrl(record.notaryCertUrl || '') }, () => '公证书')
+                : null,
+            isSuper()
+                ? h(Button, { size: 'small', status: 'danger', onClick: () => handleDelete(record) }, () => '删除')
                 : null
         ])
     }

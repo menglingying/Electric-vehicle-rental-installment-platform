@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="panel">
     <div class="panel-title">
       <div>订单管理（人工审核 + 履约）</div>
@@ -219,6 +219,7 @@ import {
   type Order
 } from '@/services/api';
 import { downloadCsv } from '@/services/download';
+import { isSuper } from '@/services/auth';
 
 const rows = ref<Order[]>([]);
 const detailVisible = ref(false);
@@ -545,8 +546,7 @@ const columns: TableColumnData[] = [
         buttons.push(h(Button, { type: 'primary', size: 'small', onClick: () => settle(record.id) }, () => '结清'));
         buttons.push(h(Button, { size: 'small', onClick: () => close(record.id) }, () => '关闭'));
       }
-      // 只有使用中的订单不能删除
-      if (status !== 'IN_USE') {
+      if (status !== 'IN_USE' && isSuper()) {
         buttons.push(h(Button, { status: 'danger', size: 'small', onClick: () => doDelete(record.id) }, () => '删除'));
       }
       return h('div', { style: 'display:flex; gap:8px; flex-wrap:wrap' }, buttons);

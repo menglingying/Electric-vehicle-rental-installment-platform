@@ -81,9 +81,10 @@
 
 <script setup lang="ts">
 import { h, onMounted, reactive, ref } from 'vue';
-import { Button, Message } from '@arco-design/web-vue';
+import { Button, Message, Modal } from '@arco-design/web-vue';
 import type { TableColumnData } from '@arco-design/web-vue';
-import { listContracts, upsertManualContract, uploadContractPdf, downloadContractFile, type Contract } from '@/services/api';
+import { listContracts, upsertManualContract, uploadContractPdf, downloadContractFile, deleteContract, type Contract } from '@/services/api';
+import { isSuper } from '@/services/auth';
 
 type ContractRow = Contract & { metaObj: Record<string, any> };
 const rows = ref<ContractRow[]>([]);
@@ -241,6 +242,25 @@ function copyText(text?: string) {
   }
 }
 
+function handleDelete(record: ContractRow) {
+  Modal.warning({
+    title: '确认删除',
+    content: `确定要删除合同 ${record.contractNo || record.orderId} 吗？此操作不可恢复。`,
+    okText: '删除',
+    cancelText: '取消',
+    hideCancel: false,
+    onOk: async () => {
+      try {
+        await deleteContract(record.orderId);
+        Message.success('删除成功');
+        await load();
+      } catch (e: any) {
+        Message.error(e?.response?.data?.message ?? '删除失败');
+      }
+    }
+  });
+}
+
 const downloading = ref(false);
 
 async function handleDownloadContract(record: ContractRow) {
@@ -323,6 +343,9 @@ const columns: TableColumnData[] = [
           : null,
         record.notaryCertUrl
           ? h(Button, { size: 'small', onClick: () => openUrl(record.notaryCertUrl || '') }, () => '公证书')
+          : null,
+        isSuper()
+          ? h(Button, { size: 'small', status: 'danger', onClick: () => handleDelete(record) }, () => '删除')
           : null
       ])
   }

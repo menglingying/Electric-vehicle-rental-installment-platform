@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="panel">
     <div class="panel-title">
       <div>分类管理</div>
@@ -38,6 +38,7 @@ import { h, onMounted, reactive, ref, computed } from 'vue';
 import { Button, Message, Modal } from '@arco-design/web-vue';
 import type { TableColumnData } from '@arco-design/web-vue';
 import { deleteCategory, listCategories, upsertCategory, type CategoryNode } from '@/services/api';
+import { isSuper } from '@/services/auth';
 
 const treeData = ref<CategoryNode[]>([]);
 const visible = ref(false);
@@ -76,7 +77,9 @@ const columns: TableColumnData[] = [
       h('div', { style: 'display:flex; gap:8px' }, [
         h(Button, { size: 'small', onClick: () => openCreate(record.id) }, () => '新增子类'),
         h(Button, { size: 'small', onClick: () => openEdit(record) }, () => '编辑'),
-        h(Button, { size: 'small', status: 'danger', onClick: () => confirmDelete(record) }, () => '删除')
+        isSuper()
+          ? h(Button, { size: 'small', status: 'danger', onClick: () => confirmDelete(record) }, () => '删除')
+          : null
       ])
   }
 ];
