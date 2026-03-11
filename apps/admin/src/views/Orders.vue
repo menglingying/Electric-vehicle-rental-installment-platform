@@ -86,6 +86,9 @@
       <div style="font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px">
         合同信息
         <a-button size="mini" :loading="refreshingDetail" @click="refreshDetail">刷新状态</a-button>
+        <span v-if="detail.contract?.status === 'SIGNING' && isPolling" style="font-size:12px; color:#1890ff; font-weight:400">
+          ⟳ 自动检测中（每20秒）
+        </span>
       </div>
       <a-descriptions :column="2" size="small" bordered>
         <a-descriptions-item label="合同编号">{{ detail.contract?.contractNo || '-' }}</a-descriptions-item>
@@ -201,7 +204,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, onMounted, ref, watch } from 'vue';
+import { computed, h, onMounted, onUnmounted, ref, watch } from 'vue';
 import { Button, Message, Modal, Input } from '@arco-design/web-vue';
 import type { TableColumnData } from '@arco-design/web-vue';
 import {
@@ -245,6 +248,60 @@ const notarySignUrl = ref('');
 const notarySignLoading = ref(false);
 const downloadingContract = ref(false);
 const refreshingDetail = ref(false);
+
+// 自动轮询：抽屉打开且合同处于 SIGNING 状态时，每 20 秒主动查询爱签最新状态
+let pollTimer: ReturnType<typeof setInterval> | null = null;
+const isPolling = ref(false);
+
+function startPolling() {
+  stopPolling();
+  isPolling.value = true;
+  pollTimer = setInterval(async () => {
+    if (!detailVisible.value || detail.value?.contract?.status !== 'SIGNING') {
+      stopPolling();
+      return;
+    }
+    if (!detail.value?.contract?.contractNo) return;
+    try {
+      const updated = await syncContractStatus(detail.value.id);
+      if (updated?.status && updated.status !== 'SIGNING') {
+        detail.value = await getOrderDetail(detail.value.id);
+        stopPolling();
+        if (updated.status === 'SIGNED') {
+          Message.success('合同已签署 ✓');
+        }
+      }
+    } catch {
+      // 静默忽略，等下次轮询
+    }
+  }, 20000);
+}
+
+function stopPolling() {
+  if (pollTimer !== null) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+  isPolling.value = false;
+}
+
+watch(detailVisible, (visible) => {
+  if (visible && detail.value?.contract?.status === 'SIGNING') {
+    startPolling();
+  } else {
+    stopPolling();
+  }
+});
+
+watch(() => detail.value?.contract?.status, (status) => {
+  if (status === 'SIGNING' && detailVisible.value) {
+    startPolling();
+  } else {
+    stopPolling();
+  }
+});
+
+onUnmounted(() => stopPolling());
 
 const canPrepareContract = computed(() => {
   const s = detail.value?.contract?.status;

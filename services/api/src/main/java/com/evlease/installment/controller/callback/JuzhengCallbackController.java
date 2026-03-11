@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -61,13 +62,16 @@ public class JuzhengCallbackController {
         return "SUCCESS";
       }
       
+      // 聚证回调数据结构：顶层有 eventType，业务数据在 businessData 子对象内
+      Map<String, Object> bd = extractBusinessData(data);
+
       switch (eventType) {
-        case "4000" -> handleOrderCreated(data);      // 订单发起回调
-        case "4001" -> handleOrderUpdated(data);      // 订单更新通知
-        case "3000" -> handleOrderCertified(data);    // 订单出证通知
-        case "9000" -> handleSignResult(data);        // 签署结果通知
-        case "2600" -> handleVideoAuditComplete(data);// 视频审核完成
-        case "2601" -> handleVideoSubmitted(data);    // 视频信息提交
+        case "4000" -> handleOrderCreated(bd);      // 订单发起回调
+        case "4001" -> handleOrderUpdated(bd);      // 订单更新通知
+        case "3000" -> handleOrderCertified(bd);    // 订单出证通知
+        case "9000" -> handleSignResult(bd);        // 签署结果通知
+        case "2600" -> handleVideoAuditComplete(bd);// 视频审核完成
+        case "2601" -> handleVideoSubmitted(bd);    // 视频信息提交
         default -> log.info("未处理的聚证回调事件: {}", eventType);
       }
       
@@ -205,6 +209,20 @@ public class JuzhengCallbackController {
     orderRepository.save(order);
   }
   
+  /**
+   * 提取 businessData 子对象（聚证回调将业务字段嵌套在 businessData 内）
+   */
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> extractBusinessData(Map<String, Object> data) {
+    Object bd = data.get("businessData");
+    if (bd instanceof Map<?, ?>) {
+      Map<String, Object> result = new HashMap<>();
+      ((Map<?, ?>) bd).forEach((k, v) -> result.put(String.valueOf(k), v));
+      return result;
+    }
+    return data;
+  }
+
   /**
    * 根据公证订单号查找订单
    */
