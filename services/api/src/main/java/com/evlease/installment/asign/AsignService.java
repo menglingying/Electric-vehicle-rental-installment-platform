@@ -551,6 +551,9 @@ public class AsignService {
     filled.putIfAbsent("firstPayDate", vars.getOrDefault("firstPayDate", ""));
     filled.putIfAbsent("firstPayTotal", vars.getOrDefault("firstPayTotal", ""));
     filled.putIfAbsent("deliveryCustomerName", vars.getOrDefault("partyBName", ""));
+    // 邮箱：无论是否填写都发送，避免模板配置了必填时报"缺少参数"
+    // 若邮箱为空且模板将其设为必填，请在爱签模板编辑器中将 partyBEmail 的"必填"取消
+    filled.put("partyBEmail", vars.getOrDefault("partyBEmail", ""));
     
     // 收货清单动态表格 — 模板控件 dataKey="表格1"，列：itemName, itemModel, itemQty
     List<Map<String, String>> table1 = new ArrayList<>();
