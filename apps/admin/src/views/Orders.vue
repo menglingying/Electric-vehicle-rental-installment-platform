@@ -83,10 +83,15 @@
       </div>
 
       <a-divider />
-      <div style="font-weight: 600; margin-bottom: 8px">合同信息</div>
+      <div style="font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px">
+        合同信息
+        <a-button size="mini" :loading="refreshingDetail" @click="refreshDetail">刷新状态</a-button>
+      </div>
       <a-descriptions :column="2" size="small" bordered>
         <a-descriptions-item label="合同编号">{{ detail.contract?.contractNo || '-' }}</a-descriptions-item>
-        <a-descriptions-item label="合同状态">{{ detail.contract?.status || '未发起' }}</a-descriptions-item>
+        <a-descriptions-item label="合同状态">
+          <span :style="contractStatusStyle(detail.contract?.status)">{{ contractStatusText(detail.contract?.status) }}</span>
+        </a-descriptions-item>
         <a-descriptions-item label="签署链接" :span="2">
           <span v-if="detail.contract?.signUrl">{{ detail.contract.signUrl }}</span>
           <span v-else>—</span>
@@ -98,16 +103,19 @@
           <span v-else>—</span>
         </a-descriptions-item>
       </a-descriptions>
+      <div v-if="detail.contract?.status === 'SIGNED'" style="margin-top: 8px">
+        <a-alert type="success" :show-icon="true">客户已完成签署，合同生效</a-alert>
+      </div>
       <div style="margin-top: 12px; display: flex; gap: 12px; flex-wrap: wrap">
         <a-button
-          v-if="detail.status === 'ACTIVE' && !detail.contract && detail.asignSerialNo"
+          v-if="detail.status === 'ACTIVE' && canPrepareContract && detail.asignSerialNo"
           type="primary"
           @click="prepareContractForOrder(detail.id)"
         >
-          生成合同
+          {{ detail.contract ? '重新生成合同' : '生成合同' }}
         </a-button>
         <a-button
-          v-if="detail.status === 'ACTIVE' && !detail.contract && !detail.asignSerialNo"
+          v-if="detail.status === 'ACTIVE' && canPrepareContract && !detail.asignSerialNo"
           type="primary"
           disabled
         >
@@ -193,7 +201,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, onMounted, ref } from 'vue';
+import { computed, h, onMounted, ref, watch } from 'vue';
 import { Button, Message, Modal, Input } from '@arco-design/web-vue';
 import type { TableColumnData } from '@arco-design/web-vue';
 import {
@@ -206,6 +214,7 @@ import {
   prepareContract,
   markContractSigned,
   downloadContractFile,
+  syncContractStatus,
   listOrders,
   pickupOrder,
   rejectOrder,
@@ -235,6 +244,34 @@ const adjustForm = ref({
 const notarySignUrl = ref('');
 const notarySignLoading = ref(false);
 const downloadingContract = ref(false);
+const refreshingDetail = ref(false);
+
+const canPrepareContract = computed(() => {
+  const s = detail.value?.contract?.status;
+  return !s || s === 'VOID' || s === 'FAILED' || s === 'EXPIRED';
+});
+
+function contractStatusText(status?: string) {
+  const map: Record<string, string> = {
+    SIGNING: '签署中',
+    SIGNED: '已签署 ✓',
+    VOID: '已作废',
+    FAILED: '失败',
+    EXPIRED: '已过期'
+  };
+  return status ? (map[status] ?? status) : '未发起';
+}
+
+function contractStatusStyle(status?: string) {
+  const map: Record<string, string> = {
+    SIGNING: 'color:#1890ff; font-weight:600',
+    SIGNED: 'color:#52c41a; font-weight:600',
+    VOID: 'color:#ff7d00; font-weight:600',
+    FAILED: 'color:#f53f3f; font-weight:600',
+    EXPIRED: 'color:#8c8c8c; font-weight:600'
+  };
+  return status ? (map[status] ?? 'color:#8c8c8c') : 'color:#8c8c8c';
+}
 const qrVisible = ref(false);
 const qrTitle = ref('签署二维码');
 const qrLink = ref('');
@@ -683,6 +720,35 @@ async function openDetail(id: string) {
     detailVisible.value = true;
   } catch (e: any) {
     Message.error(e?.response?.data?.message ?? '加载详情失败');
+  }
+}
+
+async function refreshDetail() {
+  if (!detail.value?.id) return;
+  refreshingDetail.value = true;
+  try {
+    // 如果有合同编号，先主动向爱签查询最新状态
+    if (detail.value.contract?.contractNo) {
+      try {
+        await syncContractStatus(detail.value.id);
+      } catch (e: any) {
+        // 查询爱签失败时不阻断，仅刷新本地数据
+        console.warn('同步爱签状态失败:', e?.response?.data?.message ?? e?.message);
+      }
+    }
+    detail.value = await getOrderDetail(detail.value.id);
+    const status = detail.value.contract?.status;
+    if (status === 'SIGNED') {
+      Message.success('合同已签署 ✓');
+    } else if (status === 'SIGNING') {
+      Message.info('客户尚未签署');
+    } else {
+      Message.success('已刷新');
+    }
+  } catch (e: any) {
+    Message.error(e?.response?.data?.message ?? '刷新失败');
+  } finally {
+    refreshingDetail.value = false;
   }
 }
 

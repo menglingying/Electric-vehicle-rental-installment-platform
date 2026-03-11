@@ -145,6 +145,28 @@ public class AsignService {
     return new AuthUrlResult(serialNo, authUrl);
   }
 
+  /**
+   * 主动查询爱签合同状态
+   * 返回 status: "SIGNING" | "SIGNED" | "VOID" | "FAILED" | "EXPIRED"
+   * 爱签 status 字段含义：1-草稿 2-签署完成 3-已过期 4-拒签 -3-失败
+   */
+  public String queryContractStatus(String contractNo) throws Exception {
+    ensureConfigured();
+    Map<String, Object> result = client.post("/contract/queryContract", Map.of("contractNo", contractNo));
+    Map<String, Object> data = extractData(result);
+    if (data == null) return "SIGNING";
+    Object statusObj = data.get("status");
+    if (statusObj == null) return "SIGNING";
+    String raw = String.valueOf(statusObj).trim();
+    return switch (raw) {
+      case "2" -> "SIGNED";
+      case "3" -> "EXPIRED";
+      case "4" -> "VOID";
+      case "-3" -> "FAILED";
+      default -> "SIGNING";
+    };
+  }
+
   public String downloadContract(String contractNo) throws Exception {
     Map<String, Object> result = client.post("/contract/downloadContract", Map.of(
       "contractNo", contractNo,

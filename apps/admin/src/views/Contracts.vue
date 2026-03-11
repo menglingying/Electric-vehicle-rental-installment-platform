@@ -81,9 +81,9 @@
 
 <script setup lang="ts">
 import { h, onMounted, reactive, ref } from 'vue';
-import { Button, Message, Modal } from '@arco-design/web-vue';
+import { Button, Message, Modal, Tag } from '@arco-design/web-vue';
 import type { TableColumnData } from '@arco-design/web-vue';
-import { listContracts, upsertManualContract, uploadContractPdf, downloadContractFile, deleteContract, type Contract } from '@/services/api';
+import { listContracts, upsertManualContract, uploadContractPdf, downloadContractFile, syncContractStatus, deleteContract, type Contract } from '@/services/api';
 import { isSuper } from '@/services/auth';
 
 type ContractRow = Contract & { metaObj: Record<string, any> };
@@ -262,6 +262,39 @@ function handleDelete(record: ContractRow) {
 }
 
 const downloading = ref(false);
+const syncing = ref(false);
+
+async function handleSyncStatus(record: ContractRow) {
+  if (syncing.value) return;
+  syncing.value = true;
+  try {
+    const updated = await syncContractStatus(record.orderId);
+    if (updated.status === 'SIGNED') {
+      Message.success('合同已签署 ✓，状态已更新');
+    } else if (updated.status === 'SIGNING') {
+      Message.info('客户尚未签署');
+    } else {
+      Message.warning(`状态已更新：${updated.status}`);
+    }
+    await load();
+  } catch (e: any) {
+    Message.error(e?.response?.data?.message ?? '查询爱签状态失败');
+  } finally {
+    syncing.value = false;
+  }
+}
+
+function contractStatusTag(status?: string) {
+  const map: Record<string, { label: string; color: string }> = {
+    SIGNING: { label: '签署中', color: 'blue' },
+    SIGNED: { label: '已签署', color: 'green' },
+    VOID: { label: '已作废', color: 'orangered' },
+    FAILED: { label: '失败', color: 'red' },
+    EXPIRED: { label: '已过期', color: 'gray' }
+  };
+  const s = status ? (map[status] ?? { label: status, color: 'gray' }) : { label: '未知', color: 'gray' };
+  return h(Tag, { color: s.color }, () => s.label);
+}
 
 async function handleDownloadContract(record: ContractRow) {
   if (record.fileUrl) {
@@ -322,7 +355,7 @@ const columns: TableColumnData[] = [
   },
   {
     title: '状态',
-    render: ({ record }: { record: any }) => record.status || '-'
+    render: ({ record }: { record: any }) => contractStatusTag(record.status)
   },
   {
     title: '操作',
@@ -340,6 +373,10 @@ const columns: TableColumnData[] = [
         // 下载合同：有fileUrl直接打开，SIGNED状态无fileUrl则从爱签下载
         (record.fileUrl || (record.contractType === 'ORDER' && record.status === 'SIGNED'))
           ? h(Button, { type: 'primary', size: 'small', loading: downloading.value, onClick: () => handleDownloadContract(record) }, () => '下载合同')
+          : null,
+        // 签署中状态可刷新：主动向爱签查询，已签就自动更新
+        record.contractType === 'ORDER' && record.status === 'SIGNING'
+          ? h(Button, { size: 'small', onClick: () => handleSyncStatus(record) }, () => '刷新状态')
           : null,
         record.notaryCertUrl
           ? h(Button, { size: 'small', onClick: () => openUrl(record.notaryCertUrl || '') }, () => '公证书')

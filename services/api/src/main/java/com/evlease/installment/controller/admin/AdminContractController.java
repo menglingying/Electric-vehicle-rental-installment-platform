@@ -197,6 +197,76 @@ public class AdminContractController {
     return contract;
   }
 
+  /**
+   * 主动向爱签查询合同状态并同步到本地 DB。
+   * 解决测试环境回调无法触达时，管理员需手动标记的问题。
+   */
+  @PostMapping("/{orderId}/sync-status")
+  public Contract syncStatus(@PathVariable String orderId) {
+    var contract = contractRepository.findById(orderId)
+        .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "合同不存在"));
+    if (contract.getContractNo() == null || contract.getContractNo().isBlank()) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "合同编号为空，无法查询");
+    }
+
+    String newStatus;
+    try {
+      newStatus = asignService.queryContractStatus(contract.getContractNo());
+    } catch (Exception ex) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "查询爱签状态失败：" + ex.getMessage());
+    }
+
+    String oldStatus = contract.getStatus();
+    if (!newStatus.equals(oldStatus)) {
+      if ("SIGNED".equals(newStatus)) {
+        contract.setStatus("SIGNED");
+        contract.setSignedAt(java.time.Instant.now());
+        // 尝试自动下载合同文件
+        try {
+          String fileUrl = asignService.downloadContract(contract.getContractNo());
+          if (fileUrl != null && !fileUrl.isBlank()) {
+            contract.setFileUrl(fileUrl);
+          }
+        } catch (Exception ex) {
+          // 下载失败不影响状态更新
+        }
+        // 同步后发起公证
+        var order = orderRepository.findById(orderId).orElse(null);
+        if (order != null) {
+          orderLogService.add(order, "CONTRACT_SYNC_SIGNED", "ADMIN");
+          orderRepository.save(order);
+          try {
+            if (order.getNotaryOrderNo() == null || order.getNotaryOrderNo().isBlank()) {
+              applyNotaryInternal(order);
+            }
+          } catch (Exception ex) {
+            // 公证失败不影响合同状态
+          }
+        }
+      } else if ("VOID".equals(newStatus) || "FAILED".equals(newStatus) || "EXPIRED".equals(newStatus)) {
+        contract.setStatus(newStatus);
+        var order = orderRepository.findById(orderId).orElse(null);
+        if (order != null) {
+          orderLogService.add(order, "CONTRACT_SYNC_" + newStatus, "ADMIN");
+          orderRepository.save(order);
+        }
+      }
+      contract.setUpdatedAt(java.time.Instant.now());
+      contractRepository.save(contract);
+    }
+
+    return contract;
+  }
+
+  private void applyNotaryInternal(Order order) throws Exception {
+    if (!order.isKycCompleted()) return;
+    String outOrderNo = notaryService.applyLeaseNotary(order);
+    order.setNotaryOrderNo(outOrderNo);
+    order.setNotaryStatus("10");
+    orderLogService.add(order, "NOTARY_APPLY", "ADMIN", l -> l.setActor("合同同步后自动发起"));
+    orderRepository.save(order);
+  }
+
   @PostMapping("/{orderId}/download")
   public Contract downloadContractFile(@PathVariable String orderId) {
     var contract = contractRepository.findById(orderId)

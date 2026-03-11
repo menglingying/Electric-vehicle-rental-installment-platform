@@ -126,6 +126,11 @@ export async function downloadContractFile(orderId: string) {
   return data as Contract;
 }
 
+export async function syncContractStatus(orderId: string) {
+  const { data } = await http.post(`/admin/contracts/${orderId}/sync-status`);
+  return data as Contract;
+}
+
 export async function deleteContract(orderId: string) {
   await http.delete(`/admin/contracts/${encodeURIComponent(orderId)}`);
 }
