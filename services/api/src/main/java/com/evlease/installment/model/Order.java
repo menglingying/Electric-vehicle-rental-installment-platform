@@ -63,6 +63,7 @@ public class Order {
   private String contactRelation3;
   private boolean kycCompleted;    // KYC是否完成
 
+  private String email;             // 客户邮箱（用于合同填充）
   private String employmentStatus;
   private String incomeRangeCode;
   private String homeProvinceCode;
@@ -409,6 +410,14 @@ public class Order {
 
   public void setKycCompleted(boolean kycCompleted) {
     this.kycCompleted = kycCompleted;
+  }
+
+  public String getEmail() {
+    return email;
+  }
+
+  public void setEmail(String email) {
+    this.email = email;
   }
 
   public String getEmploymentStatus() {

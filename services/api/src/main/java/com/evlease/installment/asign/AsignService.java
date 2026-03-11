@@ -467,6 +467,7 @@ public class AsignService {
     filled.put("partyBName", safe(order.getRealName()));
     filled.put("partyBIdNo", safe(order.getIdCardNumber()));
     filled.put("partyBPhone", safe(order.getPhone()));
+    filled.put("partyBEmail", safe(order.getEmail()));
     filled.put("partyBAddress", safe(extractHomeAddress(order)));
     
     // 产品信息 - 规格显示车型（品牌+型号）
@@ -624,6 +625,7 @@ public class AsignService {
     vars.put("renterName", safe(order.getRealName()));
     vars.put("renterIdNumber", safe(order.getIdCardNumber()));
     vars.put("renterPhone", safe(order.getPhone()));
+    vars.put("partyBEmail", safe(order.getEmail()));
     // 乙方信息（用于收货清单等动态表格）
     vars.put("partyBName", safe(order.getRealName()));
     vars.put("partyBIdNo", safe(order.getIdCardNumber()));

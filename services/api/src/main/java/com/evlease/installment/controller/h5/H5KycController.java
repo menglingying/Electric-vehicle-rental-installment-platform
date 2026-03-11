@@ -88,6 +88,7 @@ public class H5KycController {
     @NotBlank String facePhoto,
     @NotBlank String realName,
     @NotBlank String idCardNumber,
+    String email,
     @NotBlank String contactName,
     @NotBlank String contactPhone,
     @NotBlank String contactRelation,
@@ -125,6 +126,7 @@ public class H5KycController {
     order.setFacePhoto(req.facePhoto());
     order.setRealName(req.realName());
     order.setIdCardNumber(normalizeIdCardNo(req.idCardNumber()));
+    if (req.email() != null && !req.email().isBlank()) order.setEmail(req.email().trim());
     order.setContactName(req.contactName());
     order.setContactPhone(req.contactPhone());
     order.setContactRelation(req.contactRelation());

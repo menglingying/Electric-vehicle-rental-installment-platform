@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="page kyc-page">
     <van-nav-bar title="补充资料" left-arrow @click-left="router.back()" />
 
@@ -35,6 +35,7 @@
       <div class="section-title">个人信息</div>
       <van-field v-model="form.realName" label="真实姓名" placeholder="请输入身份证上的姓名" />
       <van-field v-model="form.idCardNumber" label="身份证号" placeholder="请输入18位身份证号" />
+      <van-field v-model="form.email" label="电子邮箱" placeholder="请输入邮箱地址（选填）" type="email" />
     </div>
 
     <div class="h5-card" v-if="step === 2">
@@ -176,6 +177,7 @@ const form = reactive({
   facePhoto: '',
   realName: '',
   idCardNumber: '',
+  email: '',
   contactName: '',
   contactPhone: '',
   contactRelation: '',
@@ -524,6 +526,7 @@ onMounted(async () => {
         facePhoto: order.facePhoto,
         realName: order.realName,
         idCardNumber: order.idCardNumber,
+        email: order.email,
         contactName: order.contactName,
         contactPhone: order.contactPhone,
         contactRelation: order.contactRelation,
