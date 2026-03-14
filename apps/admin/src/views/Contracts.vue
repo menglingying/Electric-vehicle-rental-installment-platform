@@ -5,6 +5,12 @@
       <span class="link">电子签合同 + 历史合同录入</span>
     </div>
     <div class="section-toolbar">
+      <a-input
+        v-model="searchKeyword"
+        placeholder="搜索客户姓名 / 手机号"
+        allow-clear
+        style="width: 220px"
+      />
       <a-radio-group v-model="activeType" type="button" size="small" @change="load">
         <a-radio value="ALL">全部</a-radio>
         <a-radio value="ORDER">电子签</a-radio>
@@ -13,7 +19,7 @@
       <a-button type="primary" @click="openCreate">新增历史合同</a-button>
     </div>
     <div class="table-wrap">
-      <a-table :data="rows" :columns="columns" :pagination="false" />
+      <a-table :data="filteredRows" :columns="columns" :pagination="false" />
     </div>
   </div>
 
@@ -80,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { h, onMounted, reactive, ref } from 'vue';
+import { computed, h, onMounted, reactive, ref } from 'vue';
 import { Button, Message, Modal, Tag } from '@arco-design/web-vue';
 import type { TableColumnData } from '@arco-design/web-vue';
 import { listContracts, upsertManualContract, uploadContractPdf, downloadContractFile, syncContractStatus, deleteContract, type Contract } from '@/services/api';
@@ -89,6 +95,16 @@ import { isSuper } from '@/services/auth';
 type ContractRow = Contract & { metaObj: Record<string, any> };
 const rows = ref<ContractRow[]>([]);
 const activeType = ref<'ALL' | 'ORDER' | 'MANUAL'>('ALL');
+const searchKeyword = ref('');
+const filteredRows = computed(() => {
+  const kw = searchKeyword.value.trim();
+  if (!kw) return rows.value;
+  return rows.value.filter(r => {
+    const name = r.metaObj?.renterName || '';
+    const phone = r.metaObj?.renterPhone || '';
+    return name.includes(kw) || phone.includes(kw);
+  });
+});
 const visible = ref(false);
 const uploading = ref(false);
 const form = reactive({

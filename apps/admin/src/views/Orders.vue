@@ -5,10 +5,18 @@
       <span class="link">状态流转与调价</span>
     </div>
     <div class="section-toolbar">
+      <a-input
+        v-model="searchKeyword"
+        placeholder="搜索客户姓名 / 手机号"
+        allow-clear
+        style="width: 220px"
+        @input="onSearch"
+        @clear="onSearch"
+      />
       <a-button @click="exportOrders">导出订单CSV</a-button>
     </div>
     <div class="table-wrap">
-      <a-table :data="rows" :columns="columns" :pagination="false" />
+      <a-table :data="filteredRows" :columns="columns" :pagination="false" />
     </div>
   </div>
 
@@ -94,6 +102,7 @@
         <a-descriptions-item label="合同编号">{{ detail.contract?.contractNo || '-' }}</a-descriptions-item>
         <a-descriptions-item label="合同状态">
           <span :style="contractStatusStyle(detail.contract?.status)">{{ contractStatusText(detail.contract?.status) }}</span>
+          <a-tag v-if="detail.contract?.customerSigned && detail.contract?.status === 'SIGNING'" color="green" style="margin-left:8px">客户已签署</a-tag>
         </a-descriptions-item>
         <a-descriptions-item label="签署链接" :span="2">
           <span v-if="detail.contract?.signUrl">{{ detail.contract.signUrl }}</span>
@@ -234,6 +243,20 @@ import { downloadCsv } from '@/services/download';
 import { isSuper } from '@/services/auth';
 
 const rows = ref<Order[]>([]);
+const searchKeyword = ref('');
+const filteredRows = computed(() => {
+  const kw = searchKeyword.value.trim();
+  if (!kw) return rows.value;
+  return rows.value.filter(r => {
+    const name = (r as any).realName || '';
+    const phone = (r as any).phone || '';
+    return name.includes(kw) || phone.includes(kw);
+  });
+});
+
+function onSearch() {
+  // filteredRows computed 自动更新
+}
 const detailVisible = ref(false);
 const detail = ref<any>(null);
 const adjustVisible = ref(false);
@@ -604,7 +627,32 @@ const columns: TableColumnData[] = [
         FAILED: { text: '失败', color: '#f53f3f' }
       };
       const s = status ? statusMap[status] || { text: status, color: '#8c8c8c' } : { text: '未生成', color: '#8c8c8c' };
-      return h('span', { style: `color: ${s.color}; font-weight: 500` }, s.text);
+      const tag = h('span', { style: `color: ${s.color}; font-weight: 500` }, s.text);
+      if (status === 'SIGNING') {
+        const syncBtn = h(
+          Button,
+          {
+            size: 'mini',
+            style: 'margin-left:6px',
+            onClick: async () => {
+              try {
+                const updated = await syncContractStatus(record.id);
+                if (updated?.status === 'SIGNED') {
+                  Message.success('合同已签署 ✓，状态已更新');
+                  await load();
+                } else {
+                  Message.warning('爱签仍显示签署中，若客户确已签署可手动标记');
+                }
+              } catch {
+                Message.error('查询失败');
+              }
+            }
+          },
+          () => '同步'
+        );
+        return h('span', {}, [tag, syncBtn]);
+      }
+      return tag;
     }
   },
   { title: '期数', dataIndex: 'periods' },
@@ -798,7 +846,7 @@ async function refreshDetail() {
     if (status === 'SIGNED') {
       Message.success('合同已签署 ✓');
     } else if (status === 'SIGNING') {
-      Message.info('客户尚未签署');
+      Message.warning('爱签查询仍显示签署中，若确认客户已签署，可点击"标记已签署"手动确认');
     } else {
       Message.success('已刷新');
     }
