@@ -98,6 +98,19 @@
           ⟳ 自动检测中（每20秒）
         </span>
       </div>
+
+      <!-- 签署中状态的操作提示卡片 -->
+      <div v-if="detail.contract?.status === 'SIGNING'" style="margin-bottom:12px">
+        <a-alert type="warning" :show-icon="true" style="margin-bottom:8px">
+          <template #message>
+            合同签署中 — 若客户已完成签署但状态未更新，请先点击<strong>「同步爱签状态」</strong>；若同步后仍显示签署中，可直接点击<strong>「标记已签署」</strong>手动确认。
+          </template>
+        </a-alert>
+        <div style="display:flex; gap:8px">
+          <a-button type="primary" size="small" :loading="refreshingDetail" @click="refreshDetail">同步爱签状态</a-button>
+          <a-button status="success" size="small" @click="markSigned(detail.id)">✓ 标记客户已签署</a-button>
+        </div>
+      </div>
       <a-descriptions :column="2" size="small" bordered>
         <a-descriptions-item label="合同编号">{{ detail.contract?.contractNo || '-' }}</a-descriptions-item>
         <a-descriptions-item label="合同状态">
@@ -641,7 +654,7 @@ const columns: TableColumnData[] = [
                   Message.success('合同已签署 ✓，状态已更新');
                   await load();
                 } else {
-                  Message.warning('爱签仍显示签署中，若客户确已签署可手动标记');
+                  Message.warning('爱签整体合同还未完结，若客户确已签署请进入详情点击「标记客户已签署」');
                 }
               } catch {
                 Message.error('查询失败');
@@ -846,7 +859,7 @@ async function refreshDetail() {
     if (status === 'SIGNED') {
       Message.success('合同已签署 ✓');
     } else if (status === 'SIGNING') {
-      Message.warning('爱签查询仍显示签署中，若确认客户已签署，可点击"标记已签署"手动确认');
+      Message.warning('爱签查询仍显示整体未完结，请直接点击上方「✓ 标记客户已签署」手动确认');
     } else {
       Message.success('已刷新');
     }

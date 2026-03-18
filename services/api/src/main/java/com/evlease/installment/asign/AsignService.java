@@ -150,21 +150,59 @@ public class AsignService {
    * 返回 status: "SIGNING" | "SIGNED" | "VOID" | "FAILED" | "EXPIRED"
    * 爱签 status 字段含义：1-草稿 2-签署完成 3-已过期 4-拒签 -3-失败
    */
+  /**
+   * 主动查询爱签合同状态
+   * 返回 status: "SIGNING" | "SIGNED" | "VOID" | "FAILED" | "EXPIRED" | "USER_SIGNED"
+   * 爱签 status 字段含义：1-草稿/签署中 2-签署完成 3-已过期 4-拒签 -3-失败
+   * USER_SIGNED: 合同整体还在签署中，但客户签署人已完成签署（等待企业骑缝章/流程完结）
+   */
   public String queryContractStatus(String contractNo) throws Exception {
     ensureConfigured();
     Map<String, Object> result = client.post("/contract/queryContract", Map.of("contractNo", contractNo));
+    // 打印完整原始返回，便于排查
+    System.out.println("[AsignService] queryContractStatus raw result for " + contractNo + ": " + result);
     Map<String, Object> data = extractData(result);
     if (data == null) return "SIGNING";
     Object statusObj = data.get("status");
     if (statusObj == null) return "SIGNING";
     String raw = String.valueOf(statusObj).trim();
-    return switch (raw) {
+
+    // 整体合同状态已完成
+    String overallStatus = switch (raw) {
       case "2" -> "SIGNED";
       case "3" -> "EXPIRED";
       case "4" -> "VOID";
       case "-3" -> "FAILED";
       default -> "SIGNING";
     };
+
+    if (!"SIGNING".equals(overallStatus)) return overallStatus;
+
+    // 合同整体仍在签署中，检查签署人列表：如果客户（非企业）已签署，返回 USER_SIGNED
+    try {
+      Object signersObj = data.get("signerList");
+      if (signersObj instanceof java.util.List<?> signers) {
+        for (Object signer : signers) {
+          if (signer instanceof Map<?, ?> signerMap) {
+            Object accountObj = signerMap.get("account");
+            Object signerStatusObj = signerMap.get("signerStatus");
+            String account = accountObj == null ? "" : String.valueOf(accountObj);
+            String signerStatus = signerStatusObj == null ? "" : String.valueOf(signerStatusObj);
+            // 企业账号跳过
+            String companyAccount = config.getCompanyAccount();
+            boolean isCompany = account.equals(companyAccount);
+            if (!isCompany && "2".equals(signerStatus)) {
+              System.out.println("[AsignService] 客户已签署 (signerStatus=2) account=" + account);
+              return "USER_SIGNED";
+            }
+          }
+        }
+      }
+    } catch (Exception ex) {
+      System.out.println("[AsignService] 解析signerList失败: " + ex.getMessage());
+    }
+
+    return "SIGNING";
   }
 
   public String downloadContract(String contractNo) throws Exception {

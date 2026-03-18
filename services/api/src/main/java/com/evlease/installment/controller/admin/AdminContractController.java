@@ -217,6 +217,29 @@ public class AdminContractController {
     }
 
     String oldStatus = contract.getStatus();
+    // USER_SIGNED: 客户已签但整体合同还未完结（企业骑缝章流程中），标记为 SIGNED 并打标记
+    if ("USER_SIGNED".equals(newStatus)) {
+      contract.setStatus("SIGNED");
+      contract.setSignedAt(java.time.Instant.now());
+      try {
+        String fileUrl = asignService.downloadContract(contract.getContractNo());
+        if (fileUrl != null && !fileUrl.isBlank()) contract.setFileUrl(fileUrl);
+      } catch (Exception ex) { /* 下载失败不影响 */ }
+      var order = orderRepository.findById(orderId).orElse(null);
+      if (order != null) {
+        orderLogService.add(order, "CONTRACT_SYNC_USER_SIGNED", "ADMIN");
+        orderRepository.save(order);
+        try {
+          if (order.getNotaryOrderNo() == null || order.getNotaryOrderNo().isBlank()) {
+            applyNotaryInternal(order);
+          }
+        } catch (Exception ex) { /* 公证失败不影响 */ }
+      }
+      contract.setUpdatedAt(java.time.Instant.now());
+      contractRepository.save(contract);
+      return contract;
+    }
+
     if (!newStatus.equals(oldStatus)) {
       if ("SIGNED".equals(newStatus)) {
         contract.setStatus("SIGNED");
@@ -394,8 +417,15 @@ public class AdminContractController {
     meta.put("renterName", order.getRealName());
     meta.put("renterIdNumber", order.getIdCardNumber());
     meta.put("renterPhone", order.getPhone());
-    meta.put("leaseStart", order.getRepaymentPlan() == null || order.getRepaymentPlan().isEmpty()
-      ? "" : order.getRepaymentPlan().get(0).getDueDate());
+    // 租赁开始时间取下单时间（createdAt），而非第一期付款日
+    String leaseStart = "";
+    if (order.getCreatedAt() != null) {
+      leaseStart = order.getCreatedAt()
+          .atZone(java.time.ZoneId.of("Asia/Shanghai"))
+          .toLocalDate()
+          .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+    }
+    meta.put("leaseStart", leaseStart);
     meta.put("leaseEnd", order.getRepaymentPlan() == null || order.getRepaymentPlan().isEmpty()
       ? "" : order.getRepaymentPlan().get(order.getRepaymentPlan().size() - 1).getDueDate());
     try {
