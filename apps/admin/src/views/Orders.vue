@@ -16,7 +16,7 @@
       <a-button @click="exportOrders">导出订单CSV</a-button>
     </div>
     <div class="table-wrap">
-      <a-table :data="filteredRows" :columns="columns" :pagination="false" />
+      <a-table :data="filteredRows" :columns="columns" :pagination="false" @row-click="(record: any) => openDetail(record.id)" row-class="cursor-pointer" />
     </div>
   </div>
 
@@ -597,9 +597,8 @@ function formatAddress(order: any) {
 }
 
 const columns: TableColumnData[] = [
-  { title: 'ID', dataIndex: 'id' },
+  { title: '客户姓名', render: ({ record }: { record: any }) => h('span', { style: 'color:#1890ff;cursor:pointer;font-weight:500' }, record.realName || '未实名') },
   { title: '手机号', dataIndex: 'phone' },
-  { title: '客户姓名', render: ({ record }: { record: any }) => record.realName || '-' },
   { title: '商品', dataIndex: 'productName' },
   { title: '电池配置', render: ({ record }: { record: any }) => batteryOptionText(record.batteryOption) },
   { title: '还款方式', render: ({ record }: { record: any }) => repaymentMethodText(record.repaymentMethod) },
@@ -930,5 +929,11 @@ async function exportOrders() {
   font-size: 12px;
   color: var(--color-text-3);
   margin-bottom: 4px;
+}
+:deep(.cursor-pointer) {
+  cursor: pointer;
+}
+:deep(.cursor-pointer:hover td) {
+  background: var(--color-fill-2) !important;
 }
 </style>

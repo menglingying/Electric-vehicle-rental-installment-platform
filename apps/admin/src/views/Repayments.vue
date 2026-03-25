@@ -1,13 +1,13 @@
-﻿<template>
+<template>
   <div class="panel">
     <div class="panel-title">
       <div>还款管理</div>
       <span class="link">人工标记与计划查看</span>
     </div>
     <div class="section-toolbar">
-      <a-select v-model="selectedOrderId" placeholder="选择订单" style="width: 320px" @change="onSelect">
+      <a-select v-model="selectedOrderId" placeholder="搜索客户姓名/手机号" style="width: 360px" @change="onSelect" allow-search>
         <a-option v-for="o in orders" :key="o.id" :value="o.id">
-          {{ o.id }} · {{ o.phone }} · {{ o.productName }}
+          {{ o.realName || '未实名' }} · {{ o.phone }} · {{ o.productName }}
         </a-option>
       </a-select>
       <a-button @click="loadOrders">刷新订单</a-button>
