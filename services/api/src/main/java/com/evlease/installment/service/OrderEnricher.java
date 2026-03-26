@@ -53,12 +53,15 @@ public class OrderEnricher {
 
     List<RepaymentPlanItem> plan = new ArrayList<>();
     long remainingAmount = 0;
-    for (var p : order.getRepaymentPlan()) {
-      var item = new RepaymentPlanItem(p.getPeriod(), p.getDueDate(), p.getAmount());
-      boolean paid = p.getAmount() <= 0 || paidPeriods.getOrDefault(p.getPeriod(), false);
-      item.setPaid(paid);
-      plan.add(item);
-      if (!paid) remainingAmount += p.getAmount();
+    var rawPlan = order.getRepaymentPlan();
+    if (rawPlan != null) {
+      for (var p : rawPlan) {
+        var item = new RepaymentPlanItem(p.getPeriod(), p.getDueDate(), p.getAmount());
+        boolean paid = p.getAmount() <= 0 || paidPeriods.getOrDefault(p.getPeriod(), false);
+        item.setPaid(paid);
+        plan.add(item);
+        if (!paid) remainingAmount += p.getAmount();
+      }
     }
 
     Contract contract = contractRepository.findById(order.getId()).orElse(null);

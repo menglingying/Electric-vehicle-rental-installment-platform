@@ -3,11 +3,15 @@ package com.evlease.installment.controller.admin;
 import com.evlease.installment.common.ApiException;
 import com.evlease.installment.model.RepaymentRecord;
 import com.evlease.installment.repo.OrderRepository;
+import com.evlease.installment.repo.ProductRepository;
 import com.evlease.installment.repo.RepaymentRepository;
 import com.evlease.installment.service.OrderEnricher;
 import com.evlease.installment.service.OrderLogService;
+import com.evlease.installment.service.OrderPlanService;
 import jakarta.validation.constraints.Min;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,33 +26,68 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminRepaymentController {
   private final OrderRepository orderRepository;
   private final RepaymentRepository repaymentRepository;
+  private final ProductRepository productRepository;
   private final OrderEnricher orderEnricher;
   private final OrderLogService orderLogService;
+  private final OrderPlanService orderPlanService;
 
   public AdminRepaymentController(
     OrderRepository orderRepository,
     RepaymentRepository repaymentRepository,
+    ProductRepository productRepository,
     OrderEnricher orderEnricher,
-    OrderLogService orderLogService
+    OrderLogService orderLogService,
+    OrderPlanService orderPlanService
   ) {
     this.orderRepository = orderRepository;
     this.repaymentRepository = repaymentRepository;
+    this.productRepository = productRepository;
     this.orderEnricher = orderEnricher;
     this.orderLogService = orderLogService;
+    this.orderPlanService = orderPlanService;
   }
 
   @GetMapping("/repayments")
   public Object get(@RequestParam String orderId) {
     var order = orderRepository.findById(orderId).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "订单不存在"));
     var dto = orderEnricher.enrich(order);
-    return Map.of(
-      "orderId",
-      orderId,
-      "repaymentPlan",
-      dto.get("repaymentPlan"),
-      "repaymentRecords",
-      dto.get("repaymentRecords")
-    );
+    var result = new HashMap<String, Object>();
+    result.put("orderId", orderId);
+    result.put("repaymentPlan", dto.get("repaymentPlan"));
+    result.put("repaymentRecords", dto.get("repaymentRecords"));
+    return result;
+  }
+
+  @PostMapping("/orders/{id}/generate-plan")
+  public Map<String, Object> generatePlan(@PathVariable String id) {
+    var order = orderRepository.findById(id)
+      .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "订单不存在"));
+
+    if (order.getRepaymentPlan() != null && !order.getRepaymentPlan().isEmpty()) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "该订单已有还款计划，无需重复生成");
+    }
+
+    var product = productRepository.findById(order.getProductId()).orElse(null);
+    int rentPerCycle;
+    if (product != null) {
+      if ("WITH_BATTERY".equals(order.getBatteryOption()) && product.getRentWithBattery() != null) {
+        rentPerCycle = product.getRentWithBattery();
+      } else if ("WITHOUT_BATTERY".equals(order.getBatteryOption()) && product.getRentWithoutBattery() != null) {
+        rentPerCycle = product.getRentWithoutBattery();
+      } else {
+        rentPerCycle = product.getRentPerCycle();
+      }
+    } else {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "找不到关联商品，无法计算租金");
+    }
+
+    var plan = orderPlanService.buildRentPlan(rentPerCycle, order.getPeriods(), order.getCycleDays(), order.getDepositRatio());
+    order.setRepaymentPlan(plan);
+    orderRepository.save(order);
+
+    orderLogService.add(order, "PLAN_GENERATED", "ADMIN", l -> {});
+
+    return Map.of("ok", true, "periods", plan.size());
   }
 
   @PostMapping("/orders/{id}/repayments/{period}/mark-paid")

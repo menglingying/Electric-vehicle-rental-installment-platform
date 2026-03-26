@@ -16,6 +16,7 @@ const form = reactive({
     facePhoto: '',
     realName: '',
     idCardNumber: '',
+    email: '',
     contactName: '',
     contactPhone: '',
     contactRelation: '',
@@ -356,6 +357,7 @@ onMounted(async () => {
                 facePhoto: order.facePhoto,
                 realName: order.realName,
                 idCardNumber: order.idCardNumber,
+                email: order.email,
                 contactName: order.contactName,
                 contactPhone: order.contactPhone,
                 contactRelation: order.contactRelation,
@@ -733,6 +735,21 @@ if (__VLS_ctx.step === 2) {
         label: "身份证号",
         placeholder: "请输入18位身份证号",
     }, ...__VLS_functionalComponentArgsRest(__VLS_41));
+    const __VLS_44 = {}.VanField;
+    /** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
+    // @ts-ignore
+    const __VLS_45 = __VLS_asFunctionalComponent(__VLS_44, new __VLS_44({
+        modelValue: (__VLS_ctx.form.email),
+        label: "电子邮箱",
+        placeholder: "请输入邮箱地址（选填）",
+        type: "email",
+    }));
+    const __VLS_46 = __VLS_45({
+        modelValue: (__VLS_ctx.form.email),
+        label: "电子邮箱",
+        placeholder: "请输入邮箱地址（选填）",
+        type: "email",
+    }, ...__VLS_functionalComponentArgsRest(__VLS_45));
 }
 if (__VLS_ctx.step === 2) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -741,10 +758,10 @@ if (__VLS_ctx.step === 2) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "section-title" },
     });
-    const __VLS_44 = {}.VanField;
+    const __VLS_48 = {}.VanField;
     /** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
     // @ts-ignore
-    const __VLS_45 = __VLS_asFunctionalComponent(__VLS_44, new __VLS_44({
+    const __VLS_49 = __VLS_asFunctionalComponent(__VLS_48, new __VLS_48({
         ...{ 'onClick': {} },
         modelValue: (__VLS_ctx.employmentStatusLabel),
         label: "就业状态",
@@ -752,38 +769,38 @@ if (__VLS_ctx.step === 2) {
         readonly: true,
         isLink: true,
     }));
-    const __VLS_46 = __VLS_45({
+    const __VLS_50 = __VLS_49({
         ...{ 'onClick': {} },
         modelValue: (__VLS_ctx.employmentStatusLabel),
         label: "就业状态",
         placeholder: "请选择",
         readonly: true,
         isLink: true,
-    }, ...__VLS_functionalComponentArgsRest(__VLS_45));
-    let __VLS_48;
-    let __VLS_49;
-    let __VLS_50;
-    const __VLS_51 = {
+    }, ...__VLS_functionalComponentArgsRest(__VLS_49));
+    let __VLS_52;
+    let __VLS_53;
+    let __VLS_54;
+    const __VLS_55 = {
         onClick: (...[$event]) => {
             if (!(__VLS_ctx.step === 2))
                 return;
             __VLS_ctx.showEmploymentSheet = true;
         }
     };
-    var __VLS_47;
-    const __VLS_52 = {}.VanField;
+    var __VLS_51;
+    const __VLS_56 = {}.VanField;
     /** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
     // @ts-ignore
-    const __VLS_53 = __VLS_asFunctionalComponent(__VLS_52, new __VLS_52({
+    const __VLS_57 = __VLS_asFunctionalComponent(__VLS_56, new __VLS_56({
         modelValue: (__VLS_ctx.form.employmentName),
         label: "单位/职业",
         placeholder: "请输入单位或职业名称",
     }));
-    const __VLS_54 = __VLS_53({
+    const __VLS_58 = __VLS_57({
         modelValue: (__VLS_ctx.form.employmentName),
         label: "单位/职业",
         placeholder: "请输入单位或职业名称",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_53));
+    }, ...__VLS_functionalComponentArgsRest(__VLS_57));
 }
 if (__VLS_ctx.step === 2) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -792,10 +809,10 @@ if (__VLS_ctx.step === 2) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "section-title" },
     });
-    const __VLS_56 = {}.VanField;
+    const __VLS_60 = {}.VanField;
     /** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
     // @ts-ignore
-    const __VLS_57 = __VLS_asFunctionalComponent(__VLS_56, new __VLS_56({
+    const __VLS_61 = __VLS_asFunctionalComponent(__VLS_60, new __VLS_60({
         ...{ 'onClick': {} },
         modelValue: (__VLS_ctx.incomeRangeLabel),
         label: "月收入区间",
@@ -803,25 +820,25 @@ if (__VLS_ctx.step === 2) {
         readonly: true,
         isLink: true,
     }));
-    const __VLS_58 = __VLS_57({
+    const __VLS_62 = __VLS_61({
         ...{ 'onClick': {} },
         modelValue: (__VLS_ctx.incomeRangeLabel),
         label: "月收入区间",
         placeholder: "请选择",
         readonly: true,
         isLink: true,
-    }, ...__VLS_functionalComponentArgsRest(__VLS_57));
-    let __VLS_60;
-    let __VLS_61;
-    let __VLS_62;
-    const __VLS_63 = {
+    }, ...__VLS_functionalComponentArgsRest(__VLS_61));
+    let __VLS_64;
+    let __VLS_65;
+    let __VLS_66;
+    const __VLS_67 = {
         onClick: (...[$event]) => {
             if (!(__VLS_ctx.step === 2))
                 return;
             __VLS_ctx.showIncomeSheet = true;
         }
     };
-    var __VLS_59;
+    var __VLS_63;
 }
 if (__VLS_ctx.step === 2) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -830,10 +847,10 @@ if (__VLS_ctx.step === 2) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "section-title" },
     });
-    const __VLS_64 = {}.VanField;
+    const __VLS_68 = {}.VanField;
     /** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
     // @ts-ignore
-    const __VLS_65 = __VLS_asFunctionalComponent(__VLS_64, new __VLS_64({
+    const __VLS_69 = __VLS_asFunctionalComponent(__VLS_68, new __VLS_68({
         ...{ 'onClick': {} },
         modelValue: (__VLS_ctx.provinceLabel),
         label: "省份",
@@ -841,29 +858,29 @@ if (__VLS_ctx.step === 2) {
         readonly: true,
         isLink: true,
     }));
-    const __VLS_66 = __VLS_65({
+    const __VLS_70 = __VLS_69({
         ...{ 'onClick': {} },
         modelValue: (__VLS_ctx.provinceLabel),
         label: "省份",
         placeholder: "请选择",
         readonly: true,
         isLink: true,
-    }, ...__VLS_functionalComponentArgsRest(__VLS_65));
-    let __VLS_68;
-    let __VLS_69;
-    let __VLS_70;
-    const __VLS_71 = {
+    }, ...__VLS_functionalComponentArgsRest(__VLS_69));
+    let __VLS_72;
+    let __VLS_73;
+    let __VLS_74;
+    const __VLS_75 = {
         onClick: (...[$event]) => {
             if (!(__VLS_ctx.step === 2))
                 return;
             __VLS_ctx.showProvinceSheet = true;
         }
     };
-    var __VLS_67;
-    const __VLS_72 = {}.VanField;
+    var __VLS_71;
+    const __VLS_76 = {}.VanField;
     /** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
     // @ts-ignore
-    const __VLS_73 = __VLS_asFunctionalComponent(__VLS_72, new __VLS_72({
+    const __VLS_77 = __VLS_asFunctionalComponent(__VLS_76, new __VLS_76({
         ...{ 'onClick': {} },
         modelValue: (__VLS_ctx.cityLabel),
         label: "城市",
@@ -871,25 +888,25 @@ if (__VLS_ctx.step === 2) {
         readonly: true,
         isLink: true,
     }));
-    const __VLS_74 = __VLS_73({
+    const __VLS_78 = __VLS_77({
         ...{ 'onClick': {} },
         modelValue: (__VLS_ctx.cityLabel),
         label: "城市",
         placeholder: "请选择",
         readonly: true,
         isLink: true,
-    }, ...__VLS_functionalComponentArgsRest(__VLS_73));
-    let __VLS_76;
-    let __VLS_77;
-    let __VLS_78;
-    const __VLS_79 = {
+    }, ...__VLS_functionalComponentArgsRest(__VLS_77));
+    let __VLS_80;
+    let __VLS_81;
+    let __VLS_82;
+    const __VLS_83 = {
         onClick: (__VLS_ctx.openCitySheet)
     };
-    var __VLS_75;
-    const __VLS_80 = {}.VanField;
+    var __VLS_79;
+    const __VLS_84 = {}.VanField;
     /** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
     // @ts-ignore
-    const __VLS_81 = __VLS_asFunctionalComponent(__VLS_80, new __VLS_80({
+    const __VLS_85 = __VLS_asFunctionalComponent(__VLS_84, new __VLS_84({
         ...{ 'onClick': {} },
         modelValue: (__VLS_ctx.districtLabel),
         label: "区县",
@@ -897,38 +914,38 @@ if (__VLS_ctx.step === 2) {
         readonly: true,
         isLink: true,
     }));
-    const __VLS_82 = __VLS_81({
+    const __VLS_86 = __VLS_85({
         ...{ 'onClick': {} },
         modelValue: (__VLS_ctx.districtLabel),
         label: "区县",
         placeholder: "请选择",
         readonly: true,
         isLink: true,
-    }, ...__VLS_functionalComponentArgsRest(__VLS_81));
-    let __VLS_84;
-    let __VLS_85;
-    let __VLS_86;
-    const __VLS_87 = {
+    }, ...__VLS_functionalComponentArgsRest(__VLS_85));
+    let __VLS_88;
+    let __VLS_89;
+    let __VLS_90;
+    const __VLS_91 = {
         onClick: (__VLS_ctx.openDistrictSheet)
     };
-    var __VLS_83;
-    const __VLS_88 = {}.VanField;
+    var __VLS_87;
+    const __VLS_92 = {}.VanField;
     /** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
     // @ts-ignore
-    const __VLS_89 = __VLS_asFunctionalComponent(__VLS_88, new __VLS_88({
+    const __VLS_93 = __VLS_asFunctionalComponent(__VLS_92, new __VLS_92({
         modelValue: (__VLS_ctx.form.homeAddressDetail),
         label: "详细地址",
         placeholder: "请输入详细地址",
         type: "textarea",
         rows: "2",
     }));
-    const __VLS_90 = __VLS_89({
+    const __VLS_94 = __VLS_93({
         modelValue: (__VLS_ctx.form.homeAddressDetail),
         label: "详细地址",
         placeholder: "请输入详细地址",
         type: "textarea",
         rows: "2",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_89));
+    }, ...__VLS_functionalComponentArgsRest(__VLS_93));
 }
 if (__VLS_ctx.step === 2) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -937,38 +954,38 @@ if (__VLS_ctx.step === 2) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "section-title" },
     });
-    const __VLS_92 = {}.VanField;
-    /** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
-    // @ts-ignore
-    const __VLS_93 = __VLS_asFunctionalComponent(__VLS_92, new __VLS_92({
-        modelValue: (__VLS_ctx.form.contactName),
-        label: "联系人1姓名",
-        placeholder: "请输入联系人1姓名",
-    }));
-    const __VLS_94 = __VLS_93({
-        modelValue: (__VLS_ctx.form.contactName),
-        label: "联系人1姓名",
-        placeholder: "请输入联系人1姓名",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_93));
     const __VLS_96 = {}.VanField;
     /** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
     // @ts-ignore
     const __VLS_97 = __VLS_asFunctionalComponent(__VLS_96, new __VLS_96({
-        modelValue: (__VLS_ctx.form.contactPhone),
-        label: "联系人1电话",
-        placeholder: "请输入联系人1手机号",
-        type: "tel",
+        modelValue: (__VLS_ctx.form.contactName),
+        label: "联系人1姓名",
+        placeholder: "请输入联系人1姓名",
     }));
     const __VLS_98 = __VLS_97({
-        modelValue: (__VLS_ctx.form.contactPhone),
-        label: "联系人1电话",
-        placeholder: "请输入联系人1手机号",
-        type: "tel",
+        modelValue: (__VLS_ctx.form.contactName),
+        label: "联系人1姓名",
+        placeholder: "请输入联系人1姓名",
     }, ...__VLS_functionalComponentArgsRest(__VLS_97));
     const __VLS_100 = {}.VanField;
     /** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
     // @ts-ignore
     const __VLS_101 = __VLS_asFunctionalComponent(__VLS_100, new __VLS_100({
+        modelValue: (__VLS_ctx.form.contactPhone),
+        label: "联系人1电话",
+        placeholder: "请输入联系人1手机号",
+        type: "tel",
+    }));
+    const __VLS_102 = __VLS_101({
+        modelValue: (__VLS_ctx.form.contactPhone),
+        label: "联系人1电话",
+        placeholder: "请输入联系人1手机号",
+        type: "tel",
+    }, ...__VLS_functionalComponentArgsRest(__VLS_101));
+    const __VLS_104 = {}.VanField;
+    /** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
+    // @ts-ignore
+    const __VLS_105 = __VLS_asFunctionalComponent(__VLS_104, new __VLS_104({
         ...{ 'onClick': {} },
         modelValue: (__VLS_ctx.contactRelationLabels[0]),
         label: "联系人1关系",
@@ -976,25 +993,25 @@ if (__VLS_ctx.step === 2) {
         readonly: true,
         isLink: true,
     }));
-    const __VLS_102 = __VLS_101({
+    const __VLS_106 = __VLS_105({
         ...{ 'onClick': {} },
         modelValue: (__VLS_ctx.contactRelationLabels[0]),
         label: "联系人1关系",
         placeholder: "请选择关系",
         readonly: true,
         isLink: true,
-    }, ...__VLS_functionalComponentArgsRest(__VLS_101));
-    let __VLS_104;
-    let __VLS_105;
-    let __VLS_106;
-    const __VLS_107 = {
+    }, ...__VLS_functionalComponentArgsRest(__VLS_105));
+    let __VLS_108;
+    let __VLS_109;
+    let __VLS_110;
+    const __VLS_111 = {
         onClick: (...[$event]) => {
             if (!(__VLS_ctx.step === 2))
                 return;
             __VLS_ctx.openContactRelationSheet(0);
         }
     };
-    var __VLS_103;
+    var __VLS_107;
 }
 if (__VLS_ctx.step === 2) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -1003,38 +1020,38 @@ if (__VLS_ctx.step === 2) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "section-title" },
     });
-    const __VLS_108 = {}.VanField;
-    /** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
-    // @ts-ignore
-    const __VLS_109 = __VLS_asFunctionalComponent(__VLS_108, new __VLS_108({
-        modelValue: (__VLS_ctx.form.contactName2),
-        label: "联系人2姓名",
-        placeholder: "请输入联系人2姓名",
-    }));
-    const __VLS_110 = __VLS_109({
-        modelValue: (__VLS_ctx.form.contactName2),
-        label: "联系人2姓名",
-        placeholder: "请输入联系人2姓名",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_109));
     const __VLS_112 = {}.VanField;
     /** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
     // @ts-ignore
     const __VLS_113 = __VLS_asFunctionalComponent(__VLS_112, new __VLS_112({
-        modelValue: (__VLS_ctx.form.contactPhone2),
-        label: "联系人2电话",
-        placeholder: "请输入联系人2手机号",
-        type: "tel",
+        modelValue: (__VLS_ctx.form.contactName2),
+        label: "联系人2姓名",
+        placeholder: "请输入联系人2姓名",
     }));
     const __VLS_114 = __VLS_113({
-        modelValue: (__VLS_ctx.form.contactPhone2),
-        label: "联系人2电话",
-        placeholder: "请输入联系人2手机号",
-        type: "tel",
+        modelValue: (__VLS_ctx.form.contactName2),
+        label: "联系人2姓名",
+        placeholder: "请输入联系人2姓名",
     }, ...__VLS_functionalComponentArgsRest(__VLS_113));
     const __VLS_116 = {}.VanField;
     /** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
     // @ts-ignore
     const __VLS_117 = __VLS_asFunctionalComponent(__VLS_116, new __VLS_116({
+        modelValue: (__VLS_ctx.form.contactPhone2),
+        label: "联系人2电话",
+        placeholder: "请输入联系人2手机号",
+        type: "tel",
+    }));
+    const __VLS_118 = __VLS_117({
+        modelValue: (__VLS_ctx.form.contactPhone2),
+        label: "联系人2电话",
+        placeholder: "请输入联系人2手机号",
+        type: "tel",
+    }, ...__VLS_functionalComponentArgsRest(__VLS_117));
+    const __VLS_120 = {}.VanField;
+    /** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
+    // @ts-ignore
+    const __VLS_121 = __VLS_asFunctionalComponent(__VLS_120, new __VLS_120({
         ...{ 'onClick': {} },
         modelValue: (__VLS_ctx.contactRelationLabels[1]),
         label: "联系人2关系",
@@ -1042,25 +1059,25 @@ if (__VLS_ctx.step === 2) {
         readonly: true,
         isLink: true,
     }));
-    const __VLS_118 = __VLS_117({
+    const __VLS_122 = __VLS_121({
         ...{ 'onClick': {} },
         modelValue: (__VLS_ctx.contactRelationLabels[1]),
         label: "联系人2关系",
         placeholder: "请选择关系",
         readonly: true,
         isLink: true,
-    }, ...__VLS_functionalComponentArgsRest(__VLS_117));
-    let __VLS_120;
-    let __VLS_121;
-    let __VLS_122;
-    const __VLS_123 = {
+    }, ...__VLS_functionalComponentArgsRest(__VLS_121));
+    let __VLS_124;
+    let __VLS_125;
+    let __VLS_126;
+    const __VLS_127 = {
         onClick: (...[$event]) => {
             if (!(__VLS_ctx.step === 2))
                 return;
             __VLS_ctx.openContactRelationSheet(1);
         }
     };
-    var __VLS_119;
+    var __VLS_123;
 }
 if (__VLS_ctx.step === 2) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -1069,38 +1086,38 @@ if (__VLS_ctx.step === 2) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "section-title" },
     });
-    const __VLS_124 = {}.VanField;
-    /** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
-    // @ts-ignore
-    const __VLS_125 = __VLS_asFunctionalComponent(__VLS_124, new __VLS_124({
-        modelValue: (__VLS_ctx.form.contactName3),
-        label: "联系人3姓名",
-        placeholder: "请输入联系人3姓名",
-    }));
-    const __VLS_126 = __VLS_125({
-        modelValue: (__VLS_ctx.form.contactName3),
-        label: "联系人3姓名",
-        placeholder: "请输入联系人3姓名",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_125));
     const __VLS_128 = {}.VanField;
     /** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
     // @ts-ignore
     const __VLS_129 = __VLS_asFunctionalComponent(__VLS_128, new __VLS_128({
-        modelValue: (__VLS_ctx.form.contactPhone3),
-        label: "联系人3电话",
-        placeholder: "请输入联系人3手机号",
-        type: "tel",
+        modelValue: (__VLS_ctx.form.contactName3),
+        label: "联系人3姓名",
+        placeholder: "请输入联系人3姓名",
     }));
     const __VLS_130 = __VLS_129({
-        modelValue: (__VLS_ctx.form.contactPhone3),
-        label: "联系人3电话",
-        placeholder: "请输入联系人3手机号",
-        type: "tel",
+        modelValue: (__VLS_ctx.form.contactName3),
+        label: "联系人3姓名",
+        placeholder: "请输入联系人3姓名",
     }, ...__VLS_functionalComponentArgsRest(__VLS_129));
     const __VLS_132 = {}.VanField;
     /** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
     // @ts-ignore
     const __VLS_133 = __VLS_asFunctionalComponent(__VLS_132, new __VLS_132({
+        modelValue: (__VLS_ctx.form.contactPhone3),
+        label: "联系人3电话",
+        placeholder: "请输入联系人3手机号",
+        type: "tel",
+    }));
+    const __VLS_134 = __VLS_133({
+        modelValue: (__VLS_ctx.form.contactPhone3),
+        label: "联系人3电话",
+        placeholder: "请输入联系人3手机号",
+        type: "tel",
+    }, ...__VLS_functionalComponentArgsRest(__VLS_133));
+    const __VLS_136 = {}.VanField;
+    /** @type {[typeof __VLS_components.VanField, typeof __VLS_components.vanField, ]} */ ;
+    // @ts-ignore
+    const __VLS_137 = __VLS_asFunctionalComponent(__VLS_136, new __VLS_136({
         ...{ 'onClick': {} },
         modelValue: (__VLS_ctx.contactRelationLabels[2]),
         label: "联系人3关系",
@@ -1108,220 +1125,220 @@ if (__VLS_ctx.step === 2) {
         readonly: true,
         isLink: true,
     }));
-    const __VLS_134 = __VLS_133({
+    const __VLS_138 = __VLS_137({
         ...{ 'onClick': {} },
         modelValue: (__VLS_ctx.contactRelationLabels[2]),
         label: "联系人3关系",
         placeholder: "请选择关系",
         readonly: true,
         isLink: true,
-    }, ...__VLS_functionalComponentArgsRest(__VLS_133));
-    let __VLS_136;
-    let __VLS_137;
-    let __VLS_138;
-    const __VLS_139 = {
+    }, ...__VLS_functionalComponentArgsRest(__VLS_137));
+    let __VLS_140;
+    let __VLS_141;
+    let __VLS_142;
+    const __VLS_143 = {
         onClick: (...[$event]) => {
             if (!(__VLS_ctx.step === 2))
                 return;
             __VLS_ctx.openContactRelationSheet(2);
         }
     };
-    var __VLS_135;
+    var __VLS_139;
 }
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "bottom-bar" },
 });
 if (__VLS_ctx.step > 0) {
-    const __VLS_140 = {}.VanButton;
+    const __VLS_144 = {}.VanButton;
     /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
     // @ts-ignore
-    const __VLS_141 = __VLS_asFunctionalComponent(__VLS_140, new __VLS_140({
+    const __VLS_145 = __VLS_asFunctionalComponent(__VLS_144, new __VLS_144({
         ...{ 'onClick': {} },
         ...{ style: {} },
     }));
-    const __VLS_142 = __VLS_141({
+    const __VLS_146 = __VLS_145({
         ...{ 'onClick': {} },
         ...{ style: {} },
-    }, ...__VLS_functionalComponentArgsRest(__VLS_141));
-    let __VLS_144;
-    let __VLS_145;
-    let __VLS_146;
-    const __VLS_147 = {
+    }, ...__VLS_functionalComponentArgsRest(__VLS_145));
+    let __VLS_148;
+    let __VLS_149;
+    let __VLS_150;
+    const __VLS_151 = {
         onClick: (...[$event]) => {
             if (!(__VLS_ctx.step > 0))
                 return;
             __VLS_ctx.step--;
         }
     };
-    __VLS_143.slots.default;
-    var __VLS_143;
+    __VLS_147.slots.default;
+    var __VLS_147;
 }
 if (__VLS_ctx.step < 2) {
-    const __VLS_148 = {}.VanButton;
+    const __VLS_152 = {}.VanButton;
     /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
     // @ts-ignore
-    const __VLS_149 = __VLS_asFunctionalComponent(__VLS_148, new __VLS_148({
+    const __VLS_153 = __VLS_asFunctionalComponent(__VLS_152, new __VLS_152({
         ...{ 'onClick': {} },
         type: "primary",
     }));
-    const __VLS_150 = __VLS_149({
+    const __VLS_154 = __VLS_153({
         ...{ 'onClick': {} },
         type: "primary",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_149));
-    let __VLS_152;
-    let __VLS_153;
-    let __VLS_154;
-    const __VLS_155 = {
+    }, ...__VLS_functionalComponentArgsRest(__VLS_153));
+    let __VLS_156;
+    let __VLS_157;
+    let __VLS_158;
+    const __VLS_159 = {
         onClick: (__VLS_ctx.nextStep)
     };
-    __VLS_151.slots.default;
-    var __VLS_151;
+    __VLS_155.slots.default;
+    var __VLS_155;
 }
 if (__VLS_ctx.step === 2) {
-    const __VLS_156 = {}.VanButton;
+    const __VLS_160 = {}.VanButton;
     /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
     // @ts-ignore
-    const __VLS_157 = __VLS_asFunctionalComponent(__VLS_156, new __VLS_156({
+    const __VLS_161 = __VLS_asFunctionalComponent(__VLS_160, new __VLS_160({
         ...{ 'onClick': {} },
         type: "primary",
         loading: (__VLS_ctx.submitting),
     }));
-    const __VLS_158 = __VLS_157({
+    const __VLS_162 = __VLS_161({
         ...{ 'onClick': {} },
         type: "primary",
         loading: (__VLS_ctx.submitting),
-    }, ...__VLS_functionalComponentArgsRest(__VLS_157));
-    let __VLS_160;
-    let __VLS_161;
-    let __VLS_162;
-    const __VLS_163 = {
+    }, ...__VLS_functionalComponentArgsRest(__VLS_161));
+    let __VLS_164;
+    let __VLS_165;
+    let __VLS_166;
+    const __VLS_167 = {
         onClick: (__VLS_ctx.submit)
     };
-    __VLS_159.slots.default;
-    var __VLS_159;
+    __VLS_163.slots.default;
+    var __VLS_163;
 }
-const __VLS_164 = {}.VanActionSheet;
+const __VLS_168 = {}.VanActionSheet;
 /** @type {[typeof __VLS_components.VanActionSheet, typeof __VLS_components.vanActionSheet, ]} */ ;
 // @ts-ignore
-const __VLS_165 = __VLS_asFunctionalComponent(__VLS_164, new __VLS_164({
+const __VLS_169 = __VLS_asFunctionalComponent(__VLS_168, new __VLS_168({
     ...{ 'onSelect': {} },
     show: (__VLS_ctx.showEmploymentSheet),
     actions: (__VLS_ctx.employmentActions),
 }));
-const __VLS_166 = __VLS_165({
+const __VLS_170 = __VLS_169({
     ...{ 'onSelect': {} },
     show: (__VLS_ctx.showEmploymentSheet),
     actions: (__VLS_ctx.employmentActions),
-}, ...__VLS_functionalComponentArgsRest(__VLS_165));
-let __VLS_168;
-let __VLS_169;
-let __VLS_170;
-const __VLS_171 = {
+}, ...__VLS_functionalComponentArgsRest(__VLS_169));
+let __VLS_172;
+let __VLS_173;
+let __VLS_174;
+const __VLS_175 = {
     onSelect: (__VLS_ctx.onSelectEmployment)
 };
-var __VLS_167;
-const __VLS_172 = {}.VanActionSheet;
+var __VLS_171;
+const __VLS_176 = {}.VanActionSheet;
 /** @type {[typeof __VLS_components.VanActionSheet, typeof __VLS_components.vanActionSheet, ]} */ ;
 // @ts-ignore
-const __VLS_173 = __VLS_asFunctionalComponent(__VLS_172, new __VLS_172({
+const __VLS_177 = __VLS_asFunctionalComponent(__VLS_176, new __VLS_176({
     ...{ 'onSelect': {} },
     show: (__VLS_ctx.showIncomeSheet),
     actions: (__VLS_ctx.incomeActions),
 }));
-const __VLS_174 = __VLS_173({
+const __VLS_178 = __VLS_177({
     ...{ 'onSelect': {} },
     show: (__VLS_ctx.showIncomeSheet),
     actions: (__VLS_ctx.incomeActions),
-}, ...__VLS_functionalComponentArgsRest(__VLS_173));
-let __VLS_176;
-let __VLS_177;
-let __VLS_178;
-const __VLS_179 = {
+}, ...__VLS_functionalComponentArgsRest(__VLS_177));
+let __VLS_180;
+let __VLS_181;
+let __VLS_182;
+const __VLS_183 = {
     onSelect: (__VLS_ctx.onSelectIncome)
 };
-var __VLS_175;
-const __VLS_180 = {}.VanActionSheet;
+var __VLS_179;
+const __VLS_184 = {}.VanActionSheet;
 /** @type {[typeof __VLS_components.VanActionSheet, typeof __VLS_components.vanActionSheet, ]} */ ;
 // @ts-ignore
-const __VLS_181 = __VLS_asFunctionalComponent(__VLS_180, new __VLS_180({
+const __VLS_185 = __VLS_asFunctionalComponent(__VLS_184, new __VLS_184({
     ...{ 'onSelect': {} },
     show: (__VLS_ctx.showContactRelationSheet),
     title: "选择关系",
     actions: (__VLS_ctx.contactRelationActions),
 }));
-const __VLS_182 = __VLS_181({
+const __VLS_186 = __VLS_185({
     ...{ 'onSelect': {} },
     show: (__VLS_ctx.showContactRelationSheet),
     title: "选择关系",
     actions: (__VLS_ctx.contactRelationActions),
-}, ...__VLS_functionalComponentArgsRest(__VLS_181));
-let __VLS_184;
-let __VLS_185;
-let __VLS_186;
-const __VLS_187 = {
+}, ...__VLS_functionalComponentArgsRest(__VLS_185));
+let __VLS_188;
+let __VLS_189;
+let __VLS_190;
+const __VLS_191 = {
     onSelect: (__VLS_ctx.onSelectContactRelation)
 };
-var __VLS_183;
-const __VLS_188 = {}.VanActionSheet;
+var __VLS_187;
+const __VLS_192 = {}.VanActionSheet;
 /** @type {[typeof __VLS_components.VanActionSheet, typeof __VLS_components.vanActionSheet, ]} */ ;
 // @ts-ignore
-const __VLS_189 = __VLS_asFunctionalComponent(__VLS_188, new __VLS_188({
+const __VLS_193 = __VLS_asFunctionalComponent(__VLS_192, new __VLS_192({
     ...{ 'onSelect': {} },
     show: (__VLS_ctx.showProvinceSheet),
     actions: (__VLS_ctx.provinceActions),
 }));
-const __VLS_190 = __VLS_189({
+const __VLS_194 = __VLS_193({
     ...{ 'onSelect': {} },
     show: (__VLS_ctx.showProvinceSheet),
     actions: (__VLS_ctx.provinceActions),
-}, ...__VLS_functionalComponentArgsRest(__VLS_189));
-let __VLS_192;
-let __VLS_193;
-let __VLS_194;
-const __VLS_195 = {
+}, ...__VLS_functionalComponentArgsRest(__VLS_193));
+let __VLS_196;
+let __VLS_197;
+let __VLS_198;
+const __VLS_199 = {
     onSelect: (__VLS_ctx.onSelectProvince)
 };
-var __VLS_191;
-const __VLS_196 = {}.VanActionSheet;
+var __VLS_195;
+const __VLS_200 = {}.VanActionSheet;
 /** @type {[typeof __VLS_components.VanActionSheet, typeof __VLS_components.vanActionSheet, ]} */ ;
 // @ts-ignore
-const __VLS_197 = __VLS_asFunctionalComponent(__VLS_196, new __VLS_196({
+const __VLS_201 = __VLS_asFunctionalComponent(__VLS_200, new __VLS_200({
     ...{ 'onSelect': {} },
     show: (__VLS_ctx.showCitySheet),
     actions: (__VLS_ctx.cityActions),
 }));
-const __VLS_198 = __VLS_197({
+const __VLS_202 = __VLS_201({
     ...{ 'onSelect': {} },
     show: (__VLS_ctx.showCitySheet),
     actions: (__VLS_ctx.cityActions),
-}, ...__VLS_functionalComponentArgsRest(__VLS_197));
-let __VLS_200;
-let __VLS_201;
-let __VLS_202;
-const __VLS_203 = {
+}, ...__VLS_functionalComponentArgsRest(__VLS_201));
+let __VLS_204;
+let __VLS_205;
+let __VLS_206;
+const __VLS_207 = {
     onSelect: (__VLS_ctx.onSelectCity)
 };
-var __VLS_199;
-const __VLS_204 = {}.VanActionSheet;
+var __VLS_203;
+const __VLS_208 = {}.VanActionSheet;
 /** @type {[typeof __VLS_components.VanActionSheet, typeof __VLS_components.vanActionSheet, ]} */ ;
 // @ts-ignore
-const __VLS_205 = __VLS_asFunctionalComponent(__VLS_204, new __VLS_204({
+const __VLS_209 = __VLS_asFunctionalComponent(__VLS_208, new __VLS_208({
     ...{ 'onSelect': {} },
     show: (__VLS_ctx.showDistrictSheet),
     actions: (__VLS_ctx.districtActions),
 }));
-const __VLS_206 = __VLS_205({
+const __VLS_210 = __VLS_209({
     ...{ 'onSelect': {} },
     show: (__VLS_ctx.showDistrictSheet),
     actions: (__VLS_ctx.districtActions),
-}, ...__VLS_functionalComponentArgsRest(__VLS_205));
-let __VLS_208;
-let __VLS_209;
-let __VLS_210;
-const __VLS_211 = {
+}, ...__VLS_functionalComponentArgsRest(__VLS_209));
+let __VLS_212;
+let __VLS_213;
+let __VLS_214;
+const __VLS_215 = {
     onSelect: (__VLS_ctx.onSelectDistrict)
 };
-var __VLS_207;
+var __VLS_211;
 /** @type {__VLS_StyleScopedClasses['page']} */ ;
 /** @type {__VLS_StyleScopedClasses['kyc-page']} */ ;
 /** @type {__VLS_StyleScopedClasses['h5-card']} */ ;

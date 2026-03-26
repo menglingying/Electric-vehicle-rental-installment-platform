@@ -517,6 +517,27 @@ app.post('/api/admin/orders/:id/repayments/:period/mark-paid', (req, res) => {
   res.json({ ok: true });
 });
 
+app.post('/api/admin/orders/:id/generate-plan', (req, res) => {
+  const p = requireAuth(req, 'ADMIN');
+  if (!p) return res.status(401).json({ message: '未登录' });
+  const order = orders.get(req.params.id);
+  if (!order) return res.status(404).json({ message: '订单不存在' });
+  if (order.repaymentPlan && order.repaymentPlan.length > 0) {
+    return res.status(400).json({ message: '该订单已有还款计划，无需重复生成' });
+  }
+  const product = [...products.values()].find((x) => x.id === order.productId);
+  if (!product) return res.status(400).json({ message: '找不到关联商品，无法计算租金' });
+  let rentPerCycle = product.rentPerCycle;
+  if (order.batteryOption === 'WITH_BATTERY' && product.rentWithBattery) {
+    rentPerCycle = product.rentWithBattery;
+  } else if (order.batteryOption === 'WITHOUT_BATTERY' && product.rentWithoutBattery) {
+    rentPerCycle = product.rentWithoutBattery;
+  }
+  order.repaymentPlan = buildRentPlan(rentPerCycle, order.periods, order.cycleDays, order.depositRatio || 0);
+  addOrderLog(order, 'PLAN_GENERATED', { by: 'ADMIN' });
+  res.json({ ok: true, periods: order.repaymentPlan.length });
+});
+
 // Admin reminders & SMS (reserved)
 app.get('/api/admin/reminders', (req, res) => {
   const p = requireAuth(req, 'ADMIN');
