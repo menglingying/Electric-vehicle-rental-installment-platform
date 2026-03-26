@@ -646,7 +646,8 @@ const columns: TableColumnData[] = [
           {
             size: 'mini',
             style: 'margin-left:6px',
-            onClick: async () => {
+            onClick: async (e: Event) => {
+              e.stopPropagation();
               try {
                 const updated = await syncContractStatus(record.id);
                 if (updated?.status === 'SIGNED') {
@@ -680,28 +681,29 @@ const columns: TableColumnData[] = [
     title: '操作',
     render: ({ record }: { record: any }) => {
       const status = record.status;
+      const stop = (fn: () => void) => (e: Event) => { e.stopPropagation(); fn(); };
       const buttons: any[] = [];
-      buttons.push(h(Button, { size: 'small', onClick: () => openDetail(record.id) }, () => '详情'));
+      buttons.push(h(Button, { size: 'small', onClick: stop(() => openDetail(record.id)) }, () => '详情'));
       if (status === 'PENDING_REVIEW') {
-        buttons.push(h(Button, { type: 'primary', size: 'small', onClick: () => approve(record.id) }, () => '通过'));
-        buttons.push(h(Button, { status: 'danger', size: 'small', onClick: () => reject(record.id) }, () => '驳回'));
-        buttons.push(h(Button, { size: 'small', onClick: () => openAdjust(record.id) }, () => '调价'));
-        buttons.push(h(Button, { size: 'small', onClick: () => close(record.id) }, () => '关闭'));
+        buttons.push(h(Button, { type: 'primary', size: 'small', onClick: stop(() => approve(record.id)) }, () => '通过'));
+        buttons.push(h(Button, { status: 'danger', size: 'small', onClick: stop(() => reject(record.id)) }, () => '驳回'));
+        buttons.push(h(Button, { size: 'small', onClick: stop(() => openAdjust(record.id)) }, () => '调价'));
+        buttons.push(h(Button, { size: 'small', onClick: stop(() => close(record.id)) }, () => '关闭'));
       } else if (status === 'ACTIVE') {
-        buttons.push(h(Button, { type: 'primary', size: 'small', onClick: () => deliver(record.id) }, () => '交付'));
-        buttons.push(h(Button, { size: 'small', onClick: () => close(record.id) }, () => '关闭'));
+        buttons.push(h(Button, { type: 'primary', size: 'small', onClick: stop(() => deliver(record.id)) }, () => '交付'));
+        buttons.push(h(Button, { size: 'small', onClick: stop(() => close(record.id)) }, () => '关闭'));
       } else if (status === 'DELIVERED') {
-        buttons.push(h(Button, { type: 'primary', size: 'small', onClick: () => pickup(record.id) }, () => '取车'));
-        buttons.push(h(Button, { size: 'small', onClick: () => close(record.id) }, () => '关闭'));
+        buttons.push(h(Button, { type: 'primary', size: 'small', onClick: stop(() => pickup(record.id)) }, () => '取车'));
+        buttons.push(h(Button, { size: 'small', onClick: stop(() => close(record.id)) }, () => '关闭'));
       } else if (status === 'IN_USE') {
-        buttons.push(h(Button, { type: 'primary', size: 'small', onClick: () => doReturn(record.id) }, () => '归还'));
-        buttons.push(h(Button, { size: 'small', onClick: () => close(record.id) }, () => '关闭'));
+        buttons.push(h(Button, { type: 'primary', size: 'small', onClick: stop(() => doReturn(record.id)) }, () => '归还'));
+        buttons.push(h(Button, { size: 'small', onClick: stop(() => close(record.id)) }, () => '关闭'));
       } else if (status === 'RETURNED') {
-        buttons.push(h(Button, { type: 'primary', size: 'small', onClick: () => settle(record.id) }, () => '结清'));
-        buttons.push(h(Button, { size: 'small', onClick: () => close(record.id) }, () => '关闭'));
+        buttons.push(h(Button, { type: 'primary', size: 'small', onClick: stop(() => settle(record.id)) }, () => '结清'));
+        buttons.push(h(Button, { size: 'small', onClick: stop(() => close(record.id)) }, () => '关闭'));
       }
       if (status !== 'IN_USE' && isSuper()) {
-        buttons.push(h(Button, { status: 'danger', size: 'small', onClick: () => doDelete(record.id) }, () => '删除'));
+        buttons.push(h(Button, { status: 'danger', size: 'small', onClick: stop(() => doDelete(record.id)) }, () => '删除'));
       }
       return h('div', { style: 'display:flex; gap:8px; flex-wrap:wrap' }, buttons);
     }
