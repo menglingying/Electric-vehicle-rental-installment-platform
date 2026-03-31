@@ -24,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -120,6 +121,57 @@ public class H5OrderController {
     if (!order.getPhone().equals(principal.phoneOrUsername())) {
       throw new ApiException(HttpStatus.FORBIDDEN, "无权限");
     }
+    return orderEnricher.enrich(order);
+  }
+
+  public record UpdateOrderRequest(
+    @Min(3) @Max(60) int periods,
+    @Min(7) @Max(60) int cycleDays,
+    @Min(0) @Max(1) double depositRatio,
+    String batteryOption,
+    String repaymentMethod
+  ) {}
+
+  @PutMapping("/{id}")
+  public Object update(HttpServletRequest request, @PathVariable String id, @Valid @RequestBody UpdateOrderRequest req) {
+    var principal = AuthContext.require(request, PrincipalType.H5);
+    var order = orderRepository.findById(id)
+      .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "订单不存在"));
+
+    if (!order.getPhone().equals(principal.phoneOrUsername())) {
+      throw new ApiException(HttpStatus.FORBIDDEN, "无权限");
+    }
+    if (order.getStatus() != OrderStatus.PENDING_REVIEW) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "仅待审核状态的订单可以修改");
+    }
+
+    var product = productRepository.findById(order.getProductId())
+      .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "关联商品不存在"));
+
+    order.setPeriods(req.periods());
+    order.setCycleDays(req.cycleDays());
+    order.setDepositRatio(req.depositRatio());
+    order.setBatteryOption(req.batteryOption() != null ? req.batteryOption() : order.getBatteryOption());
+    order.setRepaymentMethod(req.repaymentMethod() != null ? req.repaymentMethod() : order.getRepaymentMethod());
+
+    var batteryOption = order.getBatteryOption();
+    int rentPerCycle = product.getRentPerCycle();
+    if ("WITH_BATTERY".equals(batteryOption) && product.getRentWithBattery() != null) {
+      rentPerCycle = product.getRentWithBattery();
+    } else if ("WITHOUT_BATTERY".equals(batteryOption) && product.getRentWithoutBattery() != null) {
+      rentPerCycle = product.getRentWithoutBattery();
+    }
+
+    var newPlan = orderPlanService.buildRentPlan(rentPerCycle, req.periods(), req.cycleDays(), req.depositRatio());
+    if (order.getRepaymentPlan() != null) {
+      order.getRepaymentPlan().clear();
+      order.getRepaymentPlan().addAll(newPlan);
+    } else {
+      order.setRepaymentPlan(newPlan);
+    }
+
+    orderLogService.add(order, "UPDATED", "H5", l -> l.setActor(principal.phoneOrUsername()));
+    orderRepository.save(order);
     return orderEnricher.enrich(order);
   }
 

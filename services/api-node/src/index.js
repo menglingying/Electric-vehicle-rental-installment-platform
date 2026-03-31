@@ -236,6 +236,35 @@ app.get('/api/h5/orders/:id', (req, res) => {
   res.json(enrichOrder(order));
 });
 
+app.put('/api/h5/orders/:id', (req, res) => {
+  const p = requireAuth(req, 'H5');
+  if (!p) return res.status(401).json({ message: '未登录' });
+  const order = orders.get(req.params.id);
+  if (!order) return res.status(404).json({ message: '订单不存在' });
+  if (order.phone !== p.phoneOrUsername) return res.status(403).json({ message: '无权限' });
+  if (order.status !== 'PENDING_REVIEW') return res.status(400).json({ message: '仅待审核状态的订单可以修改' });
+
+  const { periods, cycleDays, depositRatio, batteryOption, repaymentMethod } = req.body || {};
+  const product = products.get(order.productId);
+  if (!product) return res.status(404).json({ message: '关联商品不存在' });
+
+  order.periods = Number(periods || order.periods);
+  order.cycleDays = Number(cycleDays || order.cycleDays);
+  order.depositRatio = Number(depositRatio != null ? depositRatio : order.depositRatio);
+  if (batteryOption) order.batteryOption = batteryOption;
+  if (repaymentMethod) order.repaymentMethod = repaymentMethod;
+
+  let rentPerCycle = product.rentPerCycle;
+  if (order.batteryOption === 'WITH_BATTERY' && product.rentWithBattery != null) {
+    rentPerCycle = product.rentWithBattery;
+  } else if (order.batteryOption === 'WITHOUT_BATTERY' && product.rentWithoutBattery != null) {
+    rentPerCycle = product.rentWithoutBattery;
+  }
+  order.repaymentPlan = buildRentPlan(rentPerCycle, order.periods, order.cycleDays, order.depositRatio);
+  addOrderLog(order, 'UPDATED', { by: 'H5', actor: p.phoneOrUsername });
+  res.json(enrichOrder(order));
+});
+
 // H5 e-sign (reserved)
 app.post('/api/h5/contracts/:orderId/start', (req, res) => {
   const p = requireAuth(req, 'H5');

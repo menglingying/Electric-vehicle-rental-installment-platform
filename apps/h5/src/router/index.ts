@@ -5,6 +5,7 @@ import ProductDetail from '@/views/ProductDetail.vue';
 import Orders from '@/views/Orders.vue';
 import OrderDetail from '@/views/OrderDetail.vue';
 import OrderKyc from '@/views/OrderKyc.vue';
+import OrderEdit from '@/views/OrderEdit.vue';
 import { getH5Token } from '@/services/auth';
 
 export function createRouter() {
@@ -17,7 +18,8 @@ export function createRouter() {
       { path: '/products/:id', component: ProductDetail },
       { path: '/orders', component: Orders },
       { path: '/orders/:id', component: OrderDetail },
-      { path: '/orders/:id/kyc', component: OrderKyc }
+      { path: '/orders/:id/kyc', component: OrderKyc },
+      { path: '/orders/:id/edit', component: OrderEdit }
     ]
   });
 

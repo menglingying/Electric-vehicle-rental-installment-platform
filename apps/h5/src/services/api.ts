@@ -119,6 +119,17 @@ export async function createOrder(payload: {
   return data as Order;
 }
 
+export async function updateOrder(orderId: string, payload: {
+  periods: number;
+  cycleDays: number;
+  depositRatio: number;
+  batteryOption?: string;
+  repaymentMethod?: string;
+}) {
+  const { data } = await http.put(`/h5/orders/${orderId}`, payload);
+  return data as Order;
+}
+
 export async function listOrders() {
   const { data } = await http.get('/h5/orders');
   return data as Order[];
@@ -138,6 +149,11 @@ export async function startContract(orderId: string) {
 export async function getContract(orderId: string) {
   const { data } = await http.get(`/h5/contracts/${orderId}`);
   return data as Contract | null;
+}
+
+export async function syncContractStatus(orderId: string) {
+  const { data } = await http.post(`/h5/contracts/${orderId}/sync`);
+  return data as { synced: boolean; status?: string; reason?: string };
 }
 
 export async function startPayment(orderId: string) {

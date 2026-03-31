@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="page">
     <van-nav-bar title="订单详情" left-arrow @click-left="router.back()" />
 
@@ -9,6 +9,14 @@
       <div class="detail-line" v-if="order.batteryOption">电池配置：{{ batteryOptionText(order.batteryOption) }}</div>
       <div class="detail-line" v-if="order.repaymentMethod">还款方式：{{ repaymentMethodText(order.repaymentMethod) }}</div>
       <div class="detail-line">创建时间：{{ order.createdAt }}</div>
+      <van-button
+        v-if="order.status === 'PENDING_REVIEW'"
+        type="warning"
+        size="small"
+        plain
+        style="margin-top: 10px"
+        @click="router.push(`/orders/${order.id}/edit`)"
+      >修改订单</van-button>
       <div class="detail-line" v-if="order.approvedAt">审核通过：{{ order.approvedAt }}</div>
       <div class="detail-line" v-if="order.deliveredAt">交付时间：{{ order.deliveredAt }}</div>
       <div class="detail-line" v-if="order.pickedUpAt">取车时间：{{ order.pickedUpAt }}</div>
@@ -41,10 +49,19 @@
     <div class="h5-card" v-if="order">
       <div class="section-title">合同</div>
       <div class="detail-line">状态：{{ contractStatusText(order.contract?.status, order.contract?.contractType) }}</div>
+      <div class="detail-line" v-if="order.contract?.contractNo">合同编号：{{ order.contract.contractNo }}</div>
+      <div class="detail-line" v-if="order.contract?.signedAt">签署时间：{{ order.contract.signedAt }}</div>
       <div v-if="contractHint" class="detail-line">{{ contractHint }}</div>
-      <div v-if="canSignContract || contractFileUrl" style="margin-top: 8px; display: flex; gap: 12px">
+      <div style="margin-top: 8px; display: flex; gap: 12px; flex-wrap: wrap">
         <van-button v-if="canSignContract" type="primary" block @click="onOpenSignUrl">去签署</van-button>
-        <van-button v-if="contractFileUrl" type="default" block @click="onOpenContractFile">查看合同</van-button>
+        <van-button v-if="contractFileUrl" type="primary" block @click="onOpenContractFile">查看合同</van-button>
+        <van-button
+          v-if="order.contract?.status === 'SIGNING'"
+          type="default"
+          size="small"
+          :loading="contractSyncLoading"
+          @click="onSyncContract"
+        >刷新合同状态</van-button>
       </div>
     </div>
 
@@ -101,7 +118,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { showFailToast, showSuccessToast } from 'vant';
-import { getOrder, startAsignAuth, startPayment, getNotarySignUrl } from '@/services/api';
+import { getOrder, startAsignAuth, startPayment, getNotarySignUrl, syncContractStatus } from '@/services/api';
 
 const route = useRoute();
 const router = useRouter();
@@ -109,6 +126,7 @@ const order = ref<any>(null);
 const paymentLoading = ref(false);
 const asignLoading = ref(false);
 const notarySignLoading = ref(false);
+const contractSyncLoading = ref(false);
 const loading = ref(false);
 const paymentAllowedStatuses = new Set(['ACTIVE', 'DELIVERED', 'IN_USE', 'RETURNED']);
 const shouldShowKycPrompt = computed(() => !!order.value && !order.value.kycCompleted && order.value.status === 'PENDING_REVIEW');
@@ -270,6 +288,24 @@ async function onStartPayment() {
   }
 }
 
+async function onSyncContract() {
+  if (!order.value) return;
+  contractSyncLoading.value = true;
+  try {
+    const result = await syncContractStatus(order.value.id);
+    if (result.synced) {
+      showSuccessToast('合同状态已更新');
+      await load({ bypassCache: true });
+    } else {
+      showFailToast(result.reason ?? '合同暂无更新');
+    }
+  } catch (e: any) {
+    showFailToast(e?.response?.data?.message ?? '同步失败');
+  } finally {
+    contractSyncLoading.value = false;
+  }
+}
+
 async function onStartAsignAuth() {
   if (!order.value) return;
   asignLoading.value = true;
@@ -300,14 +336,26 @@ async function load(options?: { bypassCache?: boolean }) {
   }
 }
 
-function refreshIfVisible() {
-  if (document.visibilityState === 'visible') {
-    void load({ bypassCache: true });
+async function autoSyncContractIfNeeded() {
+  if (order.value?.contract?.status === 'SIGNING' && order.value.contract.contractNo) {
+    try {
+      const result = await syncContractStatus(order.value.id);
+      if (result.synced) {
+        await load({ bypassCache: true });
+      }
+    } catch { /* ignore */ }
   }
 }
 
-onMounted(() => {
-  void load({ bypassCache: true });
+function refreshIfVisible() {
+  if (document.visibilityState === 'visible') {
+    void load({ bypassCache: true }).then(() => autoSyncContractIfNeeded());
+  }
+}
+
+onMounted(async () => {
+  await load({ bypassCache: true });
+  void autoSyncContractIfNeeded();
   document.addEventListener('visibilitychange', refreshIfVisible);
   window.addEventListener('focus', refreshIfVisible);
 });
