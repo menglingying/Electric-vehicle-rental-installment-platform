@@ -55,6 +55,9 @@
         </a-space>
       </a-form-item>
 
+      <a-form-item label="品牌" field="brand">
+        <a-input v-model="form.brand" placeholder="例如：九号电动车" />
+      </a-form-item>
       <a-form-item label="名称" field="name">
         <a-input v-model="form.name" />
       </a-form-item>
@@ -199,6 +202,7 @@ const filteredRows = computed(() => {
     list = list.filter(
       (p) =>
         p.name.toLowerCase().includes(keyword) ||
+        (p.brand || '').toLowerCase().includes(keyword) ||
         p.id.toLowerCase().includes(keyword) ||
         (p.frameConfig || '').toLowerCase().includes(keyword) ||
         (p.batteryConfig || '').toLowerCase().includes(keyword)
@@ -233,7 +237,13 @@ const columns: TableColumnData[] = [
     }
   },
   { title: 'ID', dataIndex: 'id' },
-  { title: '名称', dataIndex: 'name' },
+  {
+    title: '名称',
+    render: ({ record }: { record: any }) => {
+      const brand = record.brand ? record.brand + ' ' : '';
+      return brand + record.name;
+    }
+  },
   {
     title: '分类',
     render: ({ record }: { record: any }) => categoryNameMap.value[record.categoryId] || '-'
@@ -274,6 +284,7 @@ const columns: TableColumnData[] = [
 
 const form = reactive({
   id: '',
+  brand: '',
   name: '',
   brandId: '',
   seriesId: '',
@@ -315,6 +326,7 @@ function confirmDelete(p: Product) {
 
 function openCreate() {
   form.id = '';
+  form.brand = '';
   form.name = '';
   form.brandId = '';
   form.seriesId = '';
@@ -331,6 +343,7 @@ function openCreate() {
 
 function openEdit(p: Product) {
   form.id = p.id;
+  form.brand = p.brand ?? '';
   form.name = p.name;
   const path = resolveCategoryPath(p.categoryId ?? '');
   form.brandId = path.brandId;
@@ -399,6 +412,7 @@ async function save() {
   try {
     await upsertProduct({
       id: form.id || undefined,
+      brand: form.brand || undefined,
       name: form.name,
       categoryId: form.categoryId,
       coverUrl: images[0] || undefined,

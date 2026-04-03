@@ -58,6 +58,7 @@ const filteredRows = computed(() => {
     const keyword = searchKeyword.value.trim().toLowerCase();
     if (keyword) {
         list = list.filter((p) => p.name.toLowerCase().includes(keyword) ||
+            (p.brand || '').toLowerCase().includes(keyword) ||
             p.id.toLowerCase().includes(keyword) ||
             (p.frameConfig || '').toLowerCase().includes(keyword) ||
             (p.batteryConfig || '').toLowerCase().includes(keyword));
@@ -90,7 +91,13 @@ const columns = [
         }
     },
     { title: 'ID', dataIndex: 'id' },
-    { title: '名称', dataIndex: 'name' },
+    {
+        title: '名称',
+        render: ({ record }) => {
+            const brand = record.brand ? record.brand + ' ' : '';
+            return brand + record.name;
+        }
+    },
     {
         title: '分类',
         render: ({ record }) => categoryNameMap.value[record.categoryId] || '-'
@@ -124,6 +131,7 @@ const columns = [
 ];
 const form = reactive({
     id: '',
+    brand: '',
     name: '',
     brandId: '',
     seriesId: '',
@@ -164,6 +172,7 @@ function confirmDelete(p) {
 }
 function openCreate() {
     form.id = '';
+    form.brand = '';
     form.name = '';
     form.brandId = '';
     form.seriesId = '';
@@ -179,6 +188,7 @@ function openCreate() {
 }
 function openEdit(p) {
     form.id = p.id;
+    form.brand = p.brand ?? '';
     form.name = p.name;
     const path = resolveCategoryPath(p.categoryId ?? '');
     form.brandId = path.brandId;
@@ -248,6 +258,7 @@ async function save() {
     try {
         await upsertProduct({
             id: form.id || undefined,
+            brand: form.brand || undefined,
             name: form.name,
             categoryId: form.categoryId,
             coverUrl: images[0] || undefined,
@@ -640,95 +651,119 @@ const __VLS_101 = {}.AFormItem;
 /** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_102 = __VLS_asFunctionalComponent(__VLS_101, new __VLS_101({
-    label: "名称",
-    field: "name",
+    label: "品牌",
+    field: "brand",
 }));
 const __VLS_103 = __VLS_102({
-    label: "名称",
-    field: "name",
+    label: "品牌",
+    field: "brand",
 }, ...__VLS_functionalComponentArgsRest(__VLS_102));
 __VLS_104.slots.default;
 const __VLS_105 = {}.AInput;
 /** @type {[typeof __VLS_components.AInput, typeof __VLS_components.aInput, ]} */ ;
 // @ts-ignore
 const __VLS_106 = __VLS_asFunctionalComponent(__VLS_105, new __VLS_105({
-    modelValue: (__VLS_ctx.form.name),
+    modelValue: (__VLS_ctx.form.brand),
+    placeholder: "例如：九号电动车",
 }));
 const __VLS_107 = __VLS_106({
-    modelValue: (__VLS_ctx.form.name),
+    modelValue: (__VLS_ctx.form.brand),
+    placeholder: "例如：九号电动车",
 }, ...__VLS_functionalComponentArgsRest(__VLS_106));
 var __VLS_104;
 const __VLS_109 = {}.AFormItem;
 /** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_110 = __VLS_asFunctionalComponent(__VLS_109, new __VLS_109({
-    label: "车型分类",
+    label: "名称",
+    field: "name",
 }));
 const __VLS_111 = __VLS_110({
-    label: "车型分类",
+    label: "名称",
+    field: "name",
 }, ...__VLS_functionalComponentArgsRest(__VLS_110));
 __VLS_112.slots.default;
+const __VLS_113 = {}.AInput;
+/** @type {[typeof __VLS_components.AInput, typeof __VLS_components.aInput, ]} */ ;
+// @ts-ignore
+const __VLS_114 = __VLS_asFunctionalComponent(__VLS_113, new __VLS_113({
+    modelValue: (__VLS_ctx.form.name),
+}));
+const __VLS_115 = __VLS_114({
+    modelValue: (__VLS_ctx.form.name),
+}, ...__VLS_functionalComponentArgsRest(__VLS_114));
+var __VLS_112;
+const __VLS_117 = {}.AFormItem;
+/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
+// @ts-ignore
+const __VLS_118 = __VLS_asFunctionalComponent(__VLS_117, new __VLS_117({
+    label: "车型分类",
+}));
+const __VLS_119 = __VLS_118({
+    label: "车型分类",
+}, ...__VLS_functionalComponentArgsRest(__VLS_118));
+__VLS_120.slots.default;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "cascader-row" },
 });
-const __VLS_113 = {}.ASelect;
-/** @type {[typeof __VLS_components.ASelect, typeof __VLS_components.aSelect, ]} */ ;
-// @ts-ignore
-const __VLS_114 = __VLS_asFunctionalComponent(__VLS_113, new __VLS_113({
-    ...{ 'onChange': {} },
-    modelValue: (__VLS_ctx.form.brandId),
-    placeholder: "选择品牌",
-    options: (__VLS_ctx.brandOptions),
-    allowClear: true,
-    ...{ style: {} },
-}));
-const __VLS_115 = __VLS_114({
-    ...{ 'onChange': {} },
-    modelValue: (__VLS_ctx.form.brandId),
-    placeholder: "选择品牌",
-    options: (__VLS_ctx.brandOptions),
-    allowClear: true,
-    ...{ style: {} },
-}, ...__VLS_functionalComponentArgsRest(__VLS_114));
-let __VLS_117;
-let __VLS_118;
-let __VLS_119;
-const __VLS_120 = {
-    onChange: (__VLS_ctx.onBrandChange)
-};
-var __VLS_116;
 const __VLS_121 = {}.ASelect;
 /** @type {[typeof __VLS_components.ASelect, typeof __VLS_components.aSelect, ]} */ ;
 // @ts-ignore
 const __VLS_122 = __VLS_asFunctionalComponent(__VLS_121, new __VLS_121({
     ...{ 'onChange': {} },
-    modelValue: (__VLS_ctx.form.seriesId),
-    placeholder: "选择系列",
-    options: (__VLS_ctx.seriesOptions),
+    modelValue: (__VLS_ctx.form.brandId),
+    placeholder: "选择品牌",
+    options: (__VLS_ctx.brandOptions),
     allowClear: true,
-    disabled: (!__VLS_ctx.form.brandId),
     ...{ style: {} },
 }));
 const __VLS_123 = __VLS_122({
     ...{ 'onChange': {} },
-    modelValue: (__VLS_ctx.form.seriesId),
-    placeholder: "选择系列",
-    options: (__VLS_ctx.seriesOptions),
+    modelValue: (__VLS_ctx.form.brandId),
+    placeholder: "选择品牌",
+    options: (__VLS_ctx.brandOptions),
     allowClear: true,
-    disabled: (!__VLS_ctx.form.brandId),
     ...{ style: {} },
 }, ...__VLS_functionalComponentArgsRest(__VLS_122));
 let __VLS_125;
 let __VLS_126;
 let __VLS_127;
 const __VLS_128 = {
-    onChange: (__VLS_ctx.onSeriesChange)
+    onChange: (__VLS_ctx.onBrandChange)
 };
 var __VLS_124;
 const __VLS_129 = {}.ASelect;
 /** @type {[typeof __VLS_components.ASelect, typeof __VLS_components.aSelect, ]} */ ;
 // @ts-ignore
 const __VLS_130 = __VLS_asFunctionalComponent(__VLS_129, new __VLS_129({
+    ...{ 'onChange': {} },
+    modelValue: (__VLS_ctx.form.seriesId),
+    placeholder: "选择系列",
+    options: (__VLS_ctx.seriesOptions),
+    allowClear: true,
+    disabled: (!__VLS_ctx.form.brandId),
+    ...{ style: {} },
+}));
+const __VLS_131 = __VLS_130({
+    ...{ 'onChange': {} },
+    modelValue: (__VLS_ctx.form.seriesId),
+    placeholder: "选择系列",
+    options: (__VLS_ctx.seriesOptions),
+    allowClear: true,
+    disabled: (!__VLS_ctx.form.brandId),
+    ...{ style: {} },
+}, ...__VLS_functionalComponentArgsRest(__VLS_130));
+let __VLS_133;
+let __VLS_134;
+let __VLS_135;
+const __VLS_136 = {
+    onChange: (__VLS_ctx.onSeriesChange)
+};
+var __VLS_132;
+const __VLS_137 = {}.ASelect;
+/** @type {[typeof __VLS_components.ASelect, typeof __VLS_components.aSelect, ]} */ ;
+// @ts-ignore
+const __VLS_138 = __VLS_asFunctionalComponent(__VLS_137, new __VLS_137({
     modelValue: (__VLS_ctx.form.categoryId),
     placeholder: "选择型号",
     options: (__VLS_ctx.modelOptions),
@@ -736,113 +771,113 @@ const __VLS_130 = __VLS_asFunctionalComponent(__VLS_129, new __VLS_129({
     disabled: (!__VLS_ctx.form.seriesId),
     ...{ style: {} },
 }));
-const __VLS_131 = __VLS_130({
+const __VLS_139 = __VLS_138({
     modelValue: (__VLS_ctx.form.categoryId),
     placeholder: "选择型号",
     options: (__VLS_ctx.modelOptions),
     allowClear: true,
     disabled: (!__VLS_ctx.form.seriesId),
     ...{ style: {} },
-}, ...__VLS_functionalComponentArgsRest(__VLS_130));
+}, ...__VLS_functionalComponentArgsRest(__VLS_138));
 if (!__VLS_ctx.brandOptions.length) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ style: {} },
     });
-    const __VLS_133 = {}.AAlert;
+    const __VLS_141 = {}.AAlert;
     /** @type {[typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, ]} */ ;
     // @ts-ignore
-    const __VLS_134 = __VLS_asFunctionalComponent(__VLS_133, new __VLS_133({
+    const __VLS_142 = __VLS_asFunctionalComponent(__VLS_141, new __VLS_141({
         type: "warning",
     }));
-    const __VLS_135 = __VLS_134({
+    const __VLS_143 = __VLS_142({
         type: "warning",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_134));
-    __VLS_136.slots.default;
-    var __VLS_136;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_142));
+    __VLS_144.slots.default;
+    var __VLS_144;
 }
-var __VLS_112;
-const __VLS_137 = {}.AFormItem;
-/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
-// @ts-ignore
-const __VLS_138 = __VLS_asFunctionalComponent(__VLS_137, new __VLS_137({
-    label: "租金/期（元）",
-    field: "rentPerCycle",
-}));
-const __VLS_139 = __VLS_138({
-    label: "租金/期（元）",
-    field: "rentPerCycle",
-}, ...__VLS_functionalComponentArgsRest(__VLS_138));
-__VLS_140.slots.default;
-const __VLS_141 = {}.AInputNumber;
-/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
-// @ts-ignore
-const __VLS_142 = __VLS_asFunctionalComponent(__VLS_141, new __VLS_141({
-    modelValue: (__VLS_ctx.form.rentPerCycle),
-    min: (1),
-}));
-const __VLS_143 = __VLS_142({
-    modelValue: (__VLS_ctx.form.rentPerCycle),
-    min: (1),
-}, ...__VLS_functionalComponentArgsRest(__VLS_142));
-var __VLS_140;
+var __VLS_120;
 const __VLS_145 = {}.AFormItem;
 /** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_146 = __VLS_asFunctionalComponent(__VLS_145, new __VLS_145({
-    label: "标签（逗号分隔）",
-    field: "tagsText",
+    label: "租金/期（元）",
+    field: "rentPerCycle",
 }));
 const __VLS_147 = __VLS_146({
-    label: "标签（逗号分隔）",
-    field: "tagsText",
+    label: "租金/期（元）",
+    field: "rentPerCycle",
 }, ...__VLS_functionalComponentArgsRest(__VLS_146));
 __VLS_148.slots.default;
-const __VLS_149 = {}.AInput;
-/** @type {[typeof __VLS_components.AInput, typeof __VLS_components.aInput, ]} */ ;
+const __VLS_149 = {}.AInputNumber;
+/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
 // @ts-ignore
 const __VLS_150 = __VLS_asFunctionalComponent(__VLS_149, new __VLS_149({
-    modelValue: (__VLS_ctx.form.tagsText),
-    placeholder: "例如：续航,通勤,分期",
+    modelValue: (__VLS_ctx.form.rentPerCycle),
+    min: (1),
 }));
 const __VLS_151 = __VLS_150({
-    modelValue: (__VLS_ctx.form.tagsText),
-    placeholder: "例如：续航,通勤,分期",
+    modelValue: (__VLS_ctx.form.rentPerCycle),
+    min: (1),
 }, ...__VLS_functionalComponentArgsRest(__VLS_150));
 var __VLS_148;
 const __VLS_153 = {}.AFormItem;
 /** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_154 = __VLS_asFunctionalComponent(__VLS_153, new __VLS_153({
-    label: "车架配置",
-    field: "frameConfig",
+    label: "标签（逗号分隔）",
+    field: "tagsText",
 }));
 const __VLS_155 = __VLS_154({
-    label: "车架配置",
-    field: "frameConfig",
+    label: "标签（逗号分隔）",
+    field: "tagsText",
 }, ...__VLS_functionalComponentArgsRest(__VLS_154));
 __VLS_156.slots.default;
 const __VLS_157 = {}.AInput;
 /** @type {[typeof __VLS_components.AInput, typeof __VLS_components.aInput, ]} */ ;
 // @ts-ignore
 const __VLS_158 = __VLS_asFunctionalComponent(__VLS_157, new __VLS_157({
-    modelValue: (__VLS_ctx.form.frameConfig),
-    placeholder: "例如：铝合金车架、碳钢车架",
+    modelValue: (__VLS_ctx.form.tagsText),
+    placeholder: "例如：续航,通勤,分期",
 }));
 const __VLS_159 = __VLS_158({
-    modelValue: (__VLS_ctx.form.frameConfig),
-    placeholder: "例如：铝合金车架、碳钢车架",
+    modelValue: (__VLS_ctx.form.tagsText),
+    placeholder: "例如：续航,通勤,分期",
 }, ...__VLS_functionalComponentArgsRest(__VLS_158));
 var __VLS_156;
 const __VLS_161 = {}.AFormItem;
 /** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_162 = __VLS_asFunctionalComponent(__VLS_161, new __VLS_161({
-    label: "电池配置（下单可选）",
+    label: "车架配置",
+    field: "frameConfig",
 }));
 const __VLS_163 = __VLS_162({
-    label: "电池配置（下单可选）",
+    label: "车架配置",
+    field: "frameConfig",
 }, ...__VLS_functionalComponentArgsRest(__VLS_162));
 __VLS_164.slots.default;
+const __VLS_165 = {}.AInput;
+/** @type {[typeof __VLS_components.AInput, typeof __VLS_components.aInput, ]} */ ;
+// @ts-ignore
+const __VLS_166 = __VLS_asFunctionalComponent(__VLS_165, new __VLS_165({
+    modelValue: (__VLS_ctx.form.frameConfig),
+    placeholder: "例如：铝合金车架、碳钢车架",
+}));
+const __VLS_167 = __VLS_166({
+    modelValue: (__VLS_ctx.form.frameConfig),
+    placeholder: "例如：铝合金车架、碳钢车架",
+}, ...__VLS_functionalComponentArgsRest(__VLS_166));
+var __VLS_164;
+const __VLS_169 = {}.AFormItem;
+/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
+// @ts-ignore
+const __VLS_170 = __VLS_asFunctionalComponent(__VLS_169, new __VLS_169({
+    label: "电池配置（下单可选）",
+}));
+const __VLS_171 = __VLS_170({
+    label: "电池配置（下单可选）",
+}, ...__VLS_functionalComponentArgsRest(__VLS_170));
+__VLS_172.slots.default;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "battery-config-section" },
 });
@@ -852,115 +887,115 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.d
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "option-header" },
 });
-const __VLS_165 = {}.ATag;
+const __VLS_173 = {}.ATag;
 /** @type {[typeof __VLS_components.ATag, typeof __VLS_components.aTag, typeof __VLS_components.ATag, typeof __VLS_components.aTag, ]} */ ;
 // @ts-ignore
-const __VLS_166 = __VLS_asFunctionalComponent(__VLS_165, new __VLS_165({
-    color: "blue",
-}));
-const __VLS_167 = __VLS_166({
-    color: "blue",
-}, ...__VLS_functionalComponentArgsRest(__VLS_166));
-__VLS_168.slots.default;
-var __VLS_168;
-const __VLS_169 = {}.AFormItem;
-/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
-// @ts-ignore
-const __VLS_170 = __VLS_asFunctionalComponent(__VLS_169, new __VLS_169({
-    label: "空车租金/期（元）",
-    ...{ style: {} },
-}));
-const __VLS_171 = __VLS_170({
-    label: "空车租金/期（元）",
-    ...{ style: {} },
-}, ...__VLS_functionalComponentArgsRest(__VLS_170));
-__VLS_172.slots.default;
-const __VLS_173 = {}.AInputNumber;
-/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
-// @ts-ignore
 const __VLS_174 = __VLS_asFunctionalComponent(__VLS_173, new __VLS_173({
-    modelValue: (__VLS_ctx.form.rentWithoutBattery),
-    min: (0),
-    placeholder: "必填",
-    ...{ style: {} },
+    color: "blue",
 }));
 const __VLS_175 = __VLS_174({
+    color: "blue",
+}, ...__VLS_functionalComponentArgsRest(__VLS_174));
+__VLS_176.slots.default;
+var __VLS_176;
+const __VLS_177 = {}.AFormItem;
+/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
+// @ts-ignore
+const __VLS_178 = __VLS_asFunctionalComponent(__VLS_177, new __VLS_177({
+    label: "空车租金/期（元）",
+    ...{ style: {} },
+}));
+const __VLS_179 = __VLS_178({
+    label: "空车租金/期（元）",
+    ...{ style: {} },
+}, ...__VLS_functionalComponentArgsRest(__VLS_178));
+__VLS_180.slots.default;
+const __VLS_181 = {}.AInputNumber;
+/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
+// @ts-ignore
+const __VLS_182 = __VLS_asFunctionalComponent(__VLS_181, new __VLS_181({
     modelValue: (__VLS_ctx.form.rentWithoutBattery),
     min: (0),
     placeholder: "必填",
     ...{ style: {} },
-}, ...__VLS_functionalComponentArgsRest(__VLS_174));
-var __VLS_172;
+}));
+const __VLS_183 = __VLS_182({
+    modelValue: (__VLS_ctx.form.rentWithoutBattery),
+    min: (0),
+    placeholder: "必填",
+    ...{ style: {} },
+}, ...__VLS_functionalComponentArgsRest(__VLS_182));
+var __VLS_180;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "battery-option" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "option-header" },
 });
-const __VLS_177 = {}.ATag;
+const __VLS_185 = {}.ATag;
 /** @type {[typeof __VLS_components.ATag, typeof __VLS_components.aTag, typeof __VLS_components.ATag, typeof __VLS_components.aTag, ]} */ ;
 // @ts-ignore
-const __VLS_178 = __VLS_asFunctionalComponent(__VLS_177, new __VLS_177({
-    color: "green",
-}));
-const __VLS_179 = __VLS_178({
-    color: "green",
-}, ...__VLS_functionalComponentArgsRest(__VLS_178));
-__VLS_180.slots.default;
-var __VLS_180;
-const __VLS_181 = {}.AFormItem;
-/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
-// @ts-ignore
-const __VLS_182 = __VLS_asFunctionalComponent(__VLS_181, new __VLS_181({
-    label: "电池型号/规格",
-    ...{ style: {} },
-}));
-const __VLS_183 = __VLS_182({
-    label: "电池型号/规格",
-    ...{ style: {} },
-}, ...__VLS_functionalComponentArgsRest(__VLS_182));
-__VLS_184.slots.default;
-const __VLS_185 = {}.AInput;
-/** @type {[typeof __VLS_components.AInput, typeof __VLS_components.aInput, ]} */ ;
-// @ts-ignore
 const __VLS_186 = __VLS_asFunctionalComponent(__VLS_185, new __VLS_185({
-    modelValue: (__VLS_ctx.form.batteryConfig),
-    placeholder: "例如：48V20Ah锂电池",
+    color: "green",
 }));
 const __VLS_187 = __VLS_186({
-    modelValue: (__VLS_ctx.form.batteryConfig),
-    placeholder: "例如：48V20Ah锂电池",
+    color: "green",
 }, ...__VLS_functionalComponentArgsRest(__VLS_186));
-var __VLS_184;
+__VLS_188.slots.default;
+var __VLS_188;
 const __VLS_189 = {}.AFormItem;
 /** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_190 = __VLS_asFunctionalComponent(__VLS_189, new __VLS_189({
-    label: "含电池租金/期（元）",
+    label: "电池型号/规格",
     ...{ style: {} },
 }));
 const __VLS_191 = __VLS_190({
-    label: "含电池租金/期（元）",
+    label: "电池型号/规格",
     ...{ style: {} },
 }, ...__VLS_functionalComponentArgsRest(__VLS_190));
 __VLS_192.slots.default;
-const __VLS_193 = {}.AInputNumber;
-/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
+const __VLS_193 = {}.AInput;
+/** @type {[typeof __VLS_components.AInput, typeof __VLS_components.aInput, ]} */ ;
 // @ts-ignore
 const __VLS_194 = __VLS_asFunctionalComponent(__VLS_193, new __VLS_193({
+    modelValue: (__VLS_ctx.form.batteryConfig),
+    placeholder: "例如：48V20Ah锂电池",
+}));
+const __VLS_195 = __VLS_194({
+    modelValue: (__VLS_ctx.form.batteryConfig),
+    placeholder: "例如：48V20Ah锂电池",
+}, ...__VLS_functionalComponentArgsRest(__VLS_194));
+var __VLS_192;
+const __VLS_197 = {}.AFormItem;
+/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
+// @ts-ignore
+const __VLS_198 = __VLS_asFunctionalComponent(__VLS_197, new __VLS_197({
+    label: "含电池租金/期（元）",
+    ...{ style: {} },
+}));
+const __VLS_199 = __VLS_198({
+    label: "含电池租金/期（元）",
+    ...{ style: {} },
+}, ...__VLS_functionalComponentArgsRest(__VLS_198));
+__VLS_200.slots.default;
+const __VLS_201 = {}.AInputNumber;
+/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
+// @ts-ignore
+const __VLS_202 = __VLS_asFunctionalComponent(__VLS_201, new __VLS_201({
     modelValue: (__VLS_ctx.form.rentWithBattery),
     min: (0),
     placeholder: "不填则不提供此选项",
     ...{ style: {} },
 }));
-const __VLS_195 = __VLS_194({
+const __VLS_203 = __VLS_202({
     modelValue: (__VLS_ctx.form.rentWithBattery),
     min: (0),
     placeholder: "不填则不提供此选项",
     ...{ style: {} },
-}, ...__VLS_functionalComponentArgsRest(__VLS_194));
-var __VLS_192;
-var __VLS_164;
+}, ...__VLS_functionalComponentArgsRest(__VLS_202));
+var __VLS_200;
+var __VLS_172;
 var __VLS_32;
 var __VLS_24;
 /** @type {__VLS_StyleScopedClasses['panel']} */ ;

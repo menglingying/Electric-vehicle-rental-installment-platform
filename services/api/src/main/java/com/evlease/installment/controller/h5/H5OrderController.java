@@ -81,7 +81,10 @@ public class H5OrderController {
     order.setId("o_" + UUID.randomUUID().toString().replace("-", ""));
     order.setPhone(phone);
     order.setProductId(product.getId());
-    order.setProductName(product.getName());
+    String displayName = product.getBrand() != null && !product.getBrand().isBlank()
+        ? product.getBrand() + " " + product.getName()
+        : product.getName();
+    order.setProductName(displayName);
     order.setPeriods(req.periods());
     order.setCycleDays(req.cycleDays());
     order.setDepositRatio(req.depositRatio());

@@ -25,7 +25,7 @@ const filteredProducts = computed(() => {
     const text = keyword.value.trim();
     if (!text)
         return list;
-    return list.filter((p) => p.name.toLowerCase().includes(text.toLowerCase()));
+    return list.filter((p) => p.name.toLowerCase().includes(text.toLowerCase()) || (p.brand || '').toLowerCase().includes(text.toLowerCase()));
 });
 function initSelection() {
     if (!brandCategories.value.length)
@@ -305,7 +305,7 @@ else {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "product-name" },
         });
-        (p.name);
+        (p.brand ? p.brand + ' ' + p.name : p.name);
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "product-price" },
         });

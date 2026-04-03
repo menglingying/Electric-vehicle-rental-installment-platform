@@ -191,7 +191,7 @@ if (__VLS_ctx.product) {
         ...{ class: "section-title" },
         ...{ style: {} },
     });
-    (__VLS_ctx.product.name);
+    (__VLS_ctx.product.brand ? __VLS_ctx.product.brand + ' ' + __VLS_ctx.product.name : __VLS_ctx.product.name);
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "price-line" },
     });

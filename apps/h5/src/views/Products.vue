@@ -58,7 +58,7 @@
               <div class="product-image">
                 <van-image :src="p.coverUrl" width="100%" height="120" fit="cover" />
               </div>
-              <div class="product-name">{{ p.name }}</div>
+              <div class="product-name">{{ p.brand ? p.brand + ' ' + p.name : p.name }}</div>
               <div class="product-price">
                 ¥{{ displayPrice(p) }}<span>/期起</span>
               </div>
@@ -107,7 +107,7 @@ const filteredProducts = computed(() => {
   const list = products.value;
   const text = keyword.value.trim();
   if (!text) return list;
-  return list.filter((p) => p.name.toLowerCase().includes(text.toLowerCase()));
+  return list.filter((p) => p.name.toLowerCase().includes(text.toLowerCase()) || (p.brand || '').toLowerCase().includes(text.toLowerCase()));
 });
 
 function initSelection() {

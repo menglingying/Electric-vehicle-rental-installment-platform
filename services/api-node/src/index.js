@@ -25,6 +25,7 @@ const products = new Map([
     {
       id: 'p1',
       name: '城市通勤电动车（标准版）',
+      brand: '九号电动车',
       coverUrl: '',
       rentPerCycle: 299,
       tags: ['续航', '通勤', '分期'],
@@ -37,6 +38,7 @@ const products = new Map([
     {
       id: 'p2',
       name: '外卖骑手电动车（高配）',
+      brand: '九号电动车',
       coverUrl: '',
       rentPerCycle: 399,
       tags: ['高续航', '高载重', '分期'],
@@ -205,7 +207,7 @@ app.post('/api/h5/orders', (req, res) => {
     id,
     phone: p.phoneOrUsername,
     productId,
-    productName: product.name,
+    productName: product.brand ? product.brand + ' ' + product.name : product.name,
     periods: Number(periods || 12),
     cycleDays: Number(cycleDays || 30),
     depositRatio: Number(depositRatio || 0),
@@ -391,7 +393,7 @@ app.get('/api/admin/products', (req, res) => {
 app.post('/api/admin/products', (req, res) => {
   const p = requireAuth(req, 'ADMIN');
   if (!p) return res.status(401).json({ message: '未登录' });
-  const { id, name, rentPerCycle, tags, coverUrl, frameConfig, batteryConfig } = req.body || {};
+  const { id, name, brand, rentPerCycle, tags, coverUrl, frameConfig, batteryConfig } = req.body || {};
   if (!name) return res.status(400).json({ message: 'name 不能为空' });
   const rent = Number(rentPerCycle);
   if (!Number.isFinite(rent) || rent <= 0) return res.status(400).json({ message: 'rentPerCycle 必须大于0' });
@@ -400,6 +402,7 @@ app.post('/api/admin/products', (req, res) => {
   const product = {
     id: productId,
     name,
+    brand: brand || '',
     rentPerCycle: rent,
     tags: Array.isArray(tags) ? tags : String(tags || '')
       .split(',')

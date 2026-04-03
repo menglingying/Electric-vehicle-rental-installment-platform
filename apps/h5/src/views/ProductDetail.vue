@@ -10,7 +10,7 @@
           </van-swipe-item>
         </van-swipe>
       </div>
-      <div class="section-title" style="margin-top: 8px">{{ product.name }}</div>
+      <div class="section-title" style="margin-top: 8px">{{ product.brand ? product.brand + ' ' + product.name : product.name }}</div>
       <div class="price-line">¥{{ currentRent }}<span>/期</span></div>
       <div v-if="product.frameConfig" class="detail-line">车架：{{ product.frameConfig }}</div>
     </div>

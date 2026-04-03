@@ -1,13 +1,14 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { showFailToast, showSuccessToast } from 'vant';
-import { getOrder, startAsignAuth, startPayment, getNotarySignUrl } from '@/services/api';
+import { getOrder, startAsignAuth, startPayment, getNotarySignUrl, syncContractStatus } from '@/services/api';
 const route = useRoute();
 const router = useRouter();
 const order = ref(null);
 const paymentLoading = ref(false);
 const asignLoading = ref(false);
 const notarySignLoading = ref(false);
+const contractSyncLoading = ref(false);
 const loading = ref(false);
 const paymentAllowedStatuses = new Set(['ACTIVE', 'DELIVERED', 'IN_USE', 'RETURNED']);
 const shouldShowKycPrompt = computed(() => !!order.value && !order.value.kycCompleted && order.value.status === 'PENDING_REVIEW');
@@ -200,6 +201,27 @@ async function onStartPayment() {
         paymentLoading.value = false;
     }
 }
+async function onSyncContract() {
+    if (!order.value)
+        return;
+    contractSyncLoading.value = true;
+    try {
+        const result = await syncContractStatus(order.value.id);
+        if (result.synced) {
+            showSuccessToast('合同状态已更新');
+            await load({ bypassCache: true });
+        }
+        else {
+            showFailToast(result.reason ?? '合同暂无更新');
+        }
+    }
+    catch (e) {
+        showFailToast(e?.response?.data?.message ?? '同步失败');
+    }
+    finally {
+        contractSyncLoading.value = false;
+    }
+}
 async function onStartAsignAuth() {
     if (!order.value)
         return;
@@ -234,13 +256,25 @@ async function load(options) {
         loading.value = false;
     }
 }
-function refreshIfVisible() {
-    if (document.visibilityState === 'visible') {
-        void load({ bypassCache: true });
+async function autoSyncContractIfNeeded() {
+    if (order.value?.contract?.status === 'SIGNING' && order.value.contract.contractNo) {
+        try {
+            const result = await syncContractStatus(order.value.id);
+            if (result.synced) {
+                await load({ bypassCache: true });
+            }
+        }
+        catch { /* ignore */ }
     }
 }
-onMounted(() => {
-    void load({ bypassCache: true });
+function refreshIfVisible() {
+    if (document.visibilityState === 'visible') {
+        void load({ bypassCache: true }).then(() => autoSyncContractIfNeeded());
+    }
+}
+onMounted(async () => {
+    await load({ bypassCache: true });
+    void autoSyncContractIfNeeded();
     document.addEventListener('visibilitychange', refreshIfVisible);
     window.addEventListener('focus', refreshIfVisible);
 });
@@ -317,6 +351,39 @@ if (__VLS_ctx.order) {
         ...{ class: "detail-line" },
     });
     (__VLS_ctx.order.createdAt);
+    if (__VLS_ctx.order.status === 'PENDING_REVIEW') {
+        const __VLS_8 = {}.VanButton;
+        /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
+        // @ts-ignore
+        const __VLS_9 = __VLS_asFunctionalComponent(__VLS_8, new __VLS_8({
+            ...{ 'onClick': {} },
+            type: "warning",
+            size: "small",
+            plain: true,
+            ...{ style: {} },
+        }));
+        const __VLS_10 = __VLS_9({
+            ...{ 'onClick': {} },
+            type: "warning",
+            size: "small",
+            plain: true,
+            ...{ style: {} },
+        }, ...__VLS_functionalComponentArgsRest(__VLS_9));
+        let __VLS_12;
+        let __VLS_13;
+        let __VLS_14;
+        const __VLS_15 = {
+            onClick: (...[$event]) => {
+                if (!(__VLS_ctx.order))
+                    return;
+                if (!(__VLS_ctx.order.status === 'PENDING_REVIEW'))
+                    return;
+                __VLS_ctx.router.push(`/orders/${__VLS_ctx.order.id}/edit`);
+            }
+        };
+        __VLS_11.slots.default;
+        var __VLS_11;
+    }
     if (__VLS_ctx.order.approvedAt) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "detail-line" },
@@ -358,29 +425,29 @@ if (__VLS_ctx.shouldShowKycPrompt) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "detail-line" },
     });
-    const __VLS_8 = {}.VanButton;
+    const __VLS_16 = {}.VanButton;
     /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
     // @ts-ignore
-    const __VLS_9 = __VLS_asFunctionalComponent(__VLS_8, new __VLS_8({
+    const __VLS_17 = __VLS_asFunctionalComponent(__VLS_16, new __VLS_16({
         ...{ 'onClick': {} },
         type: "primary",
         size: "small",
         ...{ style: {} },
     }));
-    const __VLS_10 = __VLS_9({
+    const __VLS_18 = __VLS_17({
         ...{ 'onClick': {} },
         type: "primary",
         size: "small",
         ...{ style: {} },
-    }, ...__VLS_functionalComponentArgsRest(__VLS_9));
-    let __VLS_12;
-    let __VLS_13;
-    let __VLS_14;
-    const __VLS_15 = {
+    }, ...__VLS_functionalComponentArgsRest(__VLS_17));
+    let __VLS_20;
+    let __VLS_21;
+    let __VLS_22;
+    const __VLS_23 = {
         onClick: (__VLS_ctx.goToKyc)
     };
-    __VLS_11.slots.default;
-    var __VLS_11;
+    __VLS_19.slots.default;
+    var __VLS_19;
 }
 else if (__VLS_ctx.shouldShowKycBlocked) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -423,29 +490,29 @@ if (__VLS_ctx.order && __VLS_ctx.order.kycCompleted) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ style: {} },
         });
-        const __VLS_16 = {}.VanButton;
+        const __VLS_24 = {}.VanButton;
         /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
         // @ts-ignore
-        const __VLS_17 = __VLS_asFunctionalComponent(__VLS_16, new __VLS_16({
+        const __VLS_25 = __VLS_asFunctionalComponent(__VLS_24, new __VLS_24({
             ...{ 'onClick': {} },
             type: "primary",
             block: true,
             loading: (__VLS_ctx.asignLoading),
         }));
-        const __VLS_18 = __VLS_17({
+        const __VLS_26 = __VLS_25({
             ...{ 'onClick': {} },
             type: "primary",
             block: true,
             loading: (__VLS_ctx.asignLoading),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_17));
-        let __VLS_20;
-        let __VLS_21;
-        let __VLS_22;
-        const __VLS_23 = {
+        }, ...__VLS_functionalComponentArgsRest(__VLS_25));
+        let __VLS_28;
+        let __VLS_29;
+        let __VLS_30;
+        const __VLS_31 = {
             onClick: (__VLS_ctx.onStartAsignAuth)
         };
-        __VLS_19.slots.default;
-        var __VLS_19;
+        __VLS_27.slots.default;
+        var __VLS_27;
     }
 }
 if (__VLS_ctx.order) {
@@ -459,62 +526,97 @@ if (__VLS_ctx.order) {
         ...{ class: "detail-line" },
     });
     (__VLS_ctx.contractStatusText(__VLS_ctx.order.contract?.status, __VLS_ctx.order.contract?.contractType));
+    if (__VLS_ctx.order.contract?.contractNo) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "detail-line" },
+        });
+        (__VLS_ctx.order.contract.contractNo);
+    }
+    if (__VLS_ctx.order.contract?.signedAt) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "detail-line" },
+        });
+        (__VLS_ctx.order.contract.signedAt);
+    }
     if (__VLS_ctx.contractHint) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "detail-line" },
         });
         (__VLS_ctx.contractHint);
     }
-    if (__VLS_ctx.canSignContract || __VLS_ctx.contractFileUrl) {
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-            ...{ style: {} },
-        });
-        if (__VLS_ctx.canSignContract) {
-            const __VLS_24 = {}.VanButton;
-            /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
-            // @ts-ignore
-            const __VLS_25 = __VLS_asFunctionalComponent(__VLS_24, new __VLS_24({
-                ...{ 'onClick': {} },
-                type: "primary",
-                block: true,
-            }));
-            const __VLS_26 = __VLS_25({
-                ...{ 'onClick': {} },
-                type: "primary",
-                block: true,
-            }, ...__VLS_functionalComponentArgsRest(__VLS_25));
-            let __VLS_28;
-            let __VLS_29;
-            let __VLS_30;
-            const __VLS_31 = {
-                onClick: (__VLS_ctx.onOpenSignUrl)
-            };
-            __VLS_27.slots.default;
-            var __VLS_27;
-        }
-        if (__VLS_ctx.contractFileUrl) {
-            const __VLS_32 = {}.VanButton;
-            /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
-            // @ts-ignore
-            const __VLS_33 = __VLS_asFunctionalComponent(__VLS_32, new __VLS_32({
-                ...{ 'onClick': {} },
-                type: "default",
-                block: true,
-            }));
-            const __VLS_34 = __VLS_33({
-                ...{ 'onClick': {} },
-                type: "default",
-                block: true,
-            }, ...__VLS_functionalComponentArgsRest(__VLS_33));
-            let __VLS_36;
-            let __VLS_37;
-            let __VLS_38;
-            const __VLS_39 = {
-                onClick: (__VLS_ctx.onOpenContractFile)
-            };
-            __VLS_35.slots.default;
-            var __VLS_35;
-        }
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+        ...{ style: {} },
+    });
+    if (__VLS_ctx.canSignContract) {
+        const __VLS_32 = {}.VanButton;
+        /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
+        // @ts-ignore
+        const __VLS_33 = __VLS_asFunctionalComponent(__VLS_32, new __VLS_32({
+            ...{ 'onClick': {} },
+            type: "primary",
+            block: true,
+        }));
+        const __VLS_34 = __VLS_33({
+            ...{ 'onClick': {} },
+            type: "primary",
+            block: true,
+        }, ...__VLS_functionalComponentArgsRest(__VLS_33));
+        let __VLS_36;
+        let __VLS_37;
+        let __VLS_38;
+        const __VLS_39 = {
+            onClick: (__VLS_ctx.onOpenSignUrl)
+        };
+        __VLS_35.slots.default;
+        var __VLS_35;
+    }
+    if (__VLS_ctx.contractFileUrl) {
+        const __VLS_40 = {}.VanButton;
+        /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
+        // @ts-ignore
+        const __VLS_41 = __VLS_asFunctionalComponent(__VLS_40, new __VLS_40({
+            ...{ 'onClick': {} },
+            type: "primary",
+            block: true,
+        }));
+        const __VLS_42 = __VLS_41({
+            ...{ 'onClick': {} },
+            type: "primary",
+            block: true,
+        }, ...__VLS_functionalComponentArgsRest(__VLS_41));
+        let __VLS_44;
+        let __VLS_45;
+        let __VLS_46;
+        const __VLS_47 = {
+            onClick: (__VLS_ctx.onOpenContractFile)
+        };
+        __VLS_43.slots.default;
+        var __VLS_43;
+    }
+    if (__VLS_ctx.order.contract?.status === 'SIGNING') {
+        const __VLS_48 = {}.VanButton;
+        /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
+        // @ts-ignore
+        const __VLS_49 = __VLS_asFunctionalComponent(__VLS_48, new __VLS_48({
+            ...{ 'onClick': {} },
+            type: "default",
+            size: "small",
+            loading: (__VLS_ctx.contractSyncLoading),
+        }));
+        const __VLS_50 = __VLS_49({
+            ...{ 'onClick': {} },
+            type: "default",
+            size: "small",
+            loading: (__VLS_ctx.contractSyncLoading),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_49));
+        let __VLS_52;
+        let __VLS_53;
+        let __VLS_54;
+        const __VLS_55 = {
+            onClick: (__VLS_ctx.onSyncContract)
+        };
+        __VLS_51.slots.default;
+        var __VLS_51;
     }
 }
 if (__VLS_ctx.order) {
@@ -550,29 +652,29 @@ if (__VLS_ctx.order) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ style: {} },
         });
-        const __VLS_40 = {}.VanButton;
+        const __VLS_56 = {}.VanButton;
         /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
         // @ts-ignore
-        const __VLS_41 = __VLS_asFunctionalComponent(__VLS_40, new __VLS_40({
+        const __VLS_57 = __VLS_asFunctionalComponent(__VLS_56, new __VLS_56({
             ...{ 'onClick': {} },
             type: "primary",
             block: true,
             loading: (__VLS_ctx.notarySignLoading),
         }));
-        const __VLS_42 = __VLS_41({
+        const __VLS_58 = __VLS_57({
             ...{ 'onClick': {} },
             type: "primary",
             block: true,
             loading: (__VLS_ctx.notarySignLoading),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_41));
-        let __VLS_44;
-        let __VLS_45;
-        let __VLS_46;
-        const __VLS_47 = {
+        }, ...__VLS_functionalComponentArgsRest(__VLS_57));
+        let __VLS_60;
+        let __VLS_61;
+        let __VLS_62;
+        const __VLS_63 = {
             onClick: (__VLS_ctx.onSignNotary)
         };
-        __VLS_43.slots.default;
-        var __VLS_43;
+        __VLS_59.slots.default;
+        var __VLS_59;
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "detail-line" },
             ...{ style: {} },
@@ -582,27 +684,27 @@ if (__VLS_ctx.order) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ style: {} },
         });
-        const __VLS_48 = {}.VanButton;
+        const __VLS_64 = {}.VanButton;
         /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
         // @ts-ignore
-        const __VLS_49 = __VLS_asFunctionalComponent(__VLS_48, new __VLS_48({
+        const __VLS_65 = __VLS_asFunctionalComponent(__VLS_64, new __VLS_64({
             ...{ 'onClick': {} },
             type: "default",
             block: true,
         }));
-        const __VLS_50 = __VLS_49({
+        const __VLS_66 = __VLS_65({
             ...{ 'onClick': {} },
             type: "default",
             block: true,
-        }, ...__VLS_functionalComponentArgsRest(__VLS_49));
-        let __VLS_52;
-        let __VLS_53;
-        let __VLS_54;
-        const __VLS_55 = {
+        }, ...__VLS_functionalComponentArgsRest(__VLS_65));
+        let __VLS_68;
+        let __VLS_69;
+        let __VLS_70;
+        const __VLS_71 = {
             onClick: (__VLS_ctx.onOpenNotaryCert)
         };
-        __VLS_51.slots.default;
-        var __VLS_51;
+        __VLS_67.slots.default;
+        var __VLS_67;
     }
 }
 if (__VLS_ctx.order) {
@@ -619,29 +721,29 @@ if (__VLS_ctx.order) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ style: {} },
         });
-        const __VLS_56 = {}.VanButton;
+        const __VLS_72 = {}.VanButton;
         /** @type {[typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, typeof __VLS_components.VanButton, typeof __VLS_components.vanButton, ]} */ ;
         // @ts-ignore
-        const __VLS_57 = __VLS_asFunctionalComponent(__VLS_56, new __VLS_56({
+        const __VLS_73 = __VLS_asFunctionalComponent(__VLS_72, new __VLS_72({
             ...{ 'onClick': {} },
             type: "default",
             block: true,
             loading: (__VLS_ctx.paymentLoading),
         }));
-        const __VLS_58 = __VLS_57({
+        const __VLS_74 = __VLS_73({
             ...{ 'onClick': {} },
             type: "default",
             block: true,
             loading: (__VLS_ctx.paymentLoading),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_57));
-        let __VLS_60;
-        let __VLS_61;
-        let __VLS_62;
-        const __VLS_63 = {
+        }, ...__VLS_functionalComponentArgsRest(__VLS_73));
+        let __VLS_76;
+        let __VLS_77;
+        let __VLS_78;
+        const __VLS_79 = {
             onClick: (__VLS_ctx.onStartPayment)
         };
-        __VLS_59.slots.default;
-        var __VLS_59;
+        __VLS_75.slots.default;
+        var __VLS_75;
     }
     else {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -658,21 +760,21 @@ if (__VLS_ctx.order?.repaymentPlan) {
         ...{ class: "section-title" },
     });
     for (const [p, idx] of __VLS_getVForSourceType((__VLS_ctx.order.repaymentPlan))) {
-        const __VLS_64 = {}.VanCell;
+        const __VLS_80 = {}.VanCell;
         /** @type {[typeof __VLS_components.VanCell, typeof __VLS_components.vanCell, ]} */ ;
         // @ts-ignore
-        const __VLS_65 = __VLS_asFunctionalComponent(__VLS_64, new __VLS_64({
+        const __VLS_81 = __VLS_asFunctionalComponent(__VLS_80, new __VLS_80({
             key: (idx),
             title: (`第${p.period}期`),
             label: (`应还日：${p.dueDate} · ${p.paid ? '已还' : '未还'}`),
             value: (`¥${p.amount}`),
         }));
-        const __VLS_66 = __VLS_65({
+        const __VLS_82 = __VLS_81({
             key: (idx),
             title: (`第${p.period}期`),
             label: (`应还日：${p.dueDate} · ${p.paid ? '已还' : '未还'}`),
             value: (`¥${p.amount}`),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_65));
+        }, ...__VLS_functionalComponentArgsRest(__VLS_81));
     }
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "detail-line" },
@@ -686,21 +788,21 @@ if (__VLS_ctx.order?.repaymentRecords?.length) {
         ...{ class: "section-title" },
     });
     for (const [r, idx] of __VLS_getVForSourceType((__VLS_ctx.order.repaymentRecords))) {
-        const __VLS_68 = {}.VanCell;
+        const __VLS_84 = {}.VanCell;
         /** @type {[typeof __VLS_components.VanCell, typeof __VLS_components.vanCell, ]} */ ;
         // @ts-ignore
-        const __VLS_69 = __VLS_asFunctionalComponent(__VLS_68, new __VLS_68({
+        const __VLS_85 = __VLS_asFunctionalComponent(__VLS_84, new __VLS_84({
             key: (idx),
             title: (`第${r.period}期`),
             label: (`时间：${r.paidAt}`),
             value: (`¥${r.amount}`),
         }));
-        const __VLS_70 = __VLS_69({
+        const __VLS_86 = __VLS_85({
             key: (idx),
             title: (`第${r.period}期`),
             label: (`时间：${r.paidAt}`),
             value: (`¥${r.amount}`),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_69));
+        }, ...__VLS_functionalComponentArgsRest(__VLS_85));
     }
 }
 /** @type {__VLS_StyleScopedClasses['page']} */ ;
@@ -732,6 +834,8 @@ if (__VLS_ctx.order?.repaymentRecords?.length) {
 /** @type {__VLS_StyleScopedClasses['section-title']} */ ;
 /** @type {__VLS_StyleScopedClasses['detail-line']} */ ;
 /** @type {__VLS_StyleScopedClasses['detail-line']} */ ;
+/** @type {__VLS_StyleScopedClasses['detail-line']} */ ;
+/** @type {__VLS_StyleScopedClasses['detail-line']} */ ;
 /** @type {__VLS_StyleScopedClasses['h5-card']} */ ;
 /** @type {__VLS_StyleScopedClasses['section-title']} */ ;
 /** @type {__VLS_StyleScopedClasses['detail-line']} */ ;
@@ -757,6 +861,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             paymentLoading: paymentLoading,
             asignLoading: asignLoading,
             notarySignLoading: notarySignLoading,
+            contractSyncLoading: contractSyncLoading,
             shouldShowKycPrompt: shouldShowKycPrompt,
             shouldShowKycBlocked: shouldShowKycBlocked,
             kycBlockedReason: kycBlockedReason,
@@ -777,6 +882,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             onOpenNotaryCert: onOpenNotaryCert,
             onSignNotary: onSignNotary,
             onStartPayment: onStartPayment,
+            onSyncContract: onSyncContract,
             onStartAsignAuth: onStartAsignAuth,
         };
     },

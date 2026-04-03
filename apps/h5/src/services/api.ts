@@ -3,6 +3,7 @@ import { http } from './http';
 export type Product = {
   id: string;
   name: string;
+  brand?: string;
   coverUrl: string;
   images?: string[];
   rentPerCycle: number;

@@ -17,6 +17,7 @@ public class Product {
   @Id
   private String id;
   private String name;
+  private String brand;
   private String coverUrl;
   private int rentPerCycle;
   private String categoryId;
@@ -81,6 +82,14 @@ public class Product {
 
   public void setName(String name) {
     this.name = name;
+  }
+
+  public String getBrand() {
+    return brand;
+  }
+
+  public void setBrand(String brand) {
+    this.brand = brand;
   }
 
   public String getCoverUrl() {
