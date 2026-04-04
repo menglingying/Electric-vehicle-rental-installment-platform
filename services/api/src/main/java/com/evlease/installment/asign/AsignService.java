@@ -842,14 +842,30 @@ public class AsignService {
     try {
       var productOpt = productRepository.findById(order.getProductId());
       if (productOpt.isEmpty()) return productName;
-      String categoryId = productOpt.get().getCategoryId();
-      if (categoryId == null || categoryId.isBlank()) return productName;
-      var categoryOpt = categoryRepository.findById(categoryId);
-      if (categoryOpt.isEmpty()) return productName;
-      String brandName = categoryOpt.get().getName();
-      if (brandName == null || brandName.isBlank()) return productName;
-      if (productName.startsWith(brandName)) return productName;
-      return brandName + productName;
+      var product = productOpt.get();
+      String spec = productName;
+      String categoryId = product.getCategoryId();
+      if (categoryId != null && !categoryId.isBlank()) {
+        var categoryOpt = categoryRepository.findById(categoryId);
+        if (categoryOpt.isPresent()) {
+          String brandName = categoryOpt.get().getName();
+          if (brandName != null && !brandName.isBlank() && !productName.startsWith(brandName)) {
+            spec = brandName + productName;
+          }
+        }
+      }
+      String batteryOption = order.getBatteryOption();
+      if ("WITH_BATTERY".equals(batteryOption)) {
+        String batteryConfig = product.getBatteryConfig();
+        if (batteryConfig != null && !batteryConfig.isBlank()) {
+          spec += "（含电池：" + batteryConfig + "）";
+        } else {
+          spec += "（含电池）";
+        }
+      } else if ("WITHOUT_BATTERY".equals(batteryOption)) {
+        spec += "（空车）";
+      }
+      return spec;
     } catch (Exception e) {
       return productName;
     }
