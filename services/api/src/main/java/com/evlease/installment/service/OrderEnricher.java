@@ -57,7 +57,7 @@ public class OrderEnricher {
     if (rawPlan != null) {
       for (var p : rawPlan) {
         var item = new RepaymentPlanItem(p.getPeriod(), p.getDueDate(), p.getAmount());
-        boolean paid = p.getAmount() <= 0 || paidPeriods.getOrDefault(p.getPeriod(), false);
+        boolean paid = paidPeriods.getOrDefault(p.getPeriod(), false);
         item.setPaid(paid);
         plan.add(item);
         if (!paid) remainingAmount += p.getAmount();

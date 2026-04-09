@@ -8,10 +8,28 @@
 - Type check: `vue-tsc -b` (run in apps/h5 or apps/admin)
 
 ## Deploy
-- 部署命令: `python deploy\aliyun\deploy.py --ssh-key-file "deploy\aliyun\evlease_deploy_key"`
+- 部署命令: `python deploy\aliyun\deploy.py --skip-build --ssh-password "Alymima1!"`
+- 备用（SSH密钥）: `python deploy\aliyun\deploy.py --skip-build --ssh-key-file "deploy\aliyun\evlease_deploy_key"`
 - SSH密钥位置: `deploy/aliyun/evlease_deploy_key`
 - 服务器: 47.120.27.110 (H5:8088, Admin:8089)
 - 运维脚本: `scripts/deploy-tools/` (check_api.py, verify_deploy.py等)
+- 检查服务器状态: `python deploy\aliyun\deploy.py --check-only --ssh-password "Alymima1!"`
+
+### 部署注意事项（2026-04-09 记录）
+- **本地无 Java 环境**：本地只能打包前端（H5/Admin），后端 JAR 需在服务器上 Maven 构建
+- **推荐部署流程**：
+  1. 前端：本地 `npm run build:h5` + `npm run build:admin` 生成 dist
+  2. 后端：通过 `_deploy_fix.py` 上传 Java 源码到服务器，在服务器执行 `mvn package`
+  3. 部署：`--skip-build` 参数跳过本地构建，直接打包 dist + 上传 + 重启容器
+- **服务器资源紧张**：仅 1.6GB 内存，Maven 构建时 CPU/内存接近满载
+  - 构建期间 SSH 连接可能超时断开
+  - 不要同时在服务器上构建前端和后端
+  - 构建完成后等待 1-2 分钟再尝试 SSH 连接
+- **SSH 连接问题排查**：
+  1. 连接未释放：脚本异常退出时 SSH 连接可能未正确关闭
+  2. 服务器构建占满资源：Maven/npm build 会耗尽 1.6GB 内存，导致新 SSH 连接无法建立
+  3. 前端打包占用：npm build 也会消耗大量 CPU，建议在本地完成
+  4. 服务过多：4 个 Docker 容器 + 5000 端口其他服务，内存长期处于紧张状态
 
 ## Code Style
 - **TypeScript**: strict mode, ES2022, path alias `@/*` → `src/*`, no ESLint configured
@@ -32,6 +50,10 @@
 - `docs/` - 项目文档和进度
 
 ## 更新日志
+
+### 2026-04-09
+- 部署最新 bug 修复到生产服务器
+- 记录部署注意事项：本地无 Java 环境、服务器内存紧张导致 SSH 超时等问题
 
 ### 2026-03-11
 - **修复聚证回调解析 bug**：`JuzhengCallbackController` 字段从 `businessData` 子对象取，之前全为 null 导致公证状态不更新

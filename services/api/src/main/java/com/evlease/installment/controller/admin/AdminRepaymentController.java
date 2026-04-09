@@ -59,12 +59,13 @@ public class AdminRepaymentController {
   }
 
   @PostMapping("/orders/{id}/generate-plan")
-  public Map<String, Object> generatePlan(@PathVariable String id) {
+  public Map<String, Object> generatePlan(@PathVariable String id,
+      @RequestParam(defaultValue = "false") boolean force) {
     var order = orderRepository.findById(id)
       .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "订单不存在"));
 
-    if (order.getRepaymentPlan() != null && !order.getRepaymentPlan().isEmpty()) {
-      throw new ApiException(HttpStatus.BAD_REQUEST, "该订单已有还款计划，无需重复生成");
+    if (!force && order.getRepaymentPlan() != null && !order.getRepaymentPlan().isEmpty()) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "该订单已有还款计划，如需重算请传 force=true");
     }
 
     var product = productRepository.findById(order.getProductId()).orElse(null);

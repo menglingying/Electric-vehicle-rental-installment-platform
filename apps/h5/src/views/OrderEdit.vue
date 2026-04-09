@@ -130,14 +130,6 @@ const repaymentPlan = computed(() => {
     dueDate.setDate(dueDate.getDate() + cycleDays.value * i);
     plan.push({ period: i, dueDate: dueDate.toISOString().split('T')[0], amount: currentRent.value });
   }
-  if (depositRatioPercent.value > 0) {
-    let remaining = depositAmount.value;
-    for (let i = plan.length - 1; i >= 0 && remaining > 0; i--) {
-      const offset = Math.min(plan[i].amount, remaining);
-      plan[i].amount -= offset;
-      remaining -= offset;
-    }
-  }
   return plan;
 });
 

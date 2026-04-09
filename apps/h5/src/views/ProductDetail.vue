@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="page">
     <van-nav-bar title="商品详情" left-arrow @click-left="router.back()" />
 
@@ -147,15 +147,6 @@ const repaymentPlan = computed(() => {
       dueDate: dueDate.toISOString().split('T')[0],
       amount: currentRent.value
     });
-  }
-
-  if (depositRatioPercent.value > 0) {
-    let remaining = depositAmount.value;
-    for (let i = plan.length - 1; i >= 0 && remaining > 0; i--) {
-      const offset = Math.min(plan[i].amount, remaining);
-      plan[i].amount -= offset;
-      remaining -= offset;
-    }
   }
 
   return plan;
