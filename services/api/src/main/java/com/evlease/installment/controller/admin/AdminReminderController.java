@@ -52,16 +52,17 @@ public class AdminReminderController {
         var dueDate = p.getDueDate();
         boolean match = switch (kind) {
           case "due_today" -> dueDate.equals(today);
-          case "due_soon" -> dueDate.equals(soon);
-          default -> dueDate.equals(today) || dueDate.equals(soon);
+          case "due_soon" -> !dueDate.isBefore(today) && !dueDate.isAfter(soon) && !dueDate.equals(today);
+          default -> !dueDate.isBefore(today) && !dueDate.isAfter(soon);
         };
         if (!match) continue;
         items.add(
           Map.of(
-            "id", "rem_" + order.getId() + "_" + p.getPeriod(),
+            "id", "rem:" + order.getId() + ":" + p.getPeriod(),
             "orderId", order.getId(),
             "phone", order.getPhone(),
-            "productName", order.getProductName(),
+            "productName", order.getProductName() != null ? order.getProductName() : "",
+            "realName", order.getRealName() != null ? order.getRealName() : "",
             "period", p.getPeriod(),
             "dueDate", p.getDueDate(),
             "amount", amount
@@ -82,13 +83,14 @@ public class AdminReminderController {
     int failCount = 0;
 
     for (String id : req.ids()) {
-      // 解析 id: rem_{orderId}_{period}
-      String[] parts = id.split("_");
-      if (parts.length < 3) continue;
-      String orderId = parts[1];
+      // ID format: rem:{orderId}:{period}  (colon-separated to avoid conflict with orderId underscores)
+      int firstColon = id.indexOf(':');
+      int lastColon = id.lastIndexOf(':');
+      if (firstColon < 0 || firstColon == lastColon) continue;
+      String orderId = id.substring(firstColon + 1, lastColon);
       int period;
       try {
-        period = Integer.parseInt(parts[2]);
+        period = Integer.parseInt(id.substring(lastColon + 1));
       } catch (NumberFormatException e) {
         continue;
       }

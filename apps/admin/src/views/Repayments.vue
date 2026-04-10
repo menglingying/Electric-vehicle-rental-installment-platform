@@ -47,8 +47,18 @@
       <a-alert type="warning" style="margin-bottom: 8px">
         该订单暂无还款计划数据。可能是旧订单未自动生成计划，请点击下方按钮手动生成。
       </a-alert>
-      <a-button type="primary" :loading="generating" @click="handleGeneratePlan">
+      <a-button type="primary" :loading="generating" @click="handleGeneratePlan(false)">
         生成还款计划
+      </a-button>
+    </div>
+
+    <!-- 有还款计划但数据异常时，允许重新生成 -->
+    <div v-else-if="planRows.length > 0 && hasPlanIssue" style="margin-bottom: 12px">
+      <a-alert type="warning" style="margin-bottom: 8px">
+        还款计划数据异常（存在金额为0的期次或金额不均等），建议重新生成。重新生成后各期金额将均分。
+      </a-alert>
+      <a-button type="primary" :loading="generating" @click="handleGeneratePlan(true)">
+        重新生成还款计划
       </a-button>
     </div>
 
@@ -89,6 +99,14 @@ const paidCount = computed(() => planRows.value.filter(r => r.paid).length);
 const remainingAmount = computed(() =>
   planRows.value.filter(r => !r.paid && r.amount > 0).reduce((sum, r) => sum + r.amount, 0)
 );
+const hasPlanIssue = computed(() => {
+  const rows = planRows.value;
+  if (rows.length === 0) return false;
+  const hasZero = rows.some(r => r.amount <= 0);
+  const amounts = rows.map(r => r.amount).filter(a => a > 0);
+  const allEqual = amounts.length > 0 && amounts.every(a => a === amounts[0]);
+  return hasZero || (!allEqual && amounts.length > 1);
+});
 
 function statusText(status: string) {
   const map: Record<string, string> = {
@@ -206,11 +224,11 @@ async function markPaid(period: number) {
   }
 }
 
-async function handleGeneratePlan() {
+async function handleGeneratePlan(force: boolean = false) {
   if (!selectedOrderId.value) return;
   generating.value = true;
   try {
-    const { data: result } = await http.post(`/admin/orders/${selectedOrderId.value}/generate-plan`);
+    const { data: result } = await http.post(`/admin/orders/${selectedOrderId.value}/generate-plan?force=${force}`);
     Message.success(`还款计划已生成，共${result.periods}期`);
     await loadPlan();
   } catch (e: any) {

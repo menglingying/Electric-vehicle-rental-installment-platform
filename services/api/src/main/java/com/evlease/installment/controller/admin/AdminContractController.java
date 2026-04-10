@@ -217,26 +217,17 @@ public class AdminContractController {
     }
 
     String oldStatus = contract.getStatus();
-    // USER_SIGNED: 客户已签但整体合同还未完结（企业骑缝章流程中），标记为 SIGNED 并打标记
+    // USER_SIGNED: 客户已签但整体合同还未完结（企业骑缝章流程中）
+    // 设置 customerSigned=true 让管理员看到后再手动确认
     if ("USER_SIGNED".equals(newStatus)) {
-      contract.setStatus("SIGNED");
-      contract.setSignedAt(java.time.Instant.now());
-      try {
-        String fileUrl = asignService.downloadContract(contract.getContractNo());
-        if (fileUrl != null && !fileUrl.isBlank()) contract.setFileUrl(fileUrl);
-      } catch (Exception ex) { /* 下载失败不影响 */ }
+      contract.setCustomerSigned(true);
+      contract.setUpdatedAt(java.time.Instant.now());
+      contractRepository.save(contract);
       var order = orderRepository.findById(orderId).orElse(null);
       if (order != null) {
         orderLogService.add(order, "CONTRACT_SYNC_USER_SIGNED", "ADMIN");
         orderRepository.save(order);
-        try {
-          if (order.getNotaryOrderNo() == null || order.getNotaryOrderNo().isBlank()) {
-            applyNotaryInternal(order);
-          }
-        } catch (Exception ex) { /* 公证失败不影响 */ }
       }
-      contract.setUpdatedAt(java.time.Instant.now());
-      contractRepository.save(contract);
       return contract;
     }
 

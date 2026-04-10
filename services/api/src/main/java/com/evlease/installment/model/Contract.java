@@ -35,6 +35,7 @@ public class Contract {
   // 公证证书下载链接（存档）
   private String notaryCertUrl;
   private String voidReason;
+  private Boolean customerSigned;
   private Instant createdAt;
   private Instant updatedAt;
 
@@ -150,6 +151,14 @@ public class Contract {
 
   public void setVoidReason(String voidReason) {
     this.voidReason = voidReason;
+  }
+
+  public Boolean getCustomerSigned() {
+    return customerSigned;
+  }
+
+  public void setCustomerSigned(Boolean customerSigned) {
+    this.customerSigned = customerSigned;
   }
 
   public Instant getCreatedAt() {

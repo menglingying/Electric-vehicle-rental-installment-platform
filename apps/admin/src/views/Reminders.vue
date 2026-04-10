@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="panel">
     <div class="panel-title">
       <div>还款提醒</div>
@@ -25,12 +25,12 @@
         v-model:selectedKeys="selectedIds"
         row-key="id"
       >
-        <a-table-column title="订单" data-index="orderId" />
+        <a-table-column title="客户" data-index="realName" />
         <a-table-column title="手机号" data-index="phone" />
         <a-table-column title="商品" data-index="productName" />
         <a-table-column title="期次" data-index="period" />
         <a-table-column title="到期日期" data-index="dueDate" />
-        <a-table-column title="金额" :render="({ record }: any) => `¥${(record.amount / 100).toFixed(2)}`" />
+        <a-table-column title="金额" :render="({ record }: any) => `¥${record.amount}`" />
         <a-table-column title="操作">
           <template #cell="{ record }">
             <a-button type="primary" size="small" @click="sendOne(record)">发送短信</a-button>

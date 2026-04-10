@@ -60,6 +60,7 @@ export type Contract = {
   signedBy?: string;
   meta?: string;
   notaryCertUrl?: string;
+  customerSigned?: boolean;
   createdAt?: string;
   updatedAt?: string;
 };
