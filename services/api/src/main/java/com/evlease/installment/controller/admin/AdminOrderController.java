@@ -175,7 +175,10 @@ public class AdminOrderController {
 
     order.setPeriods(req.periods());
     order.setCycleDays(req.cycleDays());
-    order.setRepaymentPlan(orderPlanService.buildRentPlan(req.rentPerPeriod(), req.periods(), req.cycleDays(), order.getDepositRatio()));
+    // baseDate 固定为订单创建日；调价不改写还款日的历史锚点
+    order.setRepaymentPlan(orderPlanService.buildRentPlan(
+        req.rentPerPeriod(), req.periods(), req.cycleDays(), order.getDepositRatio(),
+        com.evlease.installment.service.OrderPlanService.baseDateOf(order)));
 
     var adjustment = new com.evlease.installment.model.OrderPriceAdjustment();
     adjustment.setId("adj_" + UUID.randomUUID().toString().replace("-", ""));

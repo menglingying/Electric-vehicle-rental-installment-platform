@@ -94,7 +94,9 @@ public class AdminRepaymentController {
       throw new ApiException(HttpStatus.BAD_REQUEST, "找不到关联商品，无法计算租金");
     }
 
-    var plan = orderPlanService.buildRentPlan(rentPerCycle, order.getPeriods(), order.getCycleDays(), order.getDepositRatio());
+    var plan = orderPlanService.buildRentPlan(
+        rentPerCycle, order.getPeriods(), order.getCycleDays(), order.getDepositRatio(),
+        com.evlease.installment.service.OrderPlanService.baseDateOf(order));
     order.setRepaymentPlan(plan);
     orderRepository.save(order);
 

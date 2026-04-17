@@ -108,7 +108,10 @@ public class H5OrderController {
       rentPerCycle = product.getRentWithoutBattery();
     }
 
-    order.setRepaymentPlan(orderPlanService.buildRentPlan(rentPerCycle, req.periods(), req.cycleDays(), req.depositRatio()));
+    // 新订单基准日 = 下单当天（上海时区），后续任何重算请保持这个 baseDate 不变。
+    order.setRepaymentPlan(orderPlanService.buildRentPlan(
+        rentPerCycle, req.periods(), req.cycleDays(), req.depositRatio(),
+        OrderPlanService.baseDateOf(order)));
     order.setStatusLogs(new ArrayList<>());
     orderLogService.add(order, "CREATED", "H5", l -> l.setActor(phone));
     orderRepository.save(order);
@@ -171,7 +174,10 @@ public class H5OrderController {
       rentPerCycle = product.getRentWithoutBattery();
     }
 
-    var newPlan = orderPlanService.buildRentPlan(rentPerCycle, req.periods(), req.cycleDays(), req.depositRatio());
+    // 继续沿用"下单当天"作为基准，保证 H5 修改订单不会推迟还款日
+    var newPlan = orderPlanService.buildRentPlan(
+        rentPerCycle, req.periods(), req.cycleDays(), req.depositRatio(),
+        OrderPlanService.baseDateOf(order));
     if (order.getRepaymentPlan() != null) {
       order.getRepaymentPlan().clear();
       order.getRepaymentPlan().addAll(newPlan);
