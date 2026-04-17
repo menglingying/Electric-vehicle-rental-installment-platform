@@ -6,6 +6,7 @@ import com.evlease.installment.common.ApiException;
 import com.evlease.installment.model.Order;
 import com.evlease.installment.model.OrderStatus;
 import com.evlease.installment.repo.BlacklistRepository;
+import com.evlease.installment.repo.ContractRepository;
 import com.evlease.installment.repo.OrderRepository;
 import com.evlease.installment.repo.ProductRepository;
 import com.evlease.installment.service.OrderEnricher;
@@ -35,6 +36,7 @@ public class H5OrderController {
   private final ProductRepository productRepository;
   private final OrderRepository orderRepository;
   private final BlacklistRepository blacklistRepository;
+  private final ContractRepository contractRepository;
   private final OrderEnricher orderEnricher;
   private final OrderLogService orderLogService;
   private final OrderPlanService orderPlanService;
@@ -43,6 +45,7 @@ public class H5OrderController {
     ProductRepository productRepository,
     OrderRepository orderRepository,
     BlacklistRepository blacklistRepository,
+    ContractRepository contractRepository,
     OrderEnricher orderEnricher,
     OrderLogService orderLogService,
     OrderPlanService orderPlanService
@@ -50,6 +53,7 @@ public class H5OrderController {
     this.productRepository = productRepository;
     this.orderRepository = orderRepository;
     this.blacklistRepository = blacklistRepository;
+    this.contractRepository = contractRepository;
     this.orderEnricher = orderEnricher;
     this.orderLogService = orderLogService;
     this.orderPlanService = orderPlanService;
@@ -147,6 +151,8 @@ public class H5OrderController {
     if (order.getStatus() != OrderStatus.PENDING_REVIEW) {
       throw new ApiException(HttpStatus.BAD_REQUEST, "仅待审核状态的订单可以修改");
     }
+    // 双保险：即使上层 status 校验被绕过，也不允许在已签合同的订单上改 plan
+    assertNoSignedContract(id);
 
     var product = productRepository.findById(order.getProductId())
       .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "关联商品不存在"));
@@ -178,4 +184,11 @@ public class H5OrderController {
     return orderEnricher.enrich(order);
   }
 
+  private void assertNoSignedContract(String orderId) {
+    var contract = contractRepository.findById(orderId).orElse(null);
+    if (contract != null && "SIGNED".equalsIgnoreCase(contract.getStatus())) {
+      throw new ApiException(HttpStatus.BAD_REQUEST,
+        "合同已签署，不能修改还款计划。如需变更金额请联系管理员作废合同后重新生成。");
+    }
+  }
 }

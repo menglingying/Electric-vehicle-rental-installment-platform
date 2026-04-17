@@ -2,6 +2,7 @@ package com.evlease.installment.controller.admin;
 
 import com.evlease.installment.common.ApiException;
 import com.evlease.installment.model.RepaymentRecord;
+import com.evlease.installment.repo.ContractRepository;
 import com.evlease.installment.repo.OrderRepository;
 import com.evlease.installment.repo.ProductRepository;
 import com.evlease.installment.repo.RepaymentRepository;
@@ -27,6 +28,7 @@ public class AdminRepaymentController {
   private final OrderRepository orderRepository;
   private final RepaymentRepository repaymentRepository;
   private final ProductRepository productRepository;
+  private final ContractRepository contractRepository;
   private final OrderEnricher orderEnricher;
   private final OrderLogService orderLogService;
   private final OrderPlanService orderPlanService;
@@ -35,6 +37,7 @@ public class AdminRepaymentController {
     OrderRepository orderRepository,
     RepaymentRepository repaymentRepository,
     ProductRepository productRepository,
+    ContractRepository contractRepository,
     OrderEnricher orderEnricher,
     OrderLogService orderLogService,
     OrderPlanService orderPlanService
@@ -42,6 +45,7 @@ public class AdminRepaymentController {
     this.orderRepository = orderRepository;
     this.repaymentRepository = repaymentRepository;
     this.productRepository = productRepository;
+    this.contractRepository = contractRepository;
     this.orderEnricher = orderEnricher;
     this.orderLogService = orderLogService;
     this.orderPlanService = orderPlanService;
@@ -66,6 +70,14 @@ public class AdminRepaymentController {
 
     if (!force && order.getRepaymentPlan() != null && !order.getRepaymentPlan().isEmpty()) {
       throw new ApiException(HttpStatus.BAD_REQUEST, "该订单已有还款计划，如需重算请传 force=true");
+    }
+
+    // 保护：合同已签署的订单不允许按当前产品价格重算 plan。
+    // 合同是法律文件 (contract.meta.rentPerPeriod 已固化)，若必须调整需先作废合同。
+    var contract = contractRepository.findById(id).orElse(null);
+    if (contract != null && "SIGNED".equalsIgnoreCase(contract.getStatus())) {
+      throw new ApiException(HttpStatus.BAD_REQUEST,
+        "合同已签署，不能重算还款计划。如确需变更，请先在合同管理页面作废该合同。");
     }
 
     var product = productRepository.findById(order.getProductId()).orElse(null);

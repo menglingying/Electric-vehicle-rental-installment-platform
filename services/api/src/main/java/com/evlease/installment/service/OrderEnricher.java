@@ -10,6 +10,8 @@ import com.evlease.installment.repo.PaymentRepository;
 import com.evlease.installment.repo.RegionRepository;
 import com.evlease.installment.util.RegionNameUtil;
 import com.evlease.installment.repo.RepaymentRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +26,7 @@ public class OrderEnricher {
   private final PaymentRepository paymentRepository;
   private final RegionRepository regionRepository;
   private final Map<String, String> regionNameCache = new ConcurrentHashMap<>();
+  private static final ObjectMapper META_MAPPER = new ObjectMapper();
 
   public OrderEnricher(
     RepaymentRepository repaymentRepository,
@@ -35,6 +38,30 @@ public class OrderEnricher {
     this.contractRepository = contractRepository;
     this.paymentRepository = paymentRepository;
     this.regionRepository = regionRepository;
+  }
+
+  /**
+   * 从已签合同的 meta JSON 中抽取 rentPerPeriod 作为"冻结值"。
+   * 合同签署时写入 meta.rentPerPeriod（AdminContractController.buildOrderMeta），
+   * 法律层面就以该值为准；台账 DB 中的 amount 如果与合同不一致（多半是
+   * 后续产品价格变动 / 重算导致的污染），读取侧自动以合同值覆盖，避免
+   * 前端展示与合同金额脱节。返回 null 表示合同不存在 / 未签署 / 无金额。
+   */
+  public static Integer extractContractRentPerPeriod(Contract contract) {
+    if (contract == null) return null;
+    String status = contract.getStatus();
+    if (status == null || !"SIGNED".equalsIgnoreCase(status)) return null;
+    String meta = contract.getMeta();
+    if (meta == null || meta.isBlank()) return null;
+    try {
+      JsonNode node = META_MAPPER.readTree(meta);
+      JsonNode rent = node.get("rentPerPeriod");
+      if (rent != null && rent.isNumber() && rent.intValue() > 0) return rent.intValue();
+      if (rent != null && rent.isTextual()) {
+        try { return Integer.parseInt(rent.asText().trim()); } catch (NumberFormatException ignored) {}
+      }
+    } catch (Exception ignored) {}
+    return null;
   }
 
   private String resolveRegionName(String code) {
@@ -51,21 +78,26 @@ public class OrderEnricher {
       paidPeriods.put(r.getPeriod(), true);
     }
 
+    Contract contract = contractRepository.findById(order.getId()).orElse(null);
+    PaymentIntent payment = paymentRepository.findFirstByOrderIdOrderByCreatedAtDesc(order.getId()).orElse(null);
+
+    // 台账：如果合同已签署且合同 meta 里记录了 rentPerPeriod，则以合同金额为准
+    // 覆盖 plan 每期金额。合同是法律文件，必须是"只读真相源"。
+    Integer contractRent = extractContractRentPerPeriod(contract);
+
     List<RepaymentPlanItem> plan = new ArrayList<>();
     long remainingAmount = 0;
     var rawPlan = order.getRepaymentPlan();
     if (rawPlan != null) {
       for (var p : rawPlan) {
-        var item = new RepaymentPlanItem(p.getPeriod(), p.getDueDate(), p.getAmount());
+        int amount = (contractRent != null) ? contractRent : p.getAmount();
+        var item = new RepaymentPlanItem(p.getPeriod(), p.getDueDate(), amount);
         boolean paid = paidPeriods.getOrDefault(p.getPeriod(), false);
         item.setPaid(paid);
         plan.add(item);
-        if (!paid) remainingAmount += p.getAmount();
+        if (!paid) remainingAmount += amount;
       }
     }
-
-    Contract contract = contractRepository.findById(order.getId()).orElse(null);
-    PaymentIntent payment = paymentRepository.findFirstByOrderIdOrderByCreatedAtDesc(order.getId()).orElse(null);
 
     Map<String, Object> dto = new HashMap<>();
     dto.put("id", order.getId());

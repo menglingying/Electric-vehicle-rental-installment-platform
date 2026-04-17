@@ -97,6 +97,7 @@ scripts/deploy-tools/ # 运维检查脚本
 
 | 日期 | 问题 | 修复位置 |
 |------|------|---------|
+| **2026-04-17 (P0)** | **还款台账金额与已签合同不一致 (25/62 订单, 涉及资金)** | **`OrderEnricher.java` 以合同 meta 为准覆盖台账 + `H5OrderController` / `AdminRepaymentController` 加"合同 SIGNED 拒改 plan"保险 + DB 批量刷 186 行 + 备份表 `repayment_plan_item_backup_20260417`。详见 `docs/P0_2026-04-17_还款台账与合同金额不一致.md`** |
 | 2026-03-11 | 聚证回调字段全为 null（businessData 未解包） | `JuzhengCallbackController.java` |
 | 2026-03-11 | 爱签回调不可靠导致合同状态滞留 SIGNING | `Orders.vue` 加自动轮询 + `AdminContractController` 加 `sync-status` 接口 |
 | 2026-03-11 | 爱签模板必填参数 partyBEmail 缺失报 100626 | `AsignService.buildTemplateFill()` 强制发送空值 |

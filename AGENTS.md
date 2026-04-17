@@ -51,6 +51,16 @@
 
 ## 更新日志
 
+### 2026-04-17 【P0】还款台账与已签合同金额不一致
+- **影响**：62 签约合同中 25 单台账 ≠ 合同（40%），涉及资金
+- **根因**：`repayment_plan_item.amount` 会被多处按当前 `product.rent_*` 重算，而合同 meta 里的 `rentPerPeriod` 是签约瞬间冻结的；两者不一致
+- **修复**：
+  - `OrderEnricher.extractContractRentPerPeriod()` 读 API 时以合同金额覆盖台账显示
+  - `H5OrderController.update` + `AdminRepaymentController.generatePlan` 加"合同 SIGNED 拒改 plan"保险
+  - DB 批量刷新 186 行，备份表 `repayment_plan_item_backup_20260417`
+  - 完整报告：`docs/P0_2026-04-17_还款台账与合同金额不一致.md`
+- **后续**：对 25 位客户逐一外呼确认；建议在 `contract` 表增加 `rent_snapshot_json` 彻底固化；建议每日 cron 做一致性体检
+
 ### 2026-04-09
 - 部署最新 bug 修复到生产服务器
 - 记录部署注意事项：本地无 Java 环境、服务器内存紧张导致 SSH 超时等问题
