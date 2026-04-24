@@ -7,6 +7,8 @@
       <div class="detail-line">状态：{{ statusText(order.status) }}</div>
       <div class="detail-line">期数：{{ order.periods }}，周期：{{ order.cycleDays }} 天/期</div>
       <div class="detail-line" v-if="order.batteryOption">电池配置：{{ batteryOptionText(order.batteryOption) }}</div>
+      <div class="detail-line" v-if="order.batteryConfig">电池型号：{{ order.batteryConfig }}</div>
+      <div class="detail-line" v-if="order.frameConfig">车架配置：{{ order.frameConfig }}</div>
       <div class="detail-line" v-if="order.repaymentMethod">还款方式：{{ repaymentMethodText(order.repaymentMethod) }}</div>
       <div class="detail-line">创建时间：{{ order.createdAt }}</div>
       <van-button

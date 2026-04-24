@@ -3,10 +3,12 @@ package com.evlease.installment.service;
 import com.evlease.installment.model.Contract;
 import com.evlease.installment.model.Order;
 import com.evlease.installment.model.PaymentIntent;
+import com.evlease.installment.model.Product;
 import com.evlease.installment.model.RepaymentPlanItem;
 import com.evlease.installment.model.RepaymentRecord;
 import com.evlease.installment.repo.ContractRepository;
 import com.evlease.installment.repo.PaymentRepository;
+import com.evlease.installment.repo.ProductRepository;
 import com.evlease.installment.repo.RegionRepository;
 import com.evlease.installment.util.RegionNameUtil;
 import com.evlease.installment.repo.RepaymentRepository;
@@ -24,6 +26,7 @@ public class OrderEnricher {
   private final RepaymentRepository repaymentRepository;
   private final ContractRepository contractRepository;
   private final PaymentRepository paymentRepository;
+  private final ProductRepository productRepository;
   private final RegionRepository regionRepository;
   private final Map<String, String> regionNameCache = new ConcurrentHashMap<>();
   private static final ObjectMapper META_MAPPER = new ObjectMapper();
@@ -32,11 +35,13 @@ public class OrderEnricher {
     RepaymentRepository repaymentRepository,
     ContractRepository contractRepository,
     PaymentRepository paymentRepository,
+    ProductRepository productRepository,
     RegionRepository regionRepository
   ) {
     this.repaymentRepository = repaymentRepository;
     this.contractRepository = contractRepository;
     this.paymentRepository = paymentRepository;
+    this.productRepository = productRepository;
     this.regionRepository = regionRepository;
   }
 
@@ -126,6 +131,15 @@ public class OrderEnricher {
     // 电池配置与还款方式
     dto.put("batteryOption", order.getBatteryOption());
     dto.put("repaymentMethod", order.getRepaymentMethod());
+
+    // 从 Product 获取具体电池型号/规格和车架配置
+    String productId = order.getProductId();
+    if (productId != null && !productId.isBlank()) {
+      productRepository.findById(productId).ifPresent(product -> {
+        dto.put("batteryConfig", product.getBatteryConfig());
+        dto.put("frameConfig", product.getFrameConfig());
+      });
+    }
     
     // KYC信息
     dto.put("kycCompleted", order.isKycCompleted());

@@ -47,12 +47,14 @@ function startPolling() {
             return;
         try {
             const updated = await syncContractStatus(detail.value.id);
-            if (updated?.status && updated.status !== 'SIGNING') {
+            if (updated?.status === 'SIGNED') {
                 detail.value = await getOrderDetail(detail.value.id);
                 stopPolling();
-                if (updated.status === 'SIGNED') {
-                    Message.success('合同已签署 ✓');
-                }
+                Message.success('合同已签署 ✓');
+            }
+            else if (updated?.customerSigned) {
+                detail.value = await getOrderDetail(detail.value.id);
+                Message.success('检测到客户已完成签署，请确认后点击「标记已签署」');
             }
         }
         catch {
@@ -114,12 +116,12 @@ const qrLink = ref('');
 const qrImageUrl = computed(() => qrLink.value
     ? `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrLink.value)}`
     : '');
-function batteryOptionText(option) {
-    const map = {
-        WITHOUT_BATTERY: '空车',
-        WITH_BATTERY: '含电池'
-    };
-    return map[option] || option || '-';
+function batteryOptionText(option, batteryConfig) {
+    if (option === 'WITH_BATTERY') {
+        return batteryConfig ? '含电池: ' + batteryConfig : '含电池';
+    }
+    if (option === 'WITHOUT_BATTERY') return '空车';
+    return option || '-';
 }
 function repaymentMethodText(method) {
     const map = {
@@ -337,7 +339,7 @@ const columns = [
     { title: '客户姓名', render: ({ record }) => h('span', { style: 'color:#1890ff;cursor:pointer;font-weight:500' }, record.realName || '未实名') },
     { title: '手机号', dataIndex: 'phone' },
     { title: '商品', dataIndex: 'productName' },
-    { title: '电池配置', render: ({ record }) => batteryOptionText(record.batteryOption) },
+    { title: '电池配置', render: ({ record }) => batteryOptionText(record.batteryOption, record.batteryConfig) },
     { title: '还款方式', render: ({ record }) => repaymentMethodText(record.repaymentMethod) },
     {
         title: 'KYC',
@@ -373,6 +375,10 @@ const columns = [
             const s = status ? statusMap[status] || { text: status, color: '#8c8c8c' } : { text: '未生成', color: '#8c8c8c' };
             const tag = h('span', { style: `color: ${s.color}; font-weight: 500` }, s.text);
             if (status === 'SIGNING') {
+                const customerSigned = record?.contract?.customerSigned;
+                const badge = customerSigned
+                    ? h('span', { style: 'color:#52c41a; font-size:11px; margin-left:4px; font-weight:600' }, '(客户已签)')
+                    : null;
                 const syncBtn = h(Button, {
                     size: 'mini',
                     style: 'margin-left:6px',
@@ -384,8 +390,12 @@ const columns = [
                                 Message.success('合同已签署 ✓，状态已更新');
                                 await load();
                             }
+                            else if (updated?.customerSigned) {
+                                Message.success('客户已签署 ✓ 请进入详情确认并标记');
+                                await load();
+                            }
                             else {
-                                Message.warning('爱签整体合同还未完结，若客户确已签署请进入详情点击「标记客户已签署」');
+                                Message.warning('客户尚未签署，请等待');
                             }
                         }
                         catch {
@@ -393,7 +403,7 @@ const columns = [
                         }
                     }
                 }, () => '同步');
-                return h('span', {}, [tag, syncBtn]);
+                return h('span', {}, [tag, badge, syncBtn].filter(Boolean));
             }
             return tag;
         }
@@ -590,11 +600,15 @@ async function refreshDetail() {
         }
         detail.value = await getOrderDetail(detail.value.id);
         const status = detail.value.contract?.status;
+        const customerSigned = detail.value.contract?.customerSigned;
         if (status === 'SIGNED') {
             Message.success('合同已签署 ✓');
         }
+        else if (status === 'SIGNING' && customerSigned) {
+            Message.success('客户已完成签署 ✓ 请确认后点击「标记已签署」');
+        }
         else if (status === 'SIGNING') {
-            Message.warning('爱签查询仍显示整体未完结，请直接点击上方「✓ 标记客户已签署」手动确认');
+            Message.warning('爱签查询显示客户尚未签署，请等待客户签署后再刷新');
         }
         else {
             Message.success('已刷新');
@@ -843,7 +857,7 @@ if (__VLS_ctx.detail) {
         label: "电池配置",
     }, ...__VLS_functionalComponentArgsRest(__VLS_50));
     __VLS_52.slots.default;
-    (__VLS_ctx.batteryOptionText(__VLS_ctx.detail.batteryOption));
+    (__VLS_ctx.batteryOptionText(__VLS_ctx.detail.batteryOption, __VLS_ctx.detail.batteryConfig));
     var __VLS_52;
     const __VLS_53 = {}.ADescriptionsItem;
     /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
@@ -1350,7 +1364,7 @@ if (__VLS_ctx.detail) {
             ...{ style: {} },
         });
     }
-    if (__VLS_ctx.detail.contract?.status === 'SIGNING') {
+    if (__VLS_ctx.detail.contract?.status === 'SIGNING' && __VLS_ctx.detail.contract?.customerSigned) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ style: {} },
         });
@@ -1358,19 +1372,18 @@ if (__VLS_ctx.detail) {
         /** @type {[typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, ]} */ ;
         // @ts-ignore
         const __VLS_206 = __VLS_asFunctionalComponent(__VLS_205, new __VLS_205({
-            type: "warning",
+            type: "success",
             showIcon: (true),
             ...{ style: {} },
         }));
         const __VLS_207 = __VLS_206({
-            type: "warning",
+            type: "success",
             showIcon: (true),
             ...{ style: {} },
         }, ...__VLS_functionalComponentArgsRest(__VLS_206));
         __VLS_208.slots.default;
         {
             const { message: __VLS_thisSlot } = __VLS_208.slots;
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.strong, __VLS_intrinsicElements.strong)({});
             __VLS_asFunctionalElement(__VLS_intrinsicElements.strong, __VLS_intrinsicElements.strong)({});
         }
         var __VLS_208;
@@ -1382,21 +1395,25 @@ if (__VLS_ctx.detail) {
         // @ts-ignore
         const __VLS_210 = __VLS_asFunctionalComponent(__VLS_209, new __VLS_209({
             ...{ 'onClick': {} },
-            type: "primary",
+            status: "success",
             size: "small",
-            loading: (__VLS_ctx.refreshingDetail),
         }));
         const __VLS_211 = __VLS_210({
             ...{ 'onClick': {} },
-            type: "primary",
+            status: "success",
             size: "small",
-            loading: (__VLS_ctx.refreshingDetail),
         }, ...__VLS_functionalComponentArgsRest(__VLS_210));
         let __VLS_213;
         let __VLS_214;
         let __VLS_215;
         const __VLS_216 = {
-            onClick: (__VLS_ctx.refreshDetail)
+            onClick: (...[$event]) => {
+                if (!(__VLS_ctx.detail))
+                    return;
+                if (!(__VLS_ctx.detail.contract?.status === 'SIGNING' && __VLS_ctx.detail.contract?.customerSigned))
+                    return;
+                __VLS_ctx.markSigned(__VLS_ctx.detail.id);
+            }
         };
         __VLS_212.slots.default;
         var __VLS_212;
@@ -1405,97 +1422,168 @@ if (__VLS_ctx.detail) {
         // @ts-ignore
         const __VLS_218 = __VLS_asFunctionalComponent(__VLS_217, new __VLS_217({
             ...{ 'onClick': {} },
-            status: "success",
             size: "small",
+            loading: (__VLS_ctx.refreshingDetail),
         }));
         const __VLS_219 = __VLS_218({
             ...{ 'onClick': {} },
-            status: "success",
             size: "small",
+            loading: (__VLS_ctx.refreshingDetail),
         }, ...__VLS_functionalComponentArgsRest(__VLS_218));
         let __VLS_221;
         let __VLS_222;
         let __VLS_223;
         const __VLS_224 = {
+            onClick: (__VLS_ctx.refreshDetail)
+        };
+        __VLS_220.slots.default;
+        var __VLS_220;
+    }
+    else if (__VLS_ctx.detail.contract?.status === 'SIGNING') {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ style: {} },
+        });
+        const __VLS_225 = {}.AAlert;
+        /** @type {[typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, ]} */ ;
+        // @ts-ignore
+        const __VLS_226 = __VLS_asFunctionalComponent(__VLS_225, new __VLS_225({
+            type: "warning",
+            showIcon: (true),
+            ...{ style: {} },
+        }));
+        const __VLS_227 = __VLS_226({
+            type: "warning",
+            showIcon: (true),
+            ...{ style: {} },
+        }, ...__VLS_functionalComponentArgsRest(__VLS_226));
+        __VLS_228.slots.default;
+        {
+            const { message: __VLS_thisSlot } = __VLS_228.slots;
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.strong, __VLS_intrinsicElements.strong)({});
+        }
+        var __VLS_228;
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ style: {} },
+        });
+        const __VLS_229 = {}.AButton;
+        /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
+        // @ts-ignore
+        const __VLS_230 = __VLS_asFunctionalComponent(__VLS_229, new __VLS_229({
+            ...{ 'onClick': {} },
+            type: "primary",
+            size: "small",
+            loading: (__VLS_ctx.refreshingDetail),
+        }));
+        const __VLS_231 = __VLS_230({
+            ...{ 'onClick': {} },
+            type: "primary",
+            size: "small",
+            loading: (__VLS_ctx.refreshingDetail),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_230));
+        let __VLS_233;
+        let __VLS_234;
+        let __VLS_235;
+        const __VLS_236 = {
+            onClick: (__VLS_ctx.refreshDetail)
+        };
+        __VLS_232.slots.default;
+        var __VLS_232;
+        const __VLS_237 = {}.AButton;
+        /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
+        // @ts-ignore
+        const __VLS_238 = __VLS_asFunctionalComponent(__VLS_237, new __VLS_237({
+            ...{ 'onClick': {} },
+            size: "small",
+        }));
+        const __VLS_239 = __VLS_238({
+            ...{ 'onClick': {} },
+            size: "small",
+        }, ...__VLS_functionalComponentArgsRest(__VLS_238));
+        let __VLS_241;
+        let __VLS_242;
+        let __VLS_243;
+        const __VLS_244 = {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
+                    return;
+                if (!!(__VLS_ctx.detail.contract?.status === 'SIGNING' && __VLS_ctx.detail.contract?.customerSigned))
                     return;
                 if (!(__VLS_ctx.detail.contract?.status === 'SIGNING'))
                     return;
                 __VLS_ctx.markSigned(__VLS_ctx.detail.id);
             }
         };
-        __VLS_220.slots.default;
-        var __VLS_220;
+        __VLS_240.slots.default;
+        var __VLS_240;
     }
-    const __VLS_225 = {}.ADescriptions;
+    const __VLS_245 = {}.ADescriptions;
     /** @type {[typeof __VLS_components.ADescriptions, typeof __VLS_components.aDescriptions, typeof __VLS_components.ADescriptions, typeof __VLS_components.aDescriptions, ]} */ ;
     // @ts-ignore
-    const __VLS_226 = __VLS_asFunctionalComponent(__VLS_225, new __VLS_225({
+    const __VLS_246 = __VLS_asFunctionalComponent(__VLS_245, new __VLS_245({
         column: (2),
         size: "small",
         bordered: true,
     }));
-    const __VLS_227 = __VLS_226({
+    const __VLS_247 = __VLS_246({
         column: (2),
         size: "small",
         bordered: true,
-    }, ...__VLS_functionalComponentArgsRest(__VLS_226));
-    __VLS_228.slots.default;
-    const __VLS_229 = {}.ADescriptionsItem;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_246));
+    __VLS_248.slots.default;
+    const __VLS_249 = {}.ADescriptionsItem;
     /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
     // @ts-ignore
-    const __VLS_230 = __VLS_asFunctionalComponent(__VLS_229, new __VLS_229({
+    const __VLS_250 = __VLS_asFunctionalComponent(__VLS_249, new __VLS_249({
         label: "合同编号",
     }));
-    const __VLS_231 = __VLS_230({
+    const __VLS_251 = __VLS_250({
         label: "合同编号",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_230));
-    __VLS_232.slots.default;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_250));
+    __VLS_252.slots.default;
     (__VLS_ctx.detail.contract?.contractNo || '-');
-    var __VLS_232;
-    const __VLS_233 = {}.ADescriptionsItem;
+    var __VLS_252;
+    const __VLS_253 = {}.ADescriptionsItem;
     /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
     // @ts-ignore
-    const __VLS_234 = __VLS_asFunctionalComponent(__VLS_233, new __VLS_233({
+    const __VLS_254 = __VLS_asFunctionalComponent(__VLS_253, new __VLS_253({
         label: "合同状态",
     }));
-    const __VLS_235 = __VLS_234({
+    const __VLS_255 = __VLS_254({
         label: "合同状态",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_234));
-    __VLS_236.slots.default;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_254));
+    __VLS_256.slots.default;
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
         ...{ style: (__VLS_ctx.contractStatusStyle(__VLS_ctx.detail.contract?.status)) },
     });
     (__VLS_ctx.contractStatusText(__VLS_ctx.detail.contract?.status));
     if (__VLS_ctx.detail.contract?.customerSigned && __VLS_ctx.detail.contract?.status === 'SIGNING') {
-        const __VLS_237 = {}.ATag;
+        const __VLS_257 = {}.ATag;
         /** @type {[typeof __VLS_components.ATag, typeof __VLS_components.aTag, typeof __VLS_components.ATag, typeof __VLS_components.aTag, ]} */ ;
         // @ts-ignore
-        const __VLS_238 = __VLS_asFunctionalComponent(__VLS_237, new __VLS_237({
+        const __VLS_258 = __VLS_asFunctionalComponent(__VLS_257, new __VLS_257({
             color: "green",
             ...{ style: {} },
         }));
-        const __VLS_239 = __VLS_238({
+        const __VLS_259 = __VLS_258({
             color: "green",
             ...{ style: {} },
-        }, ...__VLS_functionalComponentArgsRest(__VLS_238));
-        __VLS_240.slots.default;
-        var __VLS_240;
+        }, ...__VLS_functionalComponentArgsRest(__VLS_258));
+        __VLS_260.slots.default;
+        var __VLS_260;
     }
-    var __VLS_236;
-    const __VLS_241 = {}.ADescriptionsItem;
+    var __VLS_256;
+    const __VLS_261 = {}.ADescriptionsItem;
     /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
     // @ts-ignore
-    const __VLS_242 = __VLS_asFunctionalComponent(__VLS_241, new __VLS_241({
+    const __VLS_262 = __VLS_asFunctionalComponent(__VLS_261, new __VLS_261({
         label: "签署链接",
         span: (2),
     }));
-    const __VLS_243 = __VLS_242({
+    const __VLS_263 = __VLS_262({
         label: "签署链接",
         span: (2),
-    }, ...__VLS_functionalComponentArgsRest(__VLS_242));
-    __VLS_244.slots.default;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_262));
+    __VLS_264.slots.default;
     if (__VLS_ctx.detail.contract?.signUrl) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
         (__VLS_ctx.detail.contract.signUrl);
@@ -1503,43 +1591,43 @@ if (__VLS_ctx.detail) {
     else {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
     }
-    var __VLS_244;
-    const __VLS_245 = {}.ADescriptionsItem;
+    var __VLS_264;
+    const __VLS_265 = {}.ADescriptionsItem;
     /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
     // @ts-ignore
-    const __VLS_246 = __VLS_asFunctionalComponent(__VLS_245, new __VLS_245({
+    const __VLS_266 = __VLS_asFunctionalComponent(__VLS_265, new __VLS_265({
         label: "签署时间",
     }));
-    const __VLS_247 = __VLS_246({
+    const __VLS_267 = __VLS_266({
         label: "签署时间",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_246));
-    __VLS_248.slots.default;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_266));
+    __VLS_268.slots.default;
     (__VLS_ctx.detail.contract?.signedAt || '-');
-    var __VLS_248;
-    const __VLS_249 = {}.ADescriptionsItem;
+    var __VLS_268;
+    const __VLS_269 = {}.ADescriptionsItem;
     /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
     // @ts-ignore
-    const __VLS_250 = __VLS_asFunctionalComponent(__VLS_249, new __VLS_249({
+    const __VLS_270 = __VLS_asFunctionalComponent(__VLS_269, new __VLS_269({
         label: "签署人",
     }));
-    const __VLS_251 = __VLS_250({
+    const __VLS_271 = __VLS_270({
         label: "签署人",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_250));
-    __VLS_252.slots.default;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_270));
+    __VLS_272.slots.default;
     (__VLS_ctx.detail.contract?.signedBy || '-');
-    var __VLS_252;
-    const __VLS_253 = {}.ADescriptionsItem;
+    var __VLS_272;
+    const __VLS_273 = {}.ADescriptionsItem;
     /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
     // @ts-ignore
-    const __VLS_254 = __VLS_asFunctionalComponent(__VLS_253, new __VLS_253({
+    const __VLS_274 = __VLS_asFunctionalComponent(__VLS_273, new __VLS_273({
         label: "合同文件",
         span: (2),
     }));
-    const __VLS_255 = __VLS_254({
+    const __VLS_275 = __VLS_274({
         label: "合同文件",
         span: (2),
-    }, ...__VLS_functionalComponentArgsRest(__VLS_254));
-    __VLS_256.slots.default;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_274));
+    __VLS_276.slots.default;
     if (__VLS_ctx.detail.contract?.fileUrl) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
         (__VLS_ctx.detail.contract.fileUrl);
@@ -1547,106 +1635,40 @@ if (__VLS_ctx.detail) {
     else {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
     }
-    var __VLS_256;
-    var __VLS_228;
+    var __VLS_276;
+    var __VLS_248;
     if (__VLS_ctx.detail.contract?.status === 'SIGNED') {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ style: {} },
         });
-        const __VLS_257 = {}.AAlert;
+        const __VLS_277 = {}.AAlert;
         /** @type {[typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, ]} */ ;
         // @ts-ignore
-        const __VLS_258 = __VLS_asFunctionalComponent(__VLS_257, new __VLS_257({
+        const __VLS_278 = __VLS_asFunctionalComponent(__VLS_277, new __VLS_277({
             type: "success",
             showIcon: (true),
         }));
-        const __VLS_259 = __VLS_258({
+        const __VLS_279 = __VLS_278({
             type: "success",
             showIcon: (true),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_258));
-        __VLS_260.slots.default;
-        var __VLS_260;
+        }, ...__VLS_functionalComponentArgsRest(__VLS_278));
+        __VLS_280.slots.default;
+        var __VLS_280;
     }
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ style: {} },
     });
     if (__VLS_ctx.detail.status === 'ACTIVE' && __VLS_ctx.canPrepareContract && __VLS_ctx.detail.asignSerialNo) {
-        const __VLS_261 = {}.AButton;
-        /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
-        // @ts-ignore
-        const __VLS_262 = __VLS_asFunctionalComponent(__VLS_261, new __VLS_261({
-            ...{ 'onClick': {} },
-            type: "primary",
-        }));
-        const __VLS_263 = __VLS_262({
-            ...{ 'onClick': {} },
-            type: "primary",
-        }, ...__VLS_functionalComponentArgsRest(__VLS_262));
-        let __VLS_265;
-        let __VLS_266;
-        let __VLS_267;
-        const __VLS_268 = {
-            onClick: (...[$event]) => {
-                if (!(__VLS_ctx.detail))
-                    return;
-                if (!(__VLS_ctx.detail.status === 'ACTIVE' && __VLS_ctx.canPrepareContract && __VLS_ctx.detail.asignSerialNo))
-                    return;
-                __VLS_ctx.prepareContractForOrder(__VLS_ctx.detail.id);
-            }
-        };
-        __VLS_264.slots.default;
-        (__VLS_ctx.detail.contract ? '重新生成合同' : '生成合同');
-        var __VLS_264;
-    }
-    if (__VLS_ctx.detail.status === 'ACTIVE' && __VLS_ctx.canPrepareContract && !__VLS_ctx.detail.asignSerialNo) {
-        const __VLS_269 = {}.AButton;
-        /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
-        // @ts-ignore
-        const __VLS_270 = __VLS_asFunctionalComponent(__VLS_269, new __VLS_269({
-            type: "primary",
-            disabled: true,
-        }));
-        const __VLS_271 = __VLS_270({
-            type: "primary",
-            disabled: true,
-        }, ...__VLS_functionalComponentArgsRest(__VLS_270));
-        __VLS_272.slots.default;
-        var __VLS_272;
-    }
-    if (__VLS_ctx.detail.contract?.signUrl) {
-        const __VLS_273 = {}.AButton;
-        /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
-        // @ts-ignore
-        const __VLS_274 = __VLS_asFunctionalComponent(__VLS_273, new __VLS_273({
-            ...{ 'onClick': {} },
-        }));
-        const __VLS_275 = __VLS_274({
-            ...{ 'onClick': {} },
-        }, ...__VLS_functionalComponentArgsRest(__VLS_274));
-        let __VLS_277;
-        let __VLS_278;
-        let __VLS_279;
-        const __VLS_280 = {
-            onClick: (...[$event]) => {
-                if (!(__VLS_ctx.detail))
-                    return;
-                if (!(__VLS_ctx.detail.contract?.signUrl))
-                    return;
-                __VLS_ctx.copyText(__VLS_ctx.detail.contract.signUrl);
-            }
-        };
-        __VLS_276.slots.default;
-        var __VLS_276;
-    }
-    if (__VLS_ctx.detail.contract?.signUrl) {
         const __VLS_281 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
         const __VLS_282 = __VLS_asFunctionalComponent(__VLS_281, new __VLS_281({
             ...{ 'onClick': {} },
+            type: "primary",
         }));
         const __VLS_283 = __VLS_282({
             ...{ 'onClick': {} },
+            type: "primary",
         }, ...__VLS_functionalComponentArgsRest(__VLS_282));
         let __VLS_285;
         let __VLS_286;
@@ -1655,28 +1677,94 @@ if (__VLS_ctx.detail) {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
+                if (!(__VLS_ctx.detail.status === 'ACTIVE' && __VLS_ctx.canPrepareContract && __VLS_ctx.detail.asignSerialNo))
+                    return;
+                __VLS_ctx.prepareContractForOrder(__VLS_ctx.detail.id);
+            }
+        };
+        __VLS_284.slots.default;
+        (__VLS_ctx.detail.contract ? '重新生成合同' : '生成合同');
+        var __VLS_284;
+    }
+    if (__VLS_ctx.detail.status === 'ACTIVE' && __VLS_ctx.canPrepareContract && !__VLS_ctx.detail.asignSerialNo) {
+        const __VLS_289 = {}.AButton;
+        /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
+        // @ts-ignore
+        const __VLS_290 = __VLS_asFunctionalComponent(__VLS_289, new __VLS_289({
+            type: "primary",
+            disabled: true,
+        }));
+        const __VLS_291 = __VLS_290({
+            type: "primary",
+            disabled: true,
+        }, ...__VLS_functionalComponentArgsRest(__VLS_290));
+        __VLS_292.slots.default;
+        var __VLS_292;
+    }
+    if (__VLS_ctx.detail.contract?.signUrl) {
+        const __VLS_293 = {}.AButton;
+        /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
+        // @ts-ignore
+        const __VLS_294 = __VLS_asFunctionalComponent(__VLS_293, new __VLS_293({
+            ...{ 'onClick': {} },
+        }));
+        const __VLS_295 = __VLS_294({
+            ...{ 'onClick': {} },
+        }, ...__VLS_functionalComponentArgsRest(__VLS_294));
+        let __VLS_297;
+        let __VLS_298;
+        let __VLS_299;
+        const __VLS_300 = {
+            onClick: (...[$event]) => {
+                if (!(__VLS_ctx.detail))
+                    return;
+                if (!(__VLS_ctx.detail.contract?.signUrl))
+                    return;
+                __VLS_ctx.copyText(__VLS_ctx.detail.contract.signUrl);
+            }
+        };
+        __VLS_296.slots.default;
+        var __VLS_296;
+    }
+    if (__VLS_ctx.detail.contract?.signUrl) {
+        const __VLS_301 = {}.AButton;
+        /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
+        // @ts-ignore
+        const __VLS_302 = __VLS_asFunctionalComponent(__VLS_301, new __VLS_301({
+            ...{ 'onClick': {} },
+        }));
+        const __VLS_303 = __VLS_302({
+            ...{ 'onClick': {} },
+        }, ...__VLS_functionalComponentArgsRest(__VLS_302));
+        let __VLS_305;
+        let __VLS_306;
+        let __VLS_307;
+        const __VLS_308 = {
+            onClick: (...[$event]) => {
+                if (!(__VLS_ctx.detail))
+                    return;
                 if (!(__VLS_ctx.detail.contract?.signUrl))
                     return;
                 __VLS_ctx.showLinkQr('合同签署二维码', __VLS_ctx.detail.contract.signUrl);
             }
         };
-        __VLS_284.slots.default;
-        var __VLS_284;
+        __VLS_304.slots.default;
+        var __VLS_304;
     }
     if (__VLS_ctx.detail.contract?.status === 'SIGNING') {
-        const __VLS_289 = {}.AButton;
+        const __VLS_309 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
-        const __VLS_290 = __VLS_asFunctionalComponent(__VLS_289, new __VLS_289({
+        const __VLS_310 = __VLS_asFunctionalComponent(__VLS_309, new __VLS_309({
             ...{ 'onClick': {} },
         }));
-        const __VLS_291 = __VLS_290({
+        const __VLS_311 = __VLS_310({
             ...{ 'onClick': {} },
-        }, ...__VLS_functionalComponentArgsRest(__VLS_290));
-        let __VLS_293;
-        let __VLS_294;
-        let __VLS_295;
-        const __VLS_296 = {
+        }, ...__VLS_functionalComponentArgsRest(__VLS_310));
+        let __VLS_313;
+        let __VLS_314;
+        let __VLS_315;
+        const __VLS_316 = {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
@@ -1685,23 +1773,23 @@ if (__VLS_ctx.detail) {
                 __VLS_ctx.markSigned(__VLS_ctx.detail.id);
             }
         };
-        __VLS_292.slots.default;
-        var __VLS_292;
+        __VLS_312.slots.default;
+        var __VLS_312;
     }
     if (__VLS_ctx.detail.contract?.fileUrl) {
-        const __VLS_297 = {}.AButton;
+        const __VLS_317 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
-        const __VLS_298 = __VLS_asFunctionalComponent(__VLS_297, new __VLS_297({
+        const __VLS_318 = __VLS_asFunctionalComponent(__VLS_317, new __VLS_317({
             ...{ 'onClick': {} },
         }));
-        const __VLS_299 = __VLS_298({
+        const __VLS_319 = __VLS_318({
             ...{ 'onClick': {} },
-        }, ...__VLS_functionalComponentArgsRest(__VLS_298));
-        let __VLS_301;
-        let __VLS_302;
-        let __VLS_303;
-        const __VLS_304 = {
+        }, ...__VLS_functionalComponentArgsRest(__VLS_318));
+        let __VLS_321;
+        let __VLS_322;
+        let __VLS_323;
+        const __VLS_324 = {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
@@ -1710,25 +1798,25 @@ if (__VLS_ctx.detail) {
                 __VLS_ctx.openUrl(__VLS_ctx.detail.contract.fileUrl);
             }
         };
-        __VLS_300.slots.default;
-        var __VLS_300;
+        __VLS_320.slots.default;
+        var __VLS_320;
     }
     else if (__VLS_ctx.detail.contract?.status === 'SIGNED' && !__VLS_ctx.detail.contract?.fileUrl) {
-        const __VLS_305 = {}.AButton;
+        const __VLS_325 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
-        const __VLS_306 = __VLS_asFunctionalComponent(__VLS_305, new __VLS_305({
+        const __VLS_326 = __VLS_asFunctionalComponent(__VLS_325, new __VLS_325({
             ...{ 'onClick': {} },
             loading: (__VLS_ctx.downloadingContract),
         }));
-        const __VLS_307 = __VLS_306({
+        const __VLS_327 = __VLS_326({
             ...{ 'onClick': {} },
             loading: (__VLS_ctx.downloadingContract),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_306));
-        let __VLS_309;
-        let __VLS_310;
-        let __VLS_311;
-        const __VLS_312 = {
+        }, ...__VLS_functionalComponentArgsRest(__VLS_326));
+        let __VLS_329;
+        let __VLS_330;
+        let __VLS_331;
+        const __VLS_332 = {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
@@ -1739,25 +1827,25 @@ if (__VLS_ctx.detail) {
                 __VLS_ctx.handleDownloadContract(__VLS_ctx.detail.id);
             }
         };
-        __VLS_308.slots.default;
-        var __VLS_308;
+        __VLS_328.slots.default;
+        var __VLS_328;
     }
     if (__VLS_ctx.detail.contract) {
-        const __VLS_313 = {}.AButton;
+        const __VLS_333 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
-        const __VLS_314 = __VLS_asFunctionalComponent(__VLS_313, new __VLS_313({
+        const __VLS_334 = __VLS_asFunctionalComponent(__VLS_333, new __VLS_333({
             ...{ 'onClick': {} },
             status: "warning",
         }));
-        const __VLS_315 = __VLS_314({
+        const __VLS_335 = __VLS_334({
             ...{ 'onClick': {} },
             status: "warning",
-        }, ...__VLS_functionalComponentArgsRest(__VLS_314));
-        let __VLS_317;
-        let __VLS_318;
-        let __VLS_319;
-        const __VLS_320 = {
+        }, ...__VLS_functionalComponentArgsRest(__VLS_334));
+        let __VLS_337;
+        let __VLS_338;
+        let __VLS_339;
+        const __VLS_340 = {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
@@ -1766,112 +1854,112 @@ if (__VLS_ctx.detail) {
                 __VLS_ctx.resetForTest(__VLS_ctx.detail.id);
             }
         };
-        __VLS_316.slots.default;
-        var __VLS_316;
+        __VLS_336.slots.default;
+        var __VLS_336;
     }
-    const __VLS_321 = {}.ADivider;
+    const __VLS_341 = {}.ADivider;
     /** @type {[typeof __VLS_components.ADivider, typeof __VLS_components.aDivider, ]} */ ;
     // @ts-ignore
-    const __VLS_322 = __VLS_asFunctionalComponent(__VLS_321, new __VLS_321({}));
-    const __VLS_323 = __VLS_322({}, ...__VLS_functionalComponentArgsRest(__VLS_322));
+    const __VLS_342 = __VLS_asFunctionalComponent(__VLS_341, new __VLS_341({}));
+    const __VLS_343 = __VLS_342({}, ...__VLS_functionalComponentArgsRest(__VLS_342));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ style: {} },
     });
-    const __VLS_325 = {}.ADescriptions;
+    const __VLS_345 = {}.ADescriptions;
     /** @type {[typeof __VLS_components.ADescriptions, typeof __VLS_components.aDescriptions, typeof __VLS_components.ADescriptions, typeof __VLS_components.aDescriptions, ]} */ ;
     // @ts-ignore
-    const __VLS_326 = __VLS_asFunctionalComponent(__VLS_325, new __VLS_325({
+    const __VLS_346 = __VLS_asFunctionalComponent(__VLS_345, new __VLS_345({
         column: (2),
         size: "small",
         bordered: true,
     }));
-    const __VLS_327 = __VLS_326({
+    const __VLS_347 = __VLS_346({
         column: (2),
         size: "small",
         bordered: true,
-    }, ...__VLS_functionalComponentArgsRest(__VLS_326));
-    __VLS_328.slots.default;
-    const __VLS_329 = {}.ADescriptionsItem;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_346));
+    __VLS_348.slots.default;
+    const __VLS_349 = {}.ADescriptionsItem;
     /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
     // @ts-ignore
-    const __VLS_330 = __VLS_asFunctionalComponent(__VLS_329, new __VLS_329({
+    const __VLS_350 = __VLS_asFunctionalComponent(__VLS_349, new __VLS_349({
         label: "公证状态",
     }));
-    const __VLS_331 = __VLS_330({
+    const __VLS_351 = __VLS_350({
         label: "公证状态",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_330));
-    __VLS_332.slots.default;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_350));
+    __VLS_352.slots.default;
     (__VLS_ctx.notaryStatusText(__VLS_ctx.detail.notaryStatus));
-    var __VLS_332;
-    const __VLS_333 = {}.ADescriptionsItem;
+    var __VLS_352;
+    const __VLS_353 = {}.ADescriptionsItem;
     /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
     // @ts-ignore
-    const __VLS_334 = __VLS_asFunctionalComponent(__VLS_333, new __VLS_333({
+    const __VLS_354 = __VLS_asFunctionalComponent(__VLS_353, new __VLS_353({
         label: "公证单号",
     }));
-    const __VLS_335 = __VLS_334({
+    const __VLS_355 = __VLS_354({
         label: "公证单号",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_334));
-    __VLS_336.slots.default;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_354));
+    __VLS_356.slots.default;
     (__VLS_ctx.detail.notaryOrderNo || '-');
-    var __VLS_336;
-    const __VLS_337 = {}.ADescriptionsItem;
+    var __VLS_356;
+    const __VLS_357 = {}.ADescriptionsItem;
     /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
     // @ts-ignore
-    const __VLS_338 = __VLS_asFunctionalComponent(__VLS_337, new __VLS_337({
+    const __VLS_358 = __VLS_asFunctionalComponent(__VLS_357, new __VLS_357({
         label: "出证时间",
     }));
-    const __VLS_339 = __VLS_338({
+    const __VLS_359 = __VLS_358({
         label: "出证时间",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_338));
-    __VLS_340.slots.default;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_358));
+    __VLS_360.slots.default;
     (__VLS_ctx.detail.notaryCertifiedTime || '-');
-    var __VLS_340;
-    const __VLS_341 = {}.ADescriptionsItem;
+    var __VLS_360;
+    const __VLS_361 = {}.ADescriptionsItem;
     /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
     // @ts-ignore
-    const __VLS_342 = __VLS_asFunctionalComponent(__VLS_341, new __VLS_341({
+    const __VLS_362 = __VLS_asFunctionalComponent(__VLS_361, new __VLS_361({
         label: "公证员",
     }));
-    const __VLS_343 = __VLS_342({
+    const __VLS_363 = __VLS_362({
         label: "公证员",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_342));
-    __VLS_344.slots.default;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_362));
+    __VLS_364.slots.default;
     (__VLS_ctx.detail.notaryName || '-');
-    var __VLS_344;
+    var __VLS_364;
     if (__VLS_ctx.notarySignUrl) {
-        const __VLS_345 = {}.ADescriptionsItem;
+        const __VLS_365 = {}.ADescriptionsItem;
         /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
         // @ts-ignore
-        const __VLS_346 = __VLS_asFunctionalComponent(__VLS_345, new __VLS_345({
+        const __VLS_366 = __VLS_asFunctionalComponent(__VLS_365, new __VLS_365({
             label: "签署链接",
             span: (2),
         }));
-        const __VLS_347 = __VLS_346({
+        const __VLS_367 = __VLS_366({
             label: "签署链接",
             span: (2),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_346));
-        __VLS_348.slots.default;
+        }, ...__VLS_functionalComponentArgsRest(__VLS_366));
+        __VLS_368.slots.default;
         __VLS_asFunctionalElement(__VLS_intrinsicElements.a, __VLS_intrinsicElements.a)({
             href: (__VLS_ctx.notarySignUrl),
             target: "_blank",
             ...{ style: {} },
         });
         (__VLS_ctx.notarySignUrl);
-        var __VLS_348;
+        var __VLS_368;
     }
-    const __VLS_349 = {}.ADescriptionsItem;
+    const __VLS_369 = {}.ADescriptionsItem;
     /** @type {[typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, typeof __VLS_components.ADescriptionsItem, typeof __VLS_components.aDescriptionsItem, ]} */ ;
     // @ts-ignore
-    const __VLS_350 = __VLS_asFunctionalComponent(__VLS_349, new __VLS_349({
+    const __VLS_370 = __VLS_asFunctionalComponent(__VLS_369, new __VLS_369({
         label: "证书链接",
         span: (2),
     }));
-    const __VLS_351 = __VLS_350({
+    const __VLS_371 = __VLS_370({
         label: "证书链接",
         span: (2),
-    }, ...__VLS_functionalComponentArgsRest(__VLS_350));
-    __VLS_352.slots.default;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_370));
+    __VLS_372.slots.default;
     if (__VLS_ctx.detail.notaryCertUrl) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
         (__VLS_ctx.detail.notaryCertUrl);
@@ -1879,27 +1967,27 @@ if (__VLS_ctx.detail) {
     else {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
     }
-    var __VLS_352;
-    var __VLS_328;
+    var __VLS_372;
+    var __VLS_348;
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ style: {} },
     });
     if (__VLS_ctx.detail.contract?.status === 'SIGNED' && !__VLS_ctx.detail.notaryOrderNo) {
-        const __VLS_353 = {}.AButton;
+        const __VLS_373 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
-        const __VLS_354 = __VLS_asFunctionalComponent(__VLS_353, new __VLS_353({
+        const __VLS_374 = __VLS_asFunctionalComponent(__VLS_373, new __VLS_373({
             ...{ 'onClick': {} },
             type: "primary",
         }));
-        const __VLS_355 = __VLS_354({
+        const __VLS_375 = __VLS_374({
             ...{ 'onClick': {} },
             type: "primary",
-        }, ...__VLS_functionalComponentArgsRest(__VLS_354));
-        let __VLS_357;
-        let __VLS_358;
-        let __VLS_359;
-        const __VLS_360 = {
+        }, ...__VLS_functionalComponentArgsRest(__VLS_374));
+        let __VLS_377;
+        let __VLS_378;
+        let __VLS_379;
+        const __VLS_380 = {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
@@ -1908,27 +1996,27 @@ if (__VLS_ctx.detail) {
                 __VLS_ctx.applyNotaryForOrder(__VLS_ctx.detail.id);
             }
         };
-        __VLS_356.slots.default;
-        var __VLS_356;
+        __VLS_376.slots.default;
+        var __VLS_376;
     }
     if (__VLS_ctx.detail.notaryStatus === '20') {
-        const __VLS_361 = {}.AButton;
+        const __VLS_381 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
-        const __VLS_362 = __VLS_asFunctionalComponent(__VLS_361, new __VLS_361({
+        const __VLS_382 = __VLS_asFunctionalComponent(__VLS_381, new __VLS_381({
             ...{ 'onClick': {} },
             type: "primary",
             loading: (__VLS_ctx.notarySignLoading),
         }));
-        const __VLS_363 = __VLS_362({
+        const __VLS_383 = __VLS_382({
             ...{ 'onClick': {} },
             type: "primary",
             loading: (__VLS_ctx.notarySignLoading),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_362));
-        let __VLS_365;
-        let __VLS_366;
-        let __VLS_367;
-        const __VLS_368 = {
+        }, ...__VLS_functionalComponentArgsRest(__VLS_382));
+        let __VLS_385;
+        let __VLS_386;
+        let __VLS_387;
+        const __VLS_388 = {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
@@ -1937,23 +2025,23 @@ if (__VLS_ctx.detail) {
                 __VLS_ctx.getNotarySignUrl(__VLS_ctx.detail.id);
             }
         };
-        __VLS_364.slots.default;
-        var __VLS_364;
+        __VLS_384.slots.default;
+        var __VLS_384;
     }
     if (__VLS_ctx.notarySignUrl) {
-        const __VLS_369 = {}.AButton;
+        const __VLS_389 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
-        const __VLS_370 = __VLS_asFunctionalComponent(__VLS_369, new __VLS_369({
+        const __VLS_390 = __VLS_asFunctionalComponent(__VLS_389, new __VLS_389({
             ...{ 'onClick': {} },
         }));
-        const __VLS_371 = __VLS_370({
+        const __VLS_391 = __VLS_390({
             ...{ 'onClick': {} },
-        }, ...__VLS_functionalComponentArgsRest(__VLS_370));
-        let __VLS_373;
-        let __VLS_374;
-        let __VLS_375;
-        const __VLS_376 = {
+        }, ...__VLS_functionalComponentArgsRest(__VLS_390));
+        let __VLS_393;
+        let __VLS_394;
+        let __VLS_395;
+        const __VLS_396 = {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
@@ -1962,23 +2050,23 @@ if (__VLS_ctx.detail) {
                 __VLS_ctx.copyText(__VLS_ctx.notarySignUrl);
             }
         };
-        __VLS_372.slots.default;
-        var __VLS_372;
+        __VLS_392.slots.default;
+        var __VLS_392;
     }
     if (__VLS_ctx.notarySignUrl) {
-        const __VLS_377 = {}.AButton;
+        const __VLS_397 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
-        const __VLS_378 = __VLS_asFunctionalComponent(__VLS_377, new __VLS_377({
+        const __VLS_398 = __VLS_asFunctionalComponent(__VLS_397, new __VLS_397({
             ...{ 'onClick': {} },
         }));
-        const __VLS_379 = __VLS_378({
+        const __VLS_399 = __VLS_398({
             ...{ 'onClick': {} },
-        }, ...__VLS_functionalComponentArgsRest(__VLS_378));
-        let __VLS_381;
-        let __VLS_382;
-        let __VLS_383;
-        const __VLS_384 = {
+        }, ...__VLS_functionalComponentArgsRest(__VLS_398));
+        let __VLS_401;
+        let __VLS_402;
+        let __VLS_403;
+        const __VLS_404 = {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
@@ -1987,23 +2075,23 @@ if (__VLS_ctx.detail) {
                 __VLS_ctx.showLinkQr('公证签署二维码', __VLS_ctx.notarySignUrl);
             }
         };
-        __VLS_380.slots.default;
-        var __VLS_380;
+        __VLS_400.slots.default;
+        var __VLS_400;
     }
     if (__VLS_ctx.detail.notaryOrderNo) {
-        const __VLS_385 = {}.AButton;
+        const __VLS_405 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
-        const __VLS_386 = __VLS_asFunctionalComponent(__VLS_385, new __VLS_385({
+        const __VLS_406 = __VLS_asFunctionalComponent(__VLS_405, new __VLS_405({
             ...{ 'onClick': {} },
         }));
-        const __VLS_387 = __VLS_386({
+        const __VLS_407 = __VLS_406({
             ...{ 'onClick': {} },
-        }, ...__VLS_functionalComponentArgsRest(__VLS_386));
-        let __VLS_389;
-        let __VLS_390;
-        let __VLS_391;
-        const __VLS_392 = {
+        }, ...__VLS_functionalComponentArgsRest(__VLS_406));
+        let __VLS_409;
+        let __VLS_410;
+        let __VLS_411;
+        const __VLS_412 = {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
@@ -2012,23 +2100,23 @@ if (__VLS_ctx.detail) {
                 __VLS_ctx.refreshNotaryStatus(__VLS_ctx.detail.id);
             }
         };
-        __VLS_388.slots.default;
-        var __VLS_388;
+        __VLS_408.slots.default;
+        var __VLS_408;
     }
     if (__VLS_ctx.detail.notaryOrderNo && __VLS_ctx.detail.notaryStatus === '33') {
-        const __VLS_393 = {}.AButton;
+        const __VLS_413 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
-        const __VLS_394 = __VLS_asFunctionalComponent(__VLS_393, new __VLS_393({
+        const __VLS_414 = __VLS_asFunctionalComponent(__VLS_413, new __VLS_413({
             ...{ 'onClick': {} },
         }));
-        const __VLS_395 = __VLS_394({
+        const __VLS_415 = __VLS_414({
             ...{ 'onClick': {} },
-        }, ...__VLS_functionalComponentArgsRest(__VLS_394));
-        let __VLS_397;
-        let __VLS_398;
-        let __VLS_399;
-        const __VLS_400 = {
+        }, ...__VLS_functionalComponentArgsRest(__VLS_414));
+        let __VLS_417;
+        let __VLS_418;
+        let __VLS_419;
+        const __VLS_420 = {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
@@ -2037,23 +2125,23 @@ if (__VLS_ctx.detail) {
                 __VLS_ctx.fetchNotaryCert(__VLS_ctx.detail.id);
             }
         };
-        __VLS_396.slots.default;
-        var __VLS_396;
+        __VLS_416.slots.default;
+        var __VLS_416;
     }
     if (__VLS_ctx.detail.notaryCertUrl) {
-        const __VLS_401 = {}.AButton;
+        const __VLS_421 = {}.AButton;
         /** @type {[typeof __VLS_components.AButton, typeof __VLS_components.aButton, typeof __VLS_components.AButton, typeof __VLS_components.aButton, ]} */ ;
         // @ts-ignore
-        const __VLS_402 = __VLS_asFunctionalComponent(__VLS_401, new __VLS_401({
+        const __VLS_422 = __VLS_asFunctionalComponent(__VLS_421, new __VLS_421({
             ...{ 'onClick': {} },
         }));
-        const __VLS_403 = __VLS_402({
+        const __VLS_423 = __VLS_422({
             ...{ 'onClick': {} },
-        }, ...__VLS_functionalComponentArgsRest(__VLS_402));
-        let __VLS_405;
-        let __VLS_406;
-        let __VLS_407;
-        const __VLS_408 = {
+        }, ...__VLS_functionalComponentArgsRest(__VLS_422));
+        let __VLS_425;
+        let __VLS_426;
+        let __VLS_427;
+        const __VLS_428 = {
             onClick: (...[$event]) => {
                 if (!(__VLS_ctx.detail))
                     return;
@@ -2062,253 +2150,253 @@ if (__VLS_ctx.detail) {
                 __VLS_ctx.openUrl(__VLS_ctx.detail.notaryCertUrl);
             }
         };
-        __VLS_404.slots.default;
-        var __VLS_404;
+        __VLS_424.slots.default;
+        var __VLS_424;
     }
     if (__VLS_ctx.detail.notaryStatus === '20') {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ style: {} },
         });
-        const __VLS_409 = {}.AAlert;
+        const __VLS_429 = {}.AAlert;
         /** @type {[typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, ]} */ ;
         // @ts-ignore
-        const __VLS_410 = __VLS_asFunctionalComponent(__VLS_409, new __VLS_409({
+        const __VLS_430 = __VLS_asFunctionalComponent(__VLS_429, new __VLS_429({
             type: "info",
         }));
-        const __VLS_411 = __VLS_410({
+        const __VLS_431 = __VLS_430({
             type: "info",
-        }, ...__VLS_functionalComponentArgsRest(__VLS_410));
-        __VLS_412.slots.default;
-        var __VLS_412;
+        }, ...__VLS_functionalComponentArgsRest(__VLS_430));
+        __VLS_432.slots.default;
+        var __VLS_432;
     }
-    const __VLS_413 = {}.ADivider;
+    const __VLS_433 = {}.ADivider;
     /** @type {[typeof __VLS_components.ADivider, typeof __VLS_components.aDivider, ]} */ ;
     // @ts-ignore
-    const __VLS_414 = __VLS_asFunctionalComponent(__VLS_413, new __VLS_413({}));
-    const __VLS_415 = __VLS_414({}, ...__VLS_functionalComponentArgsRest(__VLS_414));
+    const __VLS_434 = __VLS_asFunctionalComponent(__VLS_433, new __VLS_433({}));
+    const __VLS_435 = __VLS_434({}, ...__VLS_functionalComponentArgsRest(__VLS_434));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ style: {} },
     });
-    const __VLS_417 = {}.ATable;
+    const __VLS_437 = {}.ATable;
     /** @type {[typeof __VLS_components.ATable, typeof __VLS_components.aTable, typeof __VLS_components.ATable, typeof __VLS_components.aTable, ]} */ ;
     // @ts-ignore
-    const __VLS_418 = __VLS_asFunctionalComponent(__VLS_417, new __VLS_417({
+    const __VLS_438 = __VLS_asFunctionalComponent(__VLS_437, new __VLS_437({
         data: (__VLS_ctx.detail.statusLogs || []),
         pagination: (false),
         size: "small",
     }));
-    const __VLS_419 = __VLS_418({
+    const __VLS_439 = __VLS_438({
         data: (__VLS_ctx.detail.statusLogs || []),
         pagination: (false),
         size: "small",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_418));
-    __VLS_420.slots.default;
-    const __VLS_421 = {}.ATableColumn;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_438));
+    __VLS_440.slots.default;
+    const __VLS_441 = {}.ATableColumn;
     /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
     // @ts-ignore
-    const __VLS_422 = __VLS_asFunctionalComponent(__VLS_421, new __VLS_421({
+    const __VLS_442 = __VLS_asFunctionalComponent(__VLS_441, new __VLS_441({
         title: "时间",
         dataIndex: "at",
     }));
-    const __VLS_423 = __VLS_422({
+    const __VLS_443 = __VLS_442({
         title: "时间",
         dataIndex: "at",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_422));
-    const __VLS_425 = {}.ATableColumn;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_442));
+    const __VLS_445 = {}.ATableColumn;
     /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
     // @ts-ignore
-    const __VLS_426 = __VLS_asFunctionalComponent(__VLS_425, new __VLS_425({
+    const __VLS_446 = __VLS_asFunctionalComponent(__VLS_445, new __VLS_445({
         title: "动作",
         dataIndex: "action",
     }));
-    const __VLS_427 = __VLS_426({
+    const __VLS_447 = __VLS_446({
         title: "动作",
         dataIndex: "action",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_426));
-    const __VLS_429 = {}.ATableColumn;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_446));
+    const __VLS_449 = {}.ATableColumn;
     /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
     // @ts-ignore
-    const __VLS_430 = __VLS_asFunctionalComponent(__VLS_429, new __VLS_429({
+    const __VLS_450 = __VLS_asFunctionalComponent(__VLS_449, new __VLS_449({
         title: "状态",
         dataIndex: "status",
     }));
-    const __VLS_431 = __VLS_430({
+    const __VLS_451 = __VLS_450({
         title: "状态",
         dataIndex: "status",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_430));
-    const __VLS_433 = {}.ATableColumn;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_450));
+    const __VLS_453 = {}.ATableColumn;
     /** @type {[typeof __VLS_components.ATableColumn, typeof __VLS_components.aTableColumn, ]} */ ;
     // @ts-ignore
-    const __VLS_434 = __VLS_asFunctionalComponent(__VLS_433, new __VLS_433({
+    const __VLS_454 = __VLS_asFunctionalComponent(__VLS_453, new __VLS_453({
         title: "来源",
         dataIndex: "by",
     }));
-    const __VLS_435 = __VLS_434({
+    const __VLS_455 = __VLS_454({
         title: "来源",
         dataIndex: "by",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_434));
-    var __VLS_420;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_454));
+    var __VLS_440;
 }
 var __VLS_28;
-const __VLS_437 = {}.AModal;
+const __VLS_457 = {}.AModal;
 /** @type {[typeof __VLS_components.AModal, typeof __VLS_components.aModal, typeof __VLS_components.AModal, typeof __VLS_components.aModal, ]} */ ;
-// @ts-ignore
-const __VLS_438 = __VLS_asFunctionalComponent(__VLS_437, new __VLS_437({
-    ...{ 'onOk': {} },
-    visible: (__VLS_ctx.adjustVisible),
-    title: "订单调价",
-}));
-const __VLS_439 = __VLS_438({
-    ...{ 'onOk': {} },
-    visible: (__VLS_ctx.adjustVisible),
-    title: "订单调价",
-}, ...__VLS_functionalComponentArgsRest(__VLS_438));
-let __VLS_441;
-let __VLS_442;
-let __VLS_443;
-const __VLS_444 = {
-    onOk: (__VLS_ctx.submitAdjust)
-};
-__VLS_440.slots.default;
-const __VLS_445 = {}.AForm;
-/** @type {[typeof __VLS_components.AForm, typeof __VLS_components.aForm, typeof __VLS_components.AForm, typeof __VLS_components.aForm, ]} */ ;
-// @ts-ignore
-const __VLS_446 = __VLS_asFunctionalComponent(__VLS_445, new __VLS_445({
-    model: (__VLS_ctx.adjustForm),
-    layout: "vertical",
-}));
-const __VLS_447 = __VLS_446({
-    model: (__VLS_ctx.adjustForm),
-    layout: "vertical",
-}, ...__VLS_functionalComponentArgsRest(__VLS_446));
-__VLS_448.slots.default;
-const __VLS_449 = {}.AFormItem;
-/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
-// @ts-ignore
-const __VLS_450 = __VLS_asFunctionalComponent(__VLS_449, new __VLS_449({
-    label: "租金/期（元）",
-    field: "rentPerPeriod",
-}));
-const __VLS_451 = __VLS_450({
-    label: "租金/期（元）",
-    field: "rentPerPeriod",
-}, ...__VLS_functionalComponentArgsRest(__VLS_450));
-__VLS_452.slots.default;
-const __VLS_453 = {}.AInputNumber;
-/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
-// @ts-ignore
-const __VLS_454 = __VLS_asFunctionalComponent(__VLS_453, new __VLS_453({
-    modelValue: (__VLS_ctx.adjustForm.rentPerPeriod),
-    min: (1),
-}));
-const __VLS_455 = __VLS_454({
-    modelValue: (__VLS_ctx.adjustForm.rentPerPeriod),
-    min: (1),
-}, ...__VLS_functionalComponentArgsRest(__VLS_454));
-var __VLS_452;
-const __VLS_457 = {}.AFormItem;
-/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_458 = __VLS_asFunctionalComponent(__VLS_457, new __VLS_457({
-    label: "期数",
-    field: "periods",
+    ...{ 'onOk': {} },
+    visible: (__VLS_ctx.adjustVisible),
+    title: "订单调价",
 }));
 const __VLS_459 = __VLS_458({
-    label: "期数",
-    field: "periods",
+    ...{ 'onOk': {} },
+    visible: (__VLS_ctx.adjustVisible),
+    title: "订单调价",
 }, ...__VLS_functionalComponentArgsRest(__VLS_458));
+let __VLS_461;
+let __VLS_462;
+let __VLS_463;
+const __VLS_464 = {
+    onOk: (__VLS_ctx.submitAdjust)
+};
 __VLS_460.slots.default;
-const __VLS_461 = {}.AInputNumber;
-/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
-// @ts-ignore
-const __VLS_462 = __VLS_asFunctionalComponent(__VLS_461, new __VLS_461({
-    modelValue: (__VLS_ctx.adjustForm.periods),
-    min: (3),
-}));
-const __VLS_463 = __VLS_462({
-    modelValue: (__VLS_ctx.adjustForm.periods),
-    min: (3),
-}, ...__VLS_functionalComponentArgsRest(__VLS_462));
-var __VLS_460;
-const __VLS_465 = {}.AFormItem;
-/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
+const __VLS_465 = {}.AForm;
+/** @type {[typeof __VLS_components.AForm, typeof __VLS_components.aForm, typeof __VLS_components.AForm, typeof __VLS_components.aForm, ]} */ ;
 // @ts-ignore
 const __VLS_466 = __VLS_asFunctionalComponent(__VLS_465, new __VLS_465({
-    label: "周期（天）",
-    field: "cycleDays",
+    model: (__VLS_ctx.adjustForm),
+    layout: "vertical",
 }));
 const __VLS_467 = __VLS_466({
-    label: "周期（天）",
-    field: "cycleDays",
+    model: (__VLS_ctx.adjustForm),
+    layout: "vertical",
 }, ...__VLS_functionalComponentArgsRest(__VLS_466));
 __VLS_468.slots.default;
-const __VLS_469 = {}.AInputNumber;
-/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
-// @ts-ignore
-const __VLS_470 = __VLS_asFunctionalComponent(__VLS_469, new __VLS_469({
-    modelValue: (__VLS_ctx.adjustForm.cycleDays),
-    min: (7),
-}));
-const __VLS_471 = __VLS_470({
-    modelValue: (__VLS_ctx.adjustForm.cycleDays),
-    min: (7),
-}, ...__VLS_functionalComponentArgsRest(__VLS_470));
-var __VLS_468;
-const __VLS_473 = {}.AFormItem;
+const __VLS_469 = {}.AFormItem;
 /** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
 // @ts-ignore
+const __VLS_470 = __VLS_asFunctionalComponent(__VLS_469, new __VLS_469({
+    label: "租金/期（元）",
+    field: "rentPerPeriod",
+}));
+const __VLS_471 = __VLS_470({
+    label: "租金/期（元）",
+    field: "rentPerPeriod",
+}, ...__VLS_functionalComponentArgsRest(__VLS_470));
+__VLS_472.slots.default;
+const __VLS_473 = {}.AInputNumber;
+/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
+// @ts-ignore
 const __VLS_474 = __VLS_asFunctionalComponent(__VLS_473, new __VLS_473({
-    label: "调价原因",
-    field: "reason",
+    modelValue: (__VLS_ctx.adjustForm.rentPerPeriod),
+    min: (1),
 }));
 const __VLS_475 = __VLS_474({
-    label: "调价原因",
-    field: "reason",
+    modelValue: (__VLS_ctx.adjustForm.rentPerPeriod),
+    min: (1),
 }, ...__VLS_functionalComponentArgsRest(__VLS_474));
-__VLS_476.slots.default;
-const __VLS_477 = {}.AInput;
-/** @type {[typeof __VLS_components.AInput, typeof __VLS_components.aInput, ]} */ ;
+var __VLS_472;
+const __VLS_477 = {}.AFormItem;
+/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_478 = __VLS_asFunctionalComponent(__VLS_477, new __VLS_477({
-    modelValue: (__VLS_ctx.adjustForm.reason),
-    placeholder: "请输入原因",
+    label: "期数",
+    field: "periods",
 }));
 const __VLS_479 = __VLS_478({
-    modelValue: (__VLS_ctx.adjustForm.reason),
-    placeholder: "请输入原因",
+    label: "期数",
+    field: "periods",
 }, ...__VLS_functionalComponentArgsRest(__VLS_478));
-var __VLS_476;
-const __VLS_481 = {}.AAlert;
-/** @type {[typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, ]} */ ;
+__VLS_480.slots.default;
+const __VLS_481 = {}.AInputNumber;
+/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
 // @ts-ignore
 const __VLS_482 = __VLS_asFunctionalComponent(__VLS_481, new __VLS_481({
-    type: "warning",
-    showIcon: (true),
-    title: "调价仅限审核前，调价后需重新签合同。",
+    modelValue: (__VLS_ctx.adjustForm.periods),
+    min: (3),
 }));
 const __VLS_483 = __VLS_482({
+    modelValue: (__VLS_ctx.adjustForm.periods),
+    min: (3),
+}, ...__VLS_functionalComponentArgsRest(__VLS_482));
+var __VLS_480;
+const __VLS_485 = {}.AFormItem;
+/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
+// @ts-ignore
+const __VLS_486 = __VLS_asFunctionalComponent(__VLS_485, new __VLS_485({
+    label: "周期（天）",
+    field: "cycleDays",
+}));
+const __VLS_487 = __VLS_486({
+    label: "周期（天）",
+    field: "cycleDays",
+}, ...__VLS_functionalComponentArgsRest(__VLS_486));
+__VLS_488.slots.default;
+const __VLS_489 = {}.AInputNumber;
+/** @type {[typeof __VLS_components.AInputNumber, typeof __VLS_components.aInputNumber, ]} */ ;
+// @ts-ignore
+const __VLS_490 = __VLS_asFunctionalComponent(__VLS_489, new __VLS_489({
+    modelValue: (__VLS_ctx.adjustForm.cycleDays),
+    min: (7),
+}));
+const __VLS_491 = __VLS_490({
+    modelValue: (__VLS_ctx.adjustForm.cycleDays),
+    min: (7),
+}, ...__VLS_functionalComponentArgsRest(__VLS_490));
+var __VLS_488;
+const __VLS_493 = {}.AFormItem;
+/** @type {[typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, typeof __VLS_components.AFormItem, typeof __VLS_components.aFormItem, ]} */ ;
+// @ts-ignore
+const __VLS_494 = __VLS_asFunctionalComponent(__VLS_493, new __VLS_493({
+    label: "调价原因",
+    field: "reason",
+}));
+const __VLS_495 = __VLS_494({
+    label: "调价原因",
+    field: "reason",
+}, ...__VLS_functionalComponentArgsRest(__VLS_494));
+__VLS_496.slots.default;
+const __VLS_497 = {}.AInput;
+/** @type {[typeof __VLS_components.AInput, typeof __VLS_components.aInput, ]} */ ;
+// @ts-ignore
+const __VLS_498 = __VLS_asFunctionalComponent(__VLS_497, new __VLS_497({
+    modelValue: (__VLS_ctx.adjustForm.reason),
+    placeholder: "请输入原因",
+}));
+const __VLS_499 = __VLS_498({
+    modelValue: (__VLS_ctx.adjustForm.reason),
+    placeholder: "请输入原因",
+}, ...__VLS_functionalComponentArgsRest(__VLS_498));
+var __VLS_496;
+const __VLS_501 = {}.AAlert;
+/** @type {[typeof __VLS_components.AAlert, typeof __VLS_components.aAlert, ]} */ ;
+// @ts-ignore
+const __VLS_502 = __VLS_asFunctionalComponent(__VLS_501, new __VLS_501({
     type: "warning",
     showIcon: (true),
     title: "调价仅限审核前，调价后需重新签合同。",
-}, ...__VLS_functionalComponentArgsRest(__VLS_482));
-var __VLS_448;
-var __VLS_440;
-const __VLS_485 = {}.AModal;
+}));
+const __VLS_503 = __VLS_502({
+    type: "warning",
+    showIcon: (true),
+    title: "调价仅限审核前，调价后需重新签合同。",
+}, ...__VLS_functionalComponentArgsRest(__VLS_502));
+var __VLS_468;
+var __VLS_460;
+const __VLS_505 = {}.AModal;
 /** @type {[typeof __VLS_components.AModal, typeof __VLS_components.aModal, typeof __VLS_components.AModal, typeof __VLS_components.aModal, ]} */ ;
 // @ts-ignore
-const __VLS_486 = __VLS_asFunctionalComponent(__VLS_485, new __VLS_485({
+const __VLS_506 = __VLS_asFunctionalComponent(__VLS_505, new __VLS_505({
     visible: (__VLS_ctx.qrVisible),
     title: (__VLS_ctx.qrTitle),
     footer: (false),
     width: "360",
 }));
-const __VLS_487 = __VLS_486({
+const __VLS_507 = __VLS_506({
     visible: (__VLS_ctx.qrVisible),
     title: (__VLS_ctx.qrTitle),
     footer: (false),
     width: "360",
-}, ...__VLS_functionalComponentArgsRest(__VLS_486));
-__VLS_488.slots.default;
+}, ...__VLS_functionalComponentArgsRest(__VLS_506));
+__VLS_508.slots.default;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ style: {} },
 });
@@ -2320,22 +2408,22 @@ if (__VLS_ctx.qrImageUrl) {
     });
 }
 if (__VLS_ctx.qrLink) {
-    const __VLS_489 = {}.ATypographyParagraph;
+    const __VLS_509 = {}.ATypographyParagraph;
     /** @type {[typeof __VLS_components.ATypographyParagraph, typeof __VLS_components.aTypographyParagraph, typeof __VLS_components.ATypographyParagraph, typeof __VLS_components.aTypographyParagraph, ]} */ ;
     // @ts-ignore
-    const __VLS_490 = __VLS_asFunctionalComponent(__VLS_489, new __VLS_489({
+    const __VLS_510 = __VLS_asFunctionalComponent(__VLS_509, new __VLS_509({
         copyable: true,
         ...{ style: {} },
     }));
-    const __VLS_491 = __VLS_490({
+    const __VLS_511 = __VLS_510({
         copyable: true,
         ...{ style: {} },
-    }, ...__VLS_functionalComponentArgsRest(__VLS_490));
-    __VLS_492.slots.default;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_510));
+    __VLS_512.slots.default;
     (__VLS_ctx.qrLink);
-    var __VLS_492;
+    var __VLS_512;
 }
-var __VLS_488;
+var __VLS_508;
 /** @type {__VLS_StyleScopedClasses['panel']} */ ;
 /** @type {__VLS_StyleScopedClasses['panel-title']} */ ;
 /** @type {__VLS_StyleScopedClasses['link']} */ ;

@@ -594,10 +594,11 @@ public class AsignService {
     filled.put("partyBEmail", vars.getOrDefault("partyBEmail", ""));
     
     // 收货清单动态表格 — 模板控件 dataKey="表格1"，列：itemName, itemModel, itemQty
+    // itemModel 仅展示型号配置（车架+电池），不重复产品名称
     List<Map<String, String>> table1 = new ArrayList<>();
     Map<String, String> deliveryItem = new HashMap<>();
     deliveryItem.put("itemName", vars.getOrDefault("productName", ""));
-    deliveryItem.put("itemModel", vars.getOrDefault("productSpec", ""));
+    deliveryItem.put("itemModel", vars.getOrDefault("productModelConfig", vars.getOrDefault("productSpec", "")));
     deliveryItem.put("itemQty", vars.getOrDefault("productQty", "1"));
     table1.add(deliveryItem);
     filled.put("表格1", table1);
@@ -656,6 +657,7 @@ public class AsignService {
     vars.put("yajin", "0");
     vars.put("productName", safe(order.getProductName()));
     vars.put("productSpec", resolveProductSpec(order));
+    vars.put("productModelConfig", resolveModelConfig(order));
     vars.put("productQty", "1");
     // productFrameNo（车架号）由调用方传入
     vars.put("productFrameNo", safe(currentProductFrameNo));
@@ -802,10 +804,47 @@ public class AsignService {
     List<Map<String, Object>> rows = new ArrayList<>();
     Map<String, Object> row = new HashMap<>();
     row.put("itemName", safe(order.getProductName()));
-    row.put("itemModel", resolveProductSpec(order));
+    row.put("itemModel", resolveModelConfig(order));
     row.put("itemQty", "1");
     rows.add(row);
     return rows;
+  }
+
+  /**
+   * 仅提取型号配置信息（不重复产品名），用于合同表格的"型号配置"列。
+   * 包含：车架配置 + 电池型号（如"铝合金车架, 含电池:48V20Ah锂电池"）。
+   */
+  private String resolveModelConfig(Order order) {
+    if (order.getProductId() == null || order.getProductId().isBlank())
+      return resolveProductSpec(order);
+    try {
+      var productOpt = productRepository.findById(order.getProductId());
+      if (productOpt.isEmpty()) return resolveProductSpec(order);
+      var product = productOpt.get();
+      List<String> parts = new ArrayList<>();
+
+      String frameConfig = product.getFrameConfig();
+      if (frameConfig != null && !frameConfig.isBlank()) {
+        parts.add(frameConfig);
+      }
+
+      String batteryOption = order.getBatteryOption();
+      if ("WITH_BATTERY".equals(batteryOption)) {
+        String batteryConfig = product.getBatteryConfig();
+        if (batteryConfig != null && !batteryConfig.isBlank()) {
+          parts.add("含电池:" + batteryConfig);
+        } else {
+          parts.add("含电池");
+        }
+      } else if ("WITHOUT_BATTERY".equals(batteryOption)) {
+        parts.add("空车");
+      }
+
+      if (parts.isEmpty()) return resolveProductSpec(order);
+      return String.join(", ", parts);
+    } catch (Exception e) {
+      return resolveProductSpec(order);
+    }
   }
 
   private String extractLeaseStart(Order order) {
@@ -858,12 +897,12 @@ public class AsignService {
       if ("WITH_BATTERY".equals(batteryOption)) {
         String batteryConfig = product.getBatteryConfig();
         if (batteryConfig != null && !batteryConfig.isBlank()) {
-          spec += "（含电池：" + batteryConfig + "）";
+          spec += "(含电池:" + batteryConfig + ")";
         } else {
-          spec += "（含电池）";
+          spec += "(含电池)";
         }
       } else if ("WITHOUT_BATTERY".equals(batteryOption)) {
-        spec += "（空车）";
+        spec += "(空车)";
       }
       return spec;
     } catch (Exception e) {
